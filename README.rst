@@ -4,6 +4,7 @@ Brutal Maze
 **Brutal Maze** is a research hash and slash game with *polyart* graphic and
 Tango color palette. Its primary goals are:
 
+* Highly portable.
 * Auto-generated and infinite maze.
 * No binary data.
 * Enemies with randomized attributes: stun, poison, etc.

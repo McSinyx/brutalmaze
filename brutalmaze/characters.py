@@ -47,6 +47,11 @@ def fill_aapolygon(surface, points, color):
     filled_polygon(surface, points, color)
 
 
+def pos(x, y, distance, middlex, middley):
+    """Return coordinate of the center of the grid (x, y)."""
+    return middlex + (x - MIDDLE)*distance, middley + (y - MIDDLE)*distance
+
+
 class Hero:
     """Object representing the hero."""
     def __init__(self, surface):
@@ -59,12 +64,6 @@ class Hero:
         self.wound = 0
         self.speed = FPS // len(self.color)
         self.spin_queue, self.slashing = deque(), False
-
-    def resize(self):
-        """Resize the hero."""
-        w, h = self.surface.get_width(), self.surface.get_height()
-        self.x, self.y = w >> 1, h >> 1
-        self.R = int((w * h / sin(pi*2/3) / 624) ** 0.5)
 
     def slash(self, hold=False):
         """Spin the hero. If the button is hold, delay before continue
@@ -92,6 +91,12 @@ class Hero:
             self.angle = atan2(y - self.y, x - self.x)
         self.draw()
 
+    def resize(self):
+        """Resize the hero."""
+        w, h = self.surface.get_width(), self.surface.get_height()
+        self.x, self.y = w >> 1, h >> 1
+        self.R = int((w * h / sin(pi*2/3) / 624) ** 0.5)
+
 
 class Enemy:
     """Object representing an enemy."""
@@ -100,25 +105,24 @@ class Enemy:
         self.x, self.y = x, y
         self.angle, self.color = pi / 4, TANGO[TANGO_KEYS[n]]
 
-        self.moving = False
+        self.awake, self.moving = False, False
         self.wound = 0
         self.speed = FPS // len(self.color)
         self.spin_queue, self.slashing = deque(), False
 
     def draw(self, distance, middlex, middley, color=None):
-        """Draw the enemy, given distance between blocks and the middle
-        block.
+        """Draw the enemy, given distance between grids and the middle
+        grid.
         """
-        x = middlex + (self.x - MIDDLE)*distance
-        y = middley + (self.y - MIDDLE)*distance
+        x, y = pos(self.x, self.y, distance, middlex, middley)
         square = regpoly(4, int(distance / SQRT2), x, y, self.angle)
         fill_aapolygon(self.surface, square, color or self.color[self.wound])
 
     def update(self, distance, middlex, middley):
         """Update the enemy."""
-        if (self.angle - pi/4) < FLOATING_ZERO: self.angle = pi / 4
+        if (self.angle - pi/4) < EPSILON: self.angle = pi / 4
         self.draw(distance, middlex, middley, color=BG_COLOR)
-        if not self.spin_queue:
+        if self.awake and not self.spin_queue:
             self.spin_queue.extend([randsign()] * self.speed)
         if self.spin_queue and not self.moving:
             self.angle += self.spin_queue.popleft() * pi / 2 / self.speed
