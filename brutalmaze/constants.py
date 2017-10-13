@@ -20,7 +20,6 @@
 from pygame.locals import *
 from pygame.math import Vector2
 
-EPSILON = 8 ** -8
 SQRT2 = 2 ** 0.5
 
 FPS = 30

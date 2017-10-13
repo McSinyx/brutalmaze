@@ -19,6 +19,7 @@
 
 from collections import deque
 from math import atan2, cos, sin, pi
+from random import shuffle
 
 import pygame
 from pygame.gfxdraw import filled_polygon, aapolygon
@@ -31,7 +32,7 @@ def randsign():
     return (pygame.time.get_ticks() & 1)*2 - 1
 
 
-def regpoly(n, R, x, y, r):
+def regpoly(n, R, r, x, y):
     """Return the pointlist of the regular polygon with n sides,
     circumradius of R, the center point I(x, y) and one point A make the
     vector IA with angle r (in radians).
@@ -50,6 +51,11 @@ def fill_aapolygon(surface, points, color):
 def pos(x, y, distance, middlex, middley):
     """Return coordinate of the center of the grid (x, y)."""
     return middlex + (x - MIDDLE)*distance, middley + (y - MIDDLE)*distance
+
+
+def sign(n):
+    """Return the sign of number n."""
+    return -1 if n < 0 else 1 if n else 0
 
 
 class Hero:
@@ -75,7 +81,7 @@ class Hero:
 
     def draw(self, color=None):
         """Draw the hero."""
-        trigon = regpoly(3, self.R, self.x, self.y, self.angle)
+        trigon = regpoly(3, self.R, self.angle, self.x, self.y)
         fill_aapolygon(self.surface, trigon, color or self.color[self.wound])
 
     def update(self):
@@ -100,38 +106,58 @@ class Hero:
 
 class Enemy:
     """Object representing an enemy."""
-    def __init__(self, surface, n, x, y):
-        self.surface = surface
-        self.x, self.y = x, y
+    def __init__(self, surface, maze, n, x, y):
+        self.surface, self.maze = surface, maze
         self.angle, self.color = pi / 4, TANGO[TANGO_KEYS[n]]
+        self.x, self.y = x, y
 
-        self.awake, self.moving = False, False
-        self.wound = 0
+        self.awake = False
+        self.offsetx = self.offsety = 0
+        self.spin_queue = []
         self.speed = FPS // len(self.color)
-        self.spin_queue, self.slashing = deque(), False
+        self.wound = 0
 
     def draw(self, distance, middlex, middley, color=None):
-        """Draw the enemy, given distance between grids and the middle
-        grid.
-        """
+        """Draw the enemy, given distance between grids and the middle grid."""
         x, y = pos(self.x, self.y, distance, middlex, middley)
-        square = regpoly(4, int(distance / SQRT2), x, y, self.angle)
+        step = distance // 5
+        square = regpoly(4, int(distance / SQRT2), self.angle,
+                         x + self.offsetx*step, y + self.offsety*step)
         fill_aapolygon(self.surface, square, color or self.color[self.wound])
 
-    def update(self, distance, middlex, middley):
-        """Update the enemy."""
-        if (self.angle - pi/4) < EPSILON: self.angle = pi / 4
-        self.draw(distance, middlex, middley, color=BG_COLOR)
-        if self.awake and not self.spin_queue:
-            self.spin_queue.extend([randsign()] * self.speed)
-        if self.spin_queue and not self.moving:
-            self.angle += self.spin_queue.popleft() * pi / 2 / self.speed
-        self.draw(distance, middlex, middley)
-
-    def place(self, x, y):
+    def place(self, x=0, y=0):
         """Move the enemy by (x, y)."""
         self.x += x
         self.y += y
 
-    def move(self, x, y):
-        """Command the enemy to move by (x, y)."""
+    def move(self):
+        """Handle the movement of the enemy.
+
+        Return True if it moved, False otherwise.
+        """
+        if self.offsetx:
+            self.offsetx -= sign(self.offsetx)
+            return True
+        if self.offsety:
+            self.offsety -= sign(self.offsety)
+            return True
+
+        directions = [(sign(MIDDLE - self.x), 0), (0, sign(MIDDLE - self.y))]
+        shuffle(directions)
+        for x, y in directions:
+            if (x or y) and self.maze[self.x + x][self.y + y] == False:
+                self.offsetx = x * -4
+                self.offsety = y * -4
+                self.place(x, y)
+                return True
+        return False
+
+    def update(self, distance, middlex, middley):
+        """Update the enemy."""
+        if self.awake:
+            self.draw(distance, middlex, middley, color=BG_COLOR)
+            if not self.spin_queue and not self.move():
+                self.spin_queue.extend([randsign()] * self.speed)
+            if self.spin_queue:
+                self.angle += self.spin_queue.pop() * pi / 2 / self.speed
+        self.draw(distance, middlex, middley)

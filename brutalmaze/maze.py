@@ -23,13 +23,8 @@ from random import getrandbits
 
 import pygame
 
-from .characters import pos, regpoly, fill_aapolygon, Hero, Enemy
+from .characters import pos, sign, regpoly, fill_aapolygon, Hero, Enemy
 from .constants import *
-
-
-def sign(n):
-    """Return the sign of number n."""
-    return -1 if n < 0 else 1 if n else 0
 
 
 def cosin(x):
@@ -49,10 +44,6 @@ class Maze:
         self.rangex = range(MIDDLE - w, MIDDLE + w + 1)
         self.rangey = range(MIDDLE - h, MIDDLE + h + 1)
 
-        self.hero = Hero(self.surface)
-        self.enemies = [Enemy(self.surface, 4, 34, 34)]
-        self.right = self.down = self.offsetx = self.offsety = 0
-
         def wall(bit, upper=True):
             if bit: return deque([True]*ROAD_WIDTH + [False]*ROAD_WIDTH)
             if upper: return deque([True] * (ROAD_WIDTH<<1))
@@ -67,6 +58,9 @@ class Maze:
                 lower.extend(wall(b, False))
             for _ in range(ROAD_WIDTH): self.map.append(upper.__copy__())
             for _ in range(ROAD_WIDTH): self.map.append(lower.__copy__())
+        self.hero = Hero(self.surface)
+        self.enemies = [Enemy(self.surface, self.map, 4, 34, 34)]
+        self.right = self.down = self.offsetx = self.offsety = 0
         self.draw()
 
     def draw(self):
@@ -76,7 +70,7 @@ class Maze:
             for j in self.rangey:
                 if not self.map[i][j]: continue
                 x, y = pos(i, j, self.distance, self.middlex, self.middley)
-                square = regpoly(4, int(self.distance / SQRT2), x, y, pi / 4)
+                square = regpoly(4, int(self.distance / SQRT2), pi / 4, x, y)
                 fill_aapolygon(self.surface, square, FG_COLOR)
 
     def wake(self, enemy):
@@ -120,16 +114,18 @@ class Maze:
             modified = True
 
         if modified:
+            self.map[MIDDLE][MIDDLE] = False
             if abs(self.offsetx) == 5:
                 s = sign(self.offsetx)
                 self.offsetx = 0
                 self.map.rotate(s)
-                for enemy in self.enemies: enemy.place(s, 0)
+                for enemy in self.enemies: enemy.place(x=s)
             if abs(self.offsety) == 5:
                 s = sign(self.offsety)
                 self.offsety = 0
                 for d in self.map: d.rotate(s)
-                for enemy in self.enemies: enemy.place(0, s)
+                for enemy in self.enemies: enemy.place(y=s)
+            self.map[MIDDLE][MIDDLE] = None
 
             self.middlex = self.x + self.offsetx*self.step
             self.middley = self.y + self.offsety*self.step
