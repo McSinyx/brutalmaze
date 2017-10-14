@@ -19,7 +19,7 @@
 
 from collections import deque
 from math import atan, cos, sin, pi
-from random import getrandbits
+from random import choice, getrandbits, randint
 
 import pygame
 
@@ -45,9 +45,9 @@ class Maze:
         self.rangey = range(MIDDLE - h, MIDDLE + h + 1)
 
         def wall(bit, upper=True):
-            if bit: return deque([True]*ROAD_WIDTH + [False]*ROAD_WIDTH)
-            if upper: return deque([True] * (ROAD_WIDTH<<1))
-            return deque([False] * (ROAD_WIDTH<<1))
+            if bit: return deque([WALL]*ROAD_WIDTH + [EMPTY]*ROAD_WIDTH)
+            if upper: return deque([WALL] * (ROAD_WIDTH<<1))
+            return deque([EMPTY] * (ROAD_WIDTH<<1))
 
         self.map = deque()
         for _ in range(MAZE_SIZE):
@@ -58,8 +58,16 @@ class Maze:
                 lower.extend(wall(b, False))
             for _ in range(ROAD_WIDTH): self.map.append(upper.__copy__())
             for _ in range(ROAD_WIDTH): self.map.append(lower.__copy__())
+        self.enemies = []
+        while len(self.enemies) < 8:
+            x, y = MIDDLE + randint(-w, w), MIDDLE + randint(-h, h)
+            if self.map[x][y] != WALL: continue
+            if all(self.map[x + a][y + b] == WALL for a, b in ADJACENT_GRIDS):
+                continue
+            self.enemies.append(
+                Enemy(self.surface, self.map, choice(ENEMIES), x, y))
         self.hero = Hero(self.surface)
-        self.enemies = [Enemy(self.surface, self.map, 4, 34, 34)]
+        self.map[MIDDLE][MIDDLE] = HERO
         self.right = self.down = self.offsetx = self.offsety = 0
         self.draw()
 
@@ -68,7 +76,7 @@ class Maze:
         self.surface.fill(BG_COLOR)
         for i in self.rangex:
             for j in self.rangey:
-                if not self.map[i][j]: continue
+                if self.map[i][j] != WALL: continue
                 x, y = pos(i, j, self.distance, self.middlex, self.middley)
                 square = regpoly(4, int(self.distance / SQRT2), pi / 4, x, y)
                 fill_aapolygon(self.surface, square, FG_COLOR)
@@ -84,11 +92,22 @@ class Maze:
         if starty > stopy : starty, stopy = stopy, starty
         for i in range(startx, stopx + 1):
             for j in range(starty, stopy + 1):
-                if not self.map[i][j] or (i, j) == (enemy.x, enemy.y): continue
+                if self.map[i][j] != WALL: continue
                 x, y = pos(i, j, self.distance, self.middlex, self.middley)
                 d = abs(dy*(x-self.x) - dx*(y-self.y)) / (dy**2 + dx**2)**0.5
                 if d <= mind: return
         enemy.awake = True
+
+    def rotate(self, x, y):
+        """Rotate the maze by (x, y)."""
+        for enemy in self.enemies: self.map[enemy.x][enemy.y] = EMPTY
+        if x:
+            self.offsetx = 0
+            self.map.rotate(x)
+        if y:
+            self.offsety = 0
+            for d in self.map: d.rotate(y)
+        for enemy in self.enemies: enemy.place(x, y)
 
     def update(self):
         """Update the maze."""
@@ -114,19 +133,10 @@ class Maze:
             modified = True
 
         if modified:
-            self.map[MIDDLE][MIDDLE] = False
-            if abs(self.offsetx) == 5:
-                s = sign(self.offsetx)
-                self.offsetx = 0
-                self.map.rotate(s)
-                for enemy in self.enemies: enemy.place(x=s)
-            if abs(self.offsety) == 5:
-                s = sign(self.offsety)
-                self.offsety = 0
-                for d in self.map: d.rotate(s)
-                for enemy in self.enemies: enemy.place(y=s)
-            self.map[MIDDLE][MIDDLE] = None
-
+            self.map[MIDDLE][MIDDLE] = EMPTY
+            self.rotate(sign(self.offsetx) * (abs(self.offsetx)==5),
+                        sign(self.offsety) * (abs(self.offsety)==5))
+            self.map[MIDDLE][MIDDLE] = HERO
             self.middlex = self.x + self.offsetx*self.step
             self.middley = self.y + self.offsety*self.step
             self.draw()

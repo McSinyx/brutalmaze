@@ -106,10 +106,11 @@ class Hero:
 
 class Enemy:
     """Object representing an enemy."""
-    def __init__(self, surface, maze, n, x, y):
+    def __init__(self, surface, maze, kind, x, y):
         self.surface, self.maze = surface, maze
-        self.angle, self.color = pi / 4, TANGO[TANGO_KEYS[n]]
+        self.angle, self.color = pi / 4, TANGO[kind]
         self.x, self.y = x, y
+        self.maze[x][y] = ENEMY
 
         self.awake = False
         self.offsetx = self.offsety = 0
@@ -128,7 +129,10 @@ class Enemy:
     def place(self, x=0, y=0):
         """Move the enemy by (x, y)."""
         self.x += x
+        self.x %= len(self.maze)
         self.y += y
+        self.y %= len(self.maze)
+        self.maze[self.x][self.y] = ENEMY
 
     def move(self):
         """Handle the movement of the enemy.
@@ -145,9 +149,9 @@ class Enemy:
         directions = [(sign(MIDDLE - self.x), 0), (0, sign(MIDDLE - self.y))]
         shuffle(directions)
         for x, y in directions:
-            if (x or y) and self.maze[self.x + x][self.y + y] == False:
-                self.offsetx = x * -4
-                self.offsety = y * -4
+            if (x or y) and self.maze[self.x + x][self.y + y] == EMPTY:
+                self.offsetx, self.offsety = x * -4, y * -4
+                self.maze[self.x][self.y] = EMPTY
                 self.place(x, y)
                 return True
         return False
