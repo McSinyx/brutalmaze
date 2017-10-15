@@ -18,18 +18,21 @@
 # Copyright (C) 2017 Nguyễn Gia Phong
 
 from pygame.locals import *
-from pygame.math import Vector2
 
 SQRT2 = 2 ** 0.5
-EMPTY, WALL, HERO, ENEMY = range(4)
-ADJACENT_GRIDS = (1, 0), (0, 1), (-1, 0), (0, -1)
+GOLDEN_MEAN = 5**0.5/2 + 0.5
 
 FPS = 30
 SIZE = 400, 400
 MAZE_SIZE = 8
 ROAD_WIDTH = 5
 MIDDLE = (MAZE_SIZE + (MAZE_SIZE&1) - 1)*ROAD_WIDTH + (ROAD_WIDTH >> 1)
-HEALING_SPEED = 1.0     # HP/s
+INIT_SCORE = 208
+MOVE_SPEED = 5  # step/grid
+HEAL_SPEED = 1.0    # HP/s
+
+EMPTY, WALL, HERO, ENEMY = range(4)
+ADJACENT_GRIDS = (1, 0), (0, 1), (-1, 0), (0, -1)
 
 TANGO = {'Butter': ((252, 233, 79), (237, 212, 0), (196, 160, 0)),
          'Orange': ((252, 175, 62), (245, 121, 0), (206, 92, 0)),

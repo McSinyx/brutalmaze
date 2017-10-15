@@ -90,7 +90,7 @@ class Hero:
 
     def update(self):
         """Update the hero."""
-        self.wound -= HEALING_SPEED / len(self.color) / self.speed
+        self.wound -= HEAL_SPEED / len(self.color) / self.speed
         if self.wound < 0: self.wound = 0.0
         self.speed = int(FPS / (len(self.color)-self.wound))
 
@@ -129,7 +129,7 @@ class Enemy:
     def pos(self, distance, middlex, middley):
         """Return coordinate of the center of the enemy."""
         x, y = pos(self.x, self.y, distance, middlex, middley)
-        step = distance // 5
+        step = distance // MOVE_SPEED
         return x + self.offsetx*step, y + self.offsety*step
 
     def draw(self, distance, middlex, middley, color):
@@ -162,7 +162,8 @@ class Enemy:
         shuffle(directions)
         for x, y in directions:
             if (x or y) and self.maze[self.x + x][self.y + y] == EMPTY:
-                self.offsetx, self.offsety = x * -4, y * -4
+                self.offsetx = x * (1-MOVE_SPEED)
+                self.offsety = y * (1-MOVE_SPEED)
                 self.maze[self.x][self.y] = EMPTY
                 self.place(x, y)
                 return True
