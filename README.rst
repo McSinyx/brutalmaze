@@ -8,7 +8,6 @@ Tango color palette. Its primary goals are:
 * Auto-generated and infinite maze.
 * No binary data.
 * Enemies with randomized attributes: stun, poison, etc.
-* Absorb-able natural elements (fire, ice, water).
 * Resizable in realtime.
 
 Installation
@@ -32,8 +31,5 @@ Left, ``a``
 Right, ``d``
    Move right.
 
-Return
+Return, Left Mouse
    Close-range attack.
-
-``q``
-   Quit.

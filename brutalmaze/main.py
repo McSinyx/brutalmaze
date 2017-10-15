@@ -44,8 +44,6 @@ def main():
                 elif event.key == K_RETURN:
                     maze.hero.slashing = True
                     maze.hero.slash()
-                elif event.key == K_q:
-                    going = False
             elif event.type == KEYUP:
                 if event.key in (K_UP, K_w):
                     maze.move(0, -1)

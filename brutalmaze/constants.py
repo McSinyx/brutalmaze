@@ -29,6 +29,7 @@ SIZE = 400, 400
 MAZE_SIZE = 8
 ROAD_WIDTH = 5
 MIDDLE = (MAZE_SIZE + (MAZE_SIZE&1) - 1)*ROAD_WIDTH + (ROAD_WIDTH >> 1)
+HEALING_SPEED = 1.0     # HP/s
 
 TANGO = {'Butter': ((252, 233, 79), (237, 212, 0), (196, 160, 0)),
          'Orange': ((252, 175, 62), (245, 121, 0), (206, 92, 0)),

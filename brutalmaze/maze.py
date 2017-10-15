@@ -32,6 +32,13 @@ def cosin(x):
     return cos(x) + sin(x)
 
 
+def length(x0, y0, x1, y1):
+    """Return the length of the line segment joining the two points
+    (x0, y0) and (x1, y1).
+    """
+    return ((x0-x1)**2 + (y0-y1)**2)**0.5
+
+
 class Maze:
     """Object representing the maze, including the characters."""
     def __init__(self, size):
@@ -59,7 +66,7 @@ class Maze:
             for _ in range(ROAD_WIDTH): self.map.append(upper.__copy__())
             for _ in range(ROAD_WIDTH): self.map.append(lower.__copy__())
         self.enemies = []
-        while len(self.enemies) < 8:
+        while len(self.enemies) < 20:
             x, y = MIDDLE + randint(-w, w), MIDDLE + randint(-h, h)
             if self.map[x][y] != WALL: continue
             if all(self.map[x + a][y + b] == WALL for a, b in ADJACENT_GRIDS):
@@ -68,6 +75,7 @@ class Maze:
                 Enemy(self.surface, self.map, choice(ENEMIES), x, y))
         self.hero = Hero(self.surface)
         self.map[MIDDLE][MIDDLE] = HERO
+        self.slashd = self.hero.R + self.distance/SQRT2
         self.right = self.down = self.offsetx = self.offsety = 0
         self.draw()
 
@@ -109,6 +117,19 @@ class Maze:
             for d in self.map: d.rotate(y)
         for enemy in self.enemies: enemy.place(x, y)
 
+    def slash(self):
+        """Slash the enemies."""
+        unit, killist = self.distance/SQRT2 * self.hero.speed, []
+        for i, enemy in enumerate(self.enemies):
+            x, y = enemy.pos(self.distance, self.middlex, self.middley)
+            d = length(x, y, self.x, self.y)
+            if d <= self.slashd:
+                enemy.wound += (self.slashd-d) / unit
+                if enemy.wound >= 3:
+                    enemy.die()
+                    killist.append(i)
+        for i in reversed(killist): self.enemies.pop(i)
+
     def update(self):
         """Update the maze."""
         modified = False
@@ -146,7 +167,14 @@ class Maze:
         for enemy in self.enemies:
             enemy.update(self.distance, self.middlex, self.middley)
         self.hero.update()
+        if self.hero.slashing: self.slash()
+        for enemy in self.enemies:
+            x, y = enemy.pos(self.distance, self.middlex, self.middley)
+            d = length(x, y, self.x, self.y)
+            if d <= self.slashd:
+                self.hero.wound += (self.slashd-d) / self.hero.R / enemy.speed
         pygame.display.flip()
+        if self.hero.wound + 1 >= len(self.hero.color): self.lose()
 
     def resize(self, w, h):
         """Resize the maze."""
@@ -172,3 +200,7 @@ class Maze:
         self.right += x
         self.down += y
         self.right, self.down = sign(self.right), sign(self.down)
+
+    def lose(self):
+        """"""
+        pass

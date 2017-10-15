@@ -67,9 +67,13 @@ class Hero:
         self.angle, self.color = pi / 4, TANGO['Aluminium']
         self.R = int((w * h / sin(pi*2/3) / 624) ** 0.5)
 
-        self.wound = 0
+        self.wound = 0.0
         self.speed = FPS // len(self.color)
         self.spin_queue, self.slashing = deque(), False
+
+    def get_color(self):
+        """Return the color of the hero based on the amount of wounds."""
+        return self.color[int(self.wound)]
 
     def slash(self, hold=False):
         """Spin the hero. If the button is hold, delay before continue
@@ -82,10 +86,14 @@ class Hero:
     def draw(self, color=None):
         """Draw the hero."""
         trigon = regpoly(3, self.R, self.angle, self.x, self.y)
-        fill_aapolygon(self.surface, trigon, color or self.color[self.wound])
+        fill_aapolygon(self.surface, trigon, color or self.get_color())
 
     def update(self):
         """Update the hero."""
+        self.wound -= HEALING_SPEED / len(self.color) / self.speed
+        if self.wound < 0: self.wound = 0.0
+        self.speed = int(FPS / (len(self.color)-self.wound))
+
         self.slash(hold=True)
         direction = self.spin_queue.popleft() if self.spin_queue else 0
         self.draw(color=BG_COLOR)
@@ -116,15 +124,19 @@ class Enemy:
         self.offsetx = self.offsety = 0
         self.spin_queue = []
         self.speed = FPS // len(self.color)
-        self.wound = 0
+        self.wound = 0.0
 
-    def draw(self, distance, middlex, middley, color=None):
-        """Draw the enemy, given distance between grids and the middle grid."""
+    def pos(self, distance, middlex, middley):
+        """Return coordinate of the center of the enemy."""
         x, y = pos(self.x, self.y, distance, middlex, middley)
         step = distance // 5
+        return x + self.offsetx*step, y + self.offsety*step
+
+    def draw(self, distance, middlex, middley, color):
+        """Draw the enemy, given distance between grids and the middle grid."""
         square = regpoly(4, int(distance / SQRT2), self.angle,
-                         x + self.offsetx*step, y + self.offsety*step)
-        fill_aapolygon(self.surface, square, color or self.color[self.wound])
+                         *self.pos(distance, middlex, middley))
+        fill_aapolygon(self.surface, square, color)
 
     def place(self, x=0, y=0):
         """Move the enemy by (x, y)."""
@@ -159,9 +171,14 @@ class Enemy:
     def update(self, distance, middlex, middley):
         """Update the enemy."""
         if self.awake:
-            self.draw(distance, middlex, middley, color=BG_COLOR)
+            self.draw(distance, middlex, middley, BG_COLOR)
             if not self.spin_queue and not self.move():
                 self.spin_queue.extend([randsign()] * self.speed)
             if self.spin_queue:
                 self.angle += self.spin_queue.pop() * pi / 2 / self.speed
-        self.draw(distance, middlex, middley)
+        self.draw(distance, middlex, middley,
+                  self.color[int(self.wound)] if self.awake else FG_COLOR)
+
+    def die(self):
+        """Kill the enemy."""
+        self.maze[self.x][self.y] = EMPTY if self.awake else WALL
