@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# characters.py - module containing objects representing heroes and enemies
+# characters.py - module for hero and enemy classes
 # This file is part of brutalmaze
 #
 # brutalmaze is free software: you can redistribute it and/or modify
@@ -16,6 +16,8 @@
 # along with brutalmaze.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Copyright (C) 2017 Nguyễn Gia Phong
+
+__doc__ = 'brutalmaze module for hero and enemy classes'
 
 from collections import deque
 from math import atan2, cos, sin, pi
@@ -44,7 +46,7 @@ def regpoly(n, R, r, x, y):
 
 def fill_aapolygon(surface, points, color):
     """Draw a filled polygon with anti aliased edges onto a surface."""
-    aapolygon(surface, points, BG_COLOR)
+    aapolygon(surface, points, color)
     filled_polygon(surface, points, color)
 
 
@@ -109,7 +111,7 @@ class Hero:
         """Resize the hero."""
         w, h = self.surface.get_width(), self.surface.get_height()
         self.x, self.y = w >> 1, h >> 1
-        self.R = int((w * h / sin(pi*2/3) / 624) ** 0.5)
+        self.R = (w * h / sin(pi*2/3) / 624) ** 0.5
 
 
 class Enemy:
@@ -129,12 +131,12 @@ class Enemy:
     def pos(self, distance, middlex, middley):
         """Return coordinate of the center of the enemy."""
         x, y = pos(self.x, self.y, distance, middlex, middley)
-        step = distance // MOVE_SPEED
+        step = distance / MOVE_SPEED
         return x + self.offsetx*step, y + self.offsety*step
 
     def draw(self, distance, middlex, middley, color):
         """Draw the enemy, given distance between grids and the middle grid."""
-        square = regpoly(4, int(distance / SQRT2), self.angle,
+        square = regpoly(4, distance / SQRT2, self.angle,
                          *self.pos(distance, middlex, middley))
         fill_aapolygon(self.surface, square, color)
 

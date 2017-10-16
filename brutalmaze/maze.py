@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# maze.py - module containing the maze object
+# maze.py - module for the maze class
 # This file is part of brutalmaze
 #
 # brutalmaze is free software: you can redistribute it and/or modify
@@ -26,6 +26,8 @@ import pygame
 from .characters import pos, sign, regpoly, fill_aapolygon, Hero, Enemy
 from .constants import *
 
+__doc__ = 'brutalmaze module for the maze class'
+
 
 def cosin(x):
     """Return the sum of cosine and sine of x (measured in radians)."""
@@ -39,34 +41,43 @@ def length(x0, y0, x1, y1):
     return ((x0-x1)**2 + (y0-y1)**2)**0.5
 
 
+def cell(bit, upper=True):
+    """Return a half of a cell of the maze based on the given bit."""
+    if bit: return deque([WALL]*ROAD_WIDTH + [EMPTY]*ROAD_WIDTH)
+    if upper: return deque([WALL] * (ROAD_WIDTH<<1))
+    return deque([EMPTY] * (ROAD_WIDTH<<1))
+
+
+def new_column():
+    """Return a newly generated column of the maze."""
+    column = deque()
+    upper, lower = deque(), deque()
+    for _ in range(MAZE_SIZE):
+        b = getrandbits(1)
+        upper.extend(cell(b))
+        lower.extend(cell(b, False))
+    for _ in range(ROAD_WIDTH): column.append(upper.__copy__())
+    for _ in range(ROAD_WIDTH): column.append(lower.__copy__())
+    return column
+
+
 class Maze:
     """Object representing the maze, including the characters."""
     def __init__(self, size):
         self.w, self.h = size
         self.surface = pygame.display.set_mode(size, RESIZABLE)
-        self.distance = int((self.w * self.h / 416) ** 0.5)
-        self.step = self.distance // MOVE_SPEED
+        self.distance = (self.w * self.h / 416) ** 0.5
+        self.step = self.distance / MOVE_SPEED
         self.middlex, self.middley = self.x, self.y = self.w >> 1, self.h >> 1
-        w, h = self.w//self.distance+2 >> 1, self.h//self.distance+2 >> 1
+        w, h = (int((i/self.distance+2) / 2) for i in size)
         self.rangex = range(MIDDLE - w, MIDDLE + w + 1)
         self.rangey = range(MIDDLE - h, MIDDLE + h + 1)
         self.right = self.down = self.offsetx = self.offsety = 0
         self.score = INIT_SCORE
 
-        def wall(bit, upper=True):
-            if bit: return deque([WALL]*ROAD_WIDTH + [EMPTY]*ROAD_WIDTH)
-            if upper: return deque([WALL] * (ROAD_WIDTH<<1))
-            return deque([EMPTY] * (ROAD_WIDTH<<1))
-
         self.map = deque()
-        for _ in range(MAZE_SIZE):
-            upper, lower = deque(), deque()
-            for _ in range(MAZE_SIZE):
-                b = getrandbits(1)
-                upper.extend(wall(b))
-                lower.extend(wall(b, False))
-            for _ in range(ROAD_WIDTH): self.map.append(upper.__copy__())
-            for _ in range(ROAD_WIDTH): self.map.append(lower.__copy__())
+        for _ in range(MAZE_SIZE): self.map.extend(new_column())
+        self.rotatex = self.rotatey = 0
         self.enemies = []
         self.add_enemy()
         self.hero = Hero(self.surface)
@@ -76,13 +87,17 @@ class Maze:
 
     def add_enemy(self):
         """Add enough enemies."""
-        while len(self.enemies) < log(self.score, GOLDEN_MEAN):
-            x, y = choice(self.rangex), choice(self.rangey)
-            if self.map[x][y] != WALL: continue
+        walls, length = [], log(self.score, GOLDEN_MEAN)
+        for i in self.rangex:
+            for j in self.rangey:
+                if self.map[i][j] == WALL: walls.append((i, j))
+        while walls and len(self.enemies) < length:
+            x, y = choice(walls)
             if all(self.map[x + a][y + b] == WALL for a, b in ADJACENT_GRIDS):
                 continue
             self.enemies.append(
                 Enemy(self.surface, self.map, choice(ENEMIES), x, y))
+            walls.remove((x, y))
 
     def draw(self):
         """Draw the maze."""
@@ -91,7 +106,7 @@ class Maze:
             for j in self.rangey:
                 if self.map[i][j] != WALL: continue
                 x, y = pos(i, j, self.distance, self.middlex, self.middley)
-                square = regpoly(4, int(self.distance / SQRT2), pi / 4, x, y)
+                square = regpoly(4, self.distance / SQRT2, pi / 4, x, y)
                 fill_aapolygon(self.surface, square, FG_COLOR)
 
     def wake(self, enemy):
@@ -117,9 +132,23 @@ class Maze:
         if x:
             self.offsetx = 0
             self.map.rotate(x)
+            self.rotatex = (self.rotatex+x) % (ROAD_WIDTH*2)
         if y:
             self.offsety = 0
             for d in self.map: d.rotate(y)
+            self.rotatey = (self.rotatey+y) % (ROAD_WIDTH*2)
+        if not self.rotatex and not self.rotatey:
+            for _ in range(ROAD_WIDTH * 2): self.map.pop()
+            self.map.extend(new_column())
+            for i in range(MAZE_SIZE):
+                b = getrandbits(1)
+                for j, grid in enumerate(cell(b)):
+                    for k in range(ROAD_WIDTH):
+                        self.map[i*2*ROAD_WIDTH+k][LAST_ROW + j] = grid
+                for j, grid in enumerate(cell(b, False)):
+                    for k in range(ROAD_WIDTH):
+                        self.map[(i*2+1)*ROAD_WIDTH+k][LAST_ROW + j] = grid
+
         killist = []
         for i, enemy in enumerate(self.enemies):
             enemy.place(x, y)
@@ -138,9 +167,9 @@ class Maze:
             if d <= self.slashd:
                 enemy.wound += (self.slashd-d) / unit
                 if enemy.wound >= len(enemy.color):
+                    self.score += enemy.wound
                     enemy.die()
                     killist.append(i)
-                    self.score += 1
         for i in reversed(killist): self.enemies.pop(i)
         self.add_enemy()
 
@@ -197,12 +226,12 @@ class Maze:
         self.surface = pygame.display.set_mode(size, RESIZABLE)
         self.hero.resize()
 
-        self.distance = int((w * h / 416) ** 0.5)
-        self.step = self.distance // MOVE_SPEED
+        self.distance = (w * h / 416) ** 0.5
+        self.step = self.distance / MOVE_SPEED
         self.middlex = self.x + self.offsetx*self.step
         self.middley = self.y + self.offsety*self.step
         self.x, self.y = w >> 1, h >> 1
-        w, h = self.w//self.distance+2 >> 1, self.h//self.distance+2 >> 1
+        w, h = int((w/self.distance+2) / 2), int((h/self.distance+2) / 2)
         self.rangex = range(MIDDLE - w, MIDDLE + w + 1)
         self.rangey = range(MIDDLE - h, MIDDLE + h + 1)
         self.draw()

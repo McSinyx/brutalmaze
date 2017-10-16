@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# constants.py - shared constants
+# constants.py - module for shared constants
 # This file is part of brutalmaze
 #
 # brutalmaze is free software: you can redistribute it and/or modify
@@ -17,17 +17,24 @@
 #
 # Copyright (C) 2017 Nguyễn Gia Phong
 
+from pygame import image
 from pygame.locals import *
+from pkg_resources import resource_filename
+
+__doc__ = 'brutalmaze module for shared constants'
+
+ICON = image.load(resource_filename('brutalmaze', 'icon.png'))
 
 SQRT2 = 2 ** 0.5
 GOLDEN_MEAN = 5**0.5/2 + 0.5
 
 FPS = 30
 SIZE = 400, 400
-MAZE_SIZE = 8
+MAZE_SIZE = 10
 ROAD_WIDTH = 5
 MIDDLE = (MAZE_SIZE + (MAZE_SIZE&1) - 1)*ROAD_WIDTH + (ROAD_WIDTH >> 1)
-INIT_SCORE = 208
+LAST_ROW = (MAZE_SIZE-1) * ROAD_WIDTH * 2
+INIT_SCORE = 208.2016
 MOVE_SPEED = 5  # step/grid
 HEAL_SPEED = 1.0    # HP/s
 
