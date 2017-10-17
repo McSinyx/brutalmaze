@@ -132,23 +132,13 @@ class Maze:
         if x:
             self.offsetx = 0
             self.map.rotate(x)
-            self.rotatex = (self.rotatex+x) % (ROAD_WIDTH*2)
+            self.rotatex += x
         if y:
             self.offsety = 0
             for d in self.map: d.rotate(y)
-            self.rotatey = (self.rotatey+y) % (ROAD_WIDTH*2)
-        if not self.rotatex and not self.rotatey:
-            for _ in range(ROAD_WIDTH * 2): self.map.pop()
-            self.map.extend(new_column())
-            for i in range(MAZE_SIZE):
-                b = getrandbits(1)
-                for j, grid in enumerate(cell(b)):
-                    for k in range(ROAD_WIDTH):
-                        self.map[i*2*ROAD_WIDTH+k][LAST_ROW + j] = grid
-                for j, grid in enumerate(cell(b, False)):
-                    for k in range(ROAD_WIDTH):
-                        self.map[(i*2+1)*ROAD_WIDTH+k][LAST_ROW + j] = grid
+            self.rotatey += y
 
+        # Respawn the enemies that fall off the display
         killist = []
         for i, enemy in enumerate(self.enemies):
             enemy.place(x, y)
@@ -157,6 +147,25 @@ class Maze:
                 killist.append(i)
         for i in reversed(killist): self.enemies.pop(i)
         self.add_enemy()
+
+        # Regenerate the maze
+        if abs(self.rotatex) == CELL_WIDTH:
+            self.rotatex = 0
+            for _ in range(CELL_WIDTH): self.map.pop()
+            self.map.extend(new_column())
+            for i in range(-CELL_WIDTH, 0):
+                self.map[i].rotate(self.rotatey)
+        if abs(self.rotatey) == CELL_WIDTH:
+            self.rotatey = 0
+            for i in range(MAZE_SIZE):
+                b, c = getrandbits(1), (i-1)*CELL_WIDTH + self.rotatex
+                for j, grid in enumerate(cell(b)):
+                    for k in range(ROAD_WIDTH):
+                        self.map[c + k][LAST_ROW + j] = grid
+                c += ROAD_WIDTH
+                for j, grid in enumerate(cell(b, False)):
+                    for k in range(ROAD_WIDTH):
+                        self.map[c + k][LAST_ROW + j] = grid
 
     def slash(self):
         """Slash the enemies."""
@@ -218,7 +227,9 @@ class Maze:
             if d <= self.slashd:
                 self.hero.wound += (self.slashd-d) / self.hero.R / enemy.speed
         pygame.display.flip()
-        if self.hero.wound + 1 >= len(self.hero.color): self.lose()
+        pygame.display.set_caption('Brutal Maze - Score: {}'.format(
+            int(self.score - INIT_SCORE)))
+        if self.hero.wound + 1 > len(self.hero.color): self.lose()
 
     def resize(self, w, h):
         """Resize the maze."""

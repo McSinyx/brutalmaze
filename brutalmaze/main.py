@@ -26,7 +26,6 @@ from .maze import Maze
 def main():
     """Start game and main loop."""
     pygame.init()
-    pygame.display.set_caption('Brutal Maze')
     pygame.display.set_icon(ICON)
     pygame.fastevent.init()
     maze, going, clock = Maze(SIZE), True, pygame.time.Clock()

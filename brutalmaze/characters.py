@@ -136,7 +136,8 @@ class Enemy:
 
     def draw(self, distance, middlex, middley, color):
         """Draw the enemy, given distance between grids and the middle grid."""
-        square = regpoly(4, distance / SQRT2, self.angle,
+        radious = distance/SQRT2 - (self.awake and 2)
+        square = regpoly(4, radious, self.angle,
                          *self.pos(distance, middlex, middley))
         fill_aapolygon(self.surface, square, color)
 
