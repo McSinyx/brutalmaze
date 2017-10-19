@@ -28,15 +28,15 @@ ICON = image.load(resource_filename('brutalmaze', 'icon.png'))
 SQRT2 = 2 ** 0.5
 GOLDEN_MEAN = 5**0.5/2 + 0.5
 
-FPS = 30
-SIZE = 400, 400
-MAZE_SIZE = 10
+INIT_FPS = 30.0
+SIZE = 640, 480
+MAZE_SIZE = 12
 ROAD_WIDTH = 5
 CELL_WIDTH = ROAD_WIDTH * 2
 MIDDLE = (MAZE_SIZE + MAZE_SIZE%2 - 1)*ROAD_WIDTH + ROAD_WIDTH//2
 LAST_ROW = (MAZE_SIZE-1) * ROAD_WIDTH * 2
 INIT_SCORE = 208.2016
-MOVE_SPEED = 5  # step/grid
+MOVE_SPEED = 5  # grid/s
 HEAL_SPEED = 1.0    # HP/s
 
 EMPTY, WALL, HERO, ENEMY = range(4)

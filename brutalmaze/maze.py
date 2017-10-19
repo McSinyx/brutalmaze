@@ -63,24 +63,25 @@ def new_column():
 
 class Maze:
     """Object representing the maze, including the characters."""
-    def __init__(self, size):
+    def __init__(self, size, fps):
         self.w, self.h = size
+        self.fps, self.speed = fps, fps / MOVE_SPEED
         self.surface = pygame.display.set_mode(size, RESIZABLE)
         self.distance = (self.w * self.h / 416) ** 0.5
-        self.step = self.distance / MOVE_SPEED
+        self.step = self.distance / self.speed
         self.middlex, self.middley = self.x, self.y = self.w >> 1, self.h >> 1
         w, h = (int((i/self.distance+2) / 2) for i in size)
         self.rangex = range(MIDDLE - w, MIDDLE + w + 1)
         self.rangey = range(MIDDLE - h, MIDDLE + h + 1)
-        self.right = self.down = self.offsetx = self.offsety = 0
+        self.offsetx = self.offsety = 0.0
         self.score = INIT_SCORE
 
         self.map = deque()
         for _ in range(MAZE_SIZE): self.map.extend(new_column())
-        self.rotatex = self.rotatey = 0
+        self.right = self.down = self.rotatex = self.rotatey = 0
         self.enemies = []
         self.add_enemy()
-        self.hero = Hero(self.surface)
+        self.hero = Hero(self.surface, fps)
         self.map[MIDDLE][MIDDLE] = HERO
         self.slashd = self.hero.R + self.distance/SQRT2
         self.draw()
@@ -96,7 +97,7 @@ class Maze:
             if all(self.map[x + a][y + b] == WALL for a, b in ADJACENT_GRIDS):
                 continue
             self.enemies.append(
-                Enemy(self.surface, self.map, choice(ENEMIES), x, y))
+                Enemy(self.surface, self.fps, self.map, choice(ENEMIES), x, y))
             walls.remove((x, y))
 
     def draw(self):
@@ -130,11 +131,11 @@ class Maze:
         """Rotate the maze by (x, y)."""
         for enemy in self.enemies: self.map[enemy.x][enemy.y] = EMPTY
         if x:
-            self.offsetx = 0
+            self.offsetx = 0.0
             self.map.rotate(x)
             self.rotatex += x
         if y:
-            self.offsety = 0
+            self.offsety = 0.0
             for d in self.map: d.rotate(y)
             self.rotatey += y
 
@@ -169,7 +170,7 @@ class Maze:
 
     def slash(self):
         """Slash the enemies."""
-        unit, killist = self.distance/SQRT2 * self.hero.speed, []
+        unit, killist = self.distance/SQRT2 * self.hero.spin_speed, []
         for i, enemy in enumerate(self.enemies):
             x, y = enemy.pos(self.distance, self.middlex, self.middley)
             d = length(x, y, self.x, self.y)
@@ -182,33 +183,39 @@ class Maze:
         for i in reversed(killist): self.enemies.pop(i)
         self.add_enemy()
 
-    def update(self):
+    def update(self, fps):
         """Update the maze."""
-        modified, d = False, self.distance*1.5 - self.hero.R
-        self.offsetx += self.right
-        s = sign(self.offsetx) * 2
-        if ((self.map[MIDDLE - s][MIDDLE - 1]
-             or self.map[MIDDLE - s][MIDDLE]
-             or self.map[MIDDLE - s][MIDDLE + 1])
-            and abs(self.offsetx*self.step) > d):
-            self.offsetx -= self.right
-        else:
-            modified = True
+        self.offsetx *= fps / self.fps
+        self.offsety *= fps / self.fps
+        self.fps, self.speed = fps, fps / MOVE_SPEED
+        self.step = self.distance / self.speed
 
-        self.offsety += self.down
-        s = sign(self.offsety) * 2
-        if ((self.map[MIDDLE - 1][MIDDLE - s]
-             or self.map[MIDDLE][MIDDLE - s]
-             or self.map[MIDDLE + 1][MIDDLE - s])
-            and abs(self.offsety*self.step) > d):
-            self.offsety -= self.down
-        else:
-            modified = True
+        modified, d = False, self.distance*1.5 - self.hero.R
+        if self.right:
+            self.offsetx += self.right
+            s = sign(self.offsetx) * 2
+            if ((self.map[MIDDLE - s][MIDDLE - 1]
+                 or self.map[MIDDLE - s][MIDDLE]
+                 or self.map[MIDDLE - s][MIDDLE + 1])
+                and abs(self.offsetx*self.step) > d):
+                self.offsetx -= self.right
+            else:
+                modified = True
+        if self.down:
+            self.offsety += self.down
+            s = sign(self.offsety) * 2
+            if ((self.map[MIDDLE - 1][MIDDLE - s]
+                 or self.map[MIDDLE][MIDDLE - s]
+                 or self.map[MIDDLE + 1][MIDDLE - s])
+                and abs(self.offsety*self.step) > d):
+                self.offsety -= self.down
+            else:
+                modified = True
 
         if modified:
             self.map[MIDDLE][MIDDLE] = EMPTY
-            self.rotate(sign(self.offsetx) * (abs(self.offsetx)==MOVE_SPEED),
-                        sign(self.offsety) * (abs(self.offsety)==MOVE_SPEED))
+            self.rotate(sign(self.offsetx) * (abs(self.offsetx)>=self.speed),
+                        sign(self.offsety) * (abs(self.offsety)>=self.speed))
             self.map[MIDDLE][MIDDLE] = HERO
             self.middlex = self.x + self.offsetx*self.step
             self.middley = self.y + self.offsety*self.step
@@ -217,15 +224,15 @@ class Maze:
                 if not enemy.awake: self.wake(enemy)
 
         for enemy in self.enemies:
-            enemy.update(self.distance, self.middlex, self.middley)
-        self.hero.update()
+            enemy.update(fps, self.distance, self.middlex, self.middley)
+        self.hero.update(fps)
         if self.hero.slashing: self.slash()
         for enemy in self.enemies:
             if not enemy.spin_queue: continue
             x, y = enemy.pos(self.distance, self.middlex, self.middley)
             d = length(x, y, self.x, self.y)
             if d <= self.slashd:
-                self.hero.wound += (self.slashd-d) / self.hero.R / enemy.speed
+                self.hero.wound += (self.slashd-d) / self.hero.R / enemy.spin_speed
         pygame.display.flip()
         pygame.display.set_caption('Brutal Maze - Score: {}'.format(
             int(self.score - INIT_SCORE)))
@@ -238,7 +245,7 @@ class Maze:
         self.hero.resize()
 
         self.distance = (w * h / 416) ** 0.5
-        self.step = self.distance / MOVE_SPEED
+        self.step = self.distance / self.speed
         self.middlex = self.x + self.offsetx*self.step
         self.middley = self.y + self.offsety*self.step
         self.x, self.y = w >> 1, h >> 1

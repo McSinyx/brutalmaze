@@ -62,16 +62,16 @@ def sign(n):
 
 class Hero:
     """Object representing the hero."""
-    def __init__(self, surface):
+    def __init__(self, surface, fps):
         self.surface = surface
         w, h = self.surface.get_width(), self.surface.get_height()
         self.x, self.y = w >> 1, h >> 1
         self.angle, self.color = pi / 4, TANGO['Aluminium']
         self.R = int((w * h / sin(pi*2/3) / 624) ** 0.5)
 
-        self.wound = 0.0
-        self.speed = FPS // len(self.color)
+        self.spin_speed = int(round(fps / len(self.color)))
         self.spin_queue, self.slashing = deque(), False
+        self.wound = 0.0
 
     def get_color(self):
         """Return the color of the hero based on the amount of wounds."""
@@ -82,25 +82,25 @@ class Hero:
         each spin.
         """
         if self.slashing and not self.spin_queue:
-            if hold: self.spin_queue.extend([0] * (self.speed >> 1))
-            self.spin_queue.extend([randsign()] * self.speed)
+            if hold: self.spin_queue.extend([0] * (self.spin_speed >> 1))
+            self.spin_queue.extend([randsign()] * self.spin_speed)
 
     def draw(self, color=None):
         """Draw the hero."""
         trigon = regpoly(3, self.R, self.angle, self.x, self.y)
         fill_aapolygon(self.surface, trigon, color or self.get_color())
 
-    def update(self):
+    def update(self, fps):
         """Update the hero."""
-        self.wound -= HEAL_SPEED / len(self.color) / self.speed
+        self.spin_speed = int(round(fps / (len(self.color)-self.wound)))
+        self.wound -= HEAL_SPEED / len(self.color) / (self.spin_speed or 1)
         if self.wound < 0: self.wound = 0.0
-        self.speed = int(FPS / (len(self.color)-self.wound))
 
         self.slash(hold=True)
         direction = self.spin_queue.popleft() if self.spin_queue else 0
         self.draw(color=BG_COLOR)
         if direction:
-            self.angle += direction * pi * 2 / 3 / self.speed
+            self.angle += direction * pi * 2 / 3 / self.spin_speed
         else:
             # Follow the mouse cursor
             x, y = pygame.mouse.get_pos()
@@ -116,27 +116,28 @@ class Hero:
 
 class Enemy:
     """Object representing an enemy."""
-    def __init__(self, surface, maze, kind, x, y):
+    def __init__(self, surface, fps, maze, kind, x, y):
         self.surface, self.maze = surface, maze
         self.angle, self.color = pi / 4, TANGO[kind]
         self.x, self.y = x, y
         self.maze[x][y] = ENEMY
 
         self.awake = False
+        self.move_speed = fps / MOVE_SPEED
         self.offsetx = self.offsety = 0
+        self.spin_speed = int(round(fps / len(self.color)))
         self.spin_queue = []
-        self.speed = FPS // len(self.color)
         self.wound = 0.0
 
     def pos(self, distance, middlex, middley):
         """Return coordinate of the center of the enemy."""
         x, y = pos(self.x, self.y, distance, middlex, middley)
-        step = distance / MOVE_SPEED
+        step = distance / self.move_speed
         return x + self.offsetx*step, y + self.offsety*step
 
     def draw(self, distance, middlex, middley, color):
         """Draw the enemy, given distance between grids and the middle grid."""
-        radious = distance/SQRT2 - (self.awake and 2)
+        radious = distance/SQRT2 - self.awake*2
         square = regpoly(4, radious, self.angle,
                          *self.pos(distance, middlex, middley))
         fill_aapolygon(self.surface, square, color)
@@ -149,7 +150,7 @@ class Enemy:
         self.y %= len(self.maze)
         self.maze[self.x][self.y] = ENEMY
 
-    def move(self):
+    def move(self, fps):
         """Handle the movement of the enemy.
 
         Return True if it moved, False otherwise.
@@ -161,25 +162,27 @@ class Enemy:
             self.offsety -= sign(self.offsety)
             return True
 
+        self.move_speed = fps / MOVE_SPEED
         directions = [(sign(MIDDLE - self.x), 0), (0, sign(MIDDLE - self.y))]
         shuffle(directions)
         for x, y in directions:
             if (x or y) and self.maze[self.x + x][self.y + y] == EMPTY:
-                self.offsetx = x * (1-MOVE_SPEED)
-                self.offsety = y * (1-MOVE_SPEED)
+                self.offsetx = round(x * (1 - self.move_speed))
+                self.offsety = round(y * (1 - self.move_speed))
                 self.maze[self.x][self.y] = EMPTY
                 self.place(x, y)
                 return True
         return False
 
-    def update(self, distance, middlex, middley):
+    def update(self, fps, distance, middlex, middley):
         """Update the enemy."""
         if self.awake:
             self.draw(distance, middlex, middley, BG_COLOR)
-            if not self.spin_queue and not self.move():
-                self.spin_queue.extend([randsign()] * self.speed)
+            if not self.spin_queue and not self.move(fps):
+                self.spin_speed = int(round(fps / len(self.color)))
+                self.spin_queue.extend([randsign()] * self.spin_speed)
             if self.spin_queue:
-                self.angle += self.spin_queue.pop() * pi / 2 / self.speed
+                self.angle += self.spin_queue.pop() * pi / 2 / self.spin_speed
         self.draw(distance, middlex, middley,
                   self.color[int(self.wound)] if self.awake else FG_COLOR)
 
