@@ -20,44 +20,13 @@
 __doc__ = 'brutalmaze module for hero and enemy classes'
 
 from collections import deque
-from math import atan2, cos, sin, pi
+from math import atan2, sin, pi
 from random import shuffle
 
 import pygame
-from pygame.gfxdraw import filled_polygon, aapolygon
 
 from .constants import *
-
-
-def randsign():
-    """Return either -1 or 1 (kind of) randomly."""
-    return (pygame.time.get_ticks() & 1)*2 - 1
-
-
-def regpoly(n, R, r, x, y):
-    """Return the pointlist of the regular polygon with n sides,
-    circumradius of R, the center point I(x, y) and one point A make the
-    vector IA with angle r (in radians).
-    """
-    r %= pi * 2
-    angles = [r + pi*2*side/n for side in range(n)]
-    return [(x + R*cos(angle), y + R*sin(angle)) for angle in angles]
-
-
-def fill_aapolygon(surface, points, color):
-    """Draw a filled polygon with anti aliased edges onto a surface."""
-    aapolygon(surface, points, color)
-    filled_polygon(surface, points, color)
-
-
-def pos(x, y, distance, middlex, middley):
-    """Return coordinate of the center of the grid (x, y)."""
-    return middlex + (x - MIDDLE)*distance, middley + (y - MIDDLE)*distance
-
-
-def sign(n):
-    """Return the sign of number n."""
-    return -1 if n < 0 else 1 if n else 0
+from .utils import randsign, regpoly, fill_aapolygon, pos, sign
 
 
 class Hero:
@@ -85,20 +54,19 @@ class Hero:
             if hold: self.spin_queue.extend([0] * (self.spin_speed >> 1))
             self.spin_queue.extend([randsign()] * self.spin_speed)
 
-    def draw(self, color=None):
+    def draw(self):
         """Draw the hero."""
         trigon = regpoly(3, self.R, self.angle, self.x, self.y)
-        fill_aapolygon(self.surface, trigon, color or self.get_color())
+        fill_aapolygon(self.surface, trigon, self.get_color())
 
     def update(self, fps):
         """Update the hero."""
         self.spin_speed = int(round(fps / (len(self.color)-self.wound)))
-        self.wound -= HEAL_SPEED / len(self.color) / (self.spin_speed or 1)
+        self.wound -= HEAL_SPEED / len(self.color) / self.spin_speed
         if self.wound < 0: self.wound = 0.0
 
         self.slash(hold=True)
         direction = self.spin_queue.popleft() if self.spin_queue else 0
-        self.draw(color=BG_COLOR)
         if direction:
             self.angle += direction * pi * 2 / 3 / self.spin_speed
         else:
@@ -125,9 +93,8 @@ class Enemy:
         self.awake = False
         self.move_speed = fps / MOVE_SPEED
         self.offsetx = self.offsety = 0
-        self.spin_speed = int(round(fps / len(self.color)))
-        self.spin_queue = []
-        self.wound = 0.0
+        self.spin_speed = fps / len(self.color)
+        self.spin_queue = self.wound = 0.0
 
     def pos(self, distance, middlex, middley):
         """Return coordinate of the center of the enemy."""
@@ -135,11 +102,12 @@ class Enemy:
         step = distance / self.move_speed
         return x + self.offsetx*step, y + self.offsety*step
 
-    def draw(self, distance, middlex, middley, color):
+    def draw(self, distance, middlex, middley):
         """Draw the enemy, given distance between grids and the middle grid."""
         radious = distance/SQRT2 - self.awake*2
         square = regpoly(4, radious, self.angle,
                          *self.pos(distance, middlex, middley))
+        color = self.color[int(self.wound)] if self.awake else FG_COLOR
         fill_aapolygon(self.surface, square, color)
 
     def place(self, x=0, y=0):
@@ -177,14 +145,16 @@ class Enemy:
     def update(self, fps, distance, middlex, middley):
         """Update the enemy."""
         if self.awake:
-            self.draw(distance, middlex, middley, BG_COLOR)
+            self.spin_speed, old_speed = fps / len(self.color), self.spin_speed
+            self.spin_queue *= self.spin_speed / old_speed
             if not self.spin_queue and not self.move(fps):
-                self.spin_speed = int(round(fps / len(self.color)))
-                self.spin_queue.extend([randsign()] * self.spin_speed)
-            if self.spin_queue:
-                self.angle += self.spin_queue.pop() * pi / 2 / self.spin_speed
-        self.draw(distance, middlex, middley,
-                  self.color[int(self.wound)] if self.awake else FG_COLOR)
+                self.spin_queue = randsign() * self.spin_speed
+            if abs(self.spin_queue) > 0.5:
+                self.angle += sign(self.spin_queue) * pi / 2 / self.spin_speed
+                self.spin_queue -= sign(self.spin_queue)
+            else:
+                self.angle, self.spin_queue = pi / 4, 0
+        self.draw(distance, middlex, middley)
 
     def die(self):
         """Kill the enemy."""

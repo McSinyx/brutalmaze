@@ -18,27 +18,16 @@
 # Copyright (C) 2017 Nguyễn Gia Phong
 
 from collections import deque
-from math import pi, atan, cos, sin, log
+from math import pi, atan, log
 from random import choice, getrandbits
 
 import pygame
 
-from .characters import pos, sign, regpoly, fill_aapolygon, Hero, Enemy
+from .characters import Hero, Enemy
 from .constants import *
+from .utils import pos, sign, cosin, length, regpoly, fill_aapolygon
 
 __doc__ = 'brutalmaze module for the maze class'
-
-
-def cosin(x):
-    """Return the sum of cosine and sine of x (measured in radians)."""
-    return cos(x) + sin(x)
-
-
-def length(x0, y0, x1, y1):
-    """Return the length of the line segment joining the two points
-    (x0, y0) and (x1, y1).
-    """
-    return ((x0-x1)**2 + (y0-y1)**2)**0.5
 
 
 def cell(bit, upper=True):
@@ -70,7 +59,7 @@ class Maze:
         self.distance = (self.w * self.h / 416) ** 0.5
         self.step = self.distance / self.speed
         self.middlex, self.middley = self.x, self.y = self.w >> 1, self.h >> 1
-        w, h = (int((i/self.distance+2) / 2) for i in size)
+        w, h = (int(i/self.distance/2 + 2) for i in size)
         self.rangex = range(MIDDLE - w, MIDDLE + w + 1)
         self.rangey = range(MIDDLE - h, MIDDLE + h + 1)
         self.offsetx = self.offsety = 0.0
@@ -219,10 +208,10 @@ class Maze:
             self.map[MIDDLE][MIDDLE] = HERO
             self.middlex = self.x + self.offsetx*self.step
             self.middley = self.y + self.offsety*self.step
-            self.draw()
             for enemy in self.enemies:
                 if not enemy.awake: self.wake(enemy)
 
+        self.draw()
         for enemy in self.enemies:
             enemy.update(fps, self.distance, self.middlex, self.middley)
         self.hero.update(fps)
@@ -230,9 +219,9 @@ class Maze:
         for enemy in self.enemies:
             if not enemy.spin_queue: continue
             x, y = enemy.pos(self.distance, self.middlex, self.middley)
-            d = length(x, y, self.x, self.y)
-            if d <= self.slashd:
-                self.hero.wound += (self.slashd-d) / self.hero.R / enemy.spin_speed
+            d = self.slashd - length(x, y, self.x, self.y)
+            if d >= 0:
+                self.hero.wound += d / self.hero.R / enemy.spin_speed
         pygame.display.flip()
         pygame.display.set_caption('Brutal Maze - Score: {}'.format(
             int(self.score - INIT_SCORE)))
@@ -249,9 +238,10 @@ class Maze:
         self.middlex = self.x + self.offsetx*self.step
         self.middley = self.y + self.offsety*self.step
         self.x, self.y = w >> 1, h >> 1
-        w, h = int((w/self.distance+2) / 2), int((h/self.distance+2) / 2)
+        w, h = int(w/self.distance/2 + 2), int(h/self.distance/2 + 2)
         self.rangex = range(MIDDLE - w, MIDDLE + w + 1)
         self.rangey = range(MIDDLE - h, MIDDLE + h + 1)
+        self.slashd = self.hero.R + self.distance/SQRT2
         self.draw()
 
     def move(self, x, y):
@@ -265,4 +255,4 @@ class Maze:
 
     def lose(self):
         """Handle loses."""
-        quit()
+        pygame.quit()

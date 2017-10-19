@@ -69,8 +69,8 @@ def main():
                     maze.hero.slashing = False
             elif event.type == VIDEORESIZE:
                 maze.resize(event.w, event.h)
-        if len(flash_time) > 10:
-            new_fps = 10000.0 / (flash_time[-1] - flash_time[0])
+        if len(flash_time) > 5:
+            new_fps = 5000.0 / (flash_time[-1] - flash_time[0])
             fps += -1 if new_fps < fps else 5
             flash_time.popleft()
         maze.update(fps)
