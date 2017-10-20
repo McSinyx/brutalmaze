@@ -113,9 +113,7 @@ class Enemy:
     def place(self, x=0, y=0):
         """Move the enemy by (x, y)."""
         self.x += x
-        self.x %= len(self.maze)
         self.y += y
-        self.y %= len(self.maze)
         self.maze[self.x][self.y] = ENEMY
 
     def move(self, fps):
@@ -153,7 +151,7 @@ class Enemy:
                 self.angle += sign(self.spin_queue) * pi / 2 / self.spin_speed
                 self.spin_queue -= sign(self.spin_queue)
             else:
-                self.angle, self.spin_queue = pi / 4, 0
+                self.angle, self.spin_queue = pi / 4, 0.0
         self.draw(distance, middlex, middley)
 
     def die(self):
