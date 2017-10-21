@@ -36,10 +36,10 @@ class Bullet:
 
     def update(self, fps, distance):
         """Update the bullet."""
-        s = distance * 8 / fps
+        s = distance * BULLET_SPEED / fps
         self.x += s * cos(self.angle)
         self.y += s * sin(self.angle)
-        hexagon = regpoly(6, distance // 4, self.angle, self.x, self.y)
+        hexagon = regpoly(5, distance // 4, self.angle, self.x, self.y)
         fill_aapolygon(self.surface, hexagon, self.color)
 
     def place(self, x, y, step):

@@ -48,7 +48,6 @@ def main():
                     maze.move(-1, 0)
                 elif event.key == K_RETURN:
                     maze.hero.slashing = True
-                    maze.hero.slash()
             elif event.type == KEYUP:
                 if event.key in (K_UP, K_w):
                     maze.move(0, -1)
@@ -62,12 +61,13 @@ def main():
                     maze.hero.slashing = False
             elif event.type == MOUSEBUTTONDOWN:
                 if event.button == 1:
+                    maze.hero.firing = True
+                elif event.button == 3:
                     maze.hero.slashing = True
-                    maze.hero.slash()
-                if event.button == 3:
-                    maze.fire()
             elif event.type == MOUSEBUTTONUP:
                 if event.button == 1:
+                    maze.hero.firing = False
+                elif event.button == 3:
                     maze.hero.slashing = False
             elif event.type == VIDEORESIZE:
                 maze.resize(event.w, event.h)

@@ -18,8 +18,8 @@
 # Copyright (C) 2017 Nguyễn Gia Phong
 
 from collections import deque
-from math import pi, atan, log
-from random import choice, getrandbits
+from math import pi, atan, atan2, log
+from random import choice, getrandbits, uniform
 
 import pygame
 
@@ -168,7 +168,7 @@ class Maze:
             if d >= 0:
                 self.hero.wound += d / self.hero.R / enemy.spin_speed
 
-        if not self.hero.slashing: return
+        if not self.hero.spin_queue: return
         unit, killist = self.distance/SQRT2 * self.hero.spin_speed, []
         for i, enemy in enumerate(self.enemies):
             x, y = enemy.pos(self.distance, self.middlex, self.middley)
@@ -185,6 +185,17 @@ class Maze:
     def track_bullets(self):
         """Handle the bullets."""
         fallen, time = [], pygame.time.get_ticks()
+        for enemy in self.enemies:
+            if uniform(-2, 2) > (INIT_SCORE/self.score)**2 and enemy.firable():
+                x, y = enemy.pos(self.distance, self.middlex, self.middley)
+                self.bullets.append(
+                    Bullet(self.surface, x, y, atan2(self.y - y, self.x - x),
+                           enemy.color[0]))
+        if (self.hero.firing and not self.hero.slashing
+            and time >= self.hero.next_strike):
+            self.hero.next_strike = time + ATTACK_SPEED
+            self.bullets.append(Bullet(self.surface, self.x, self.y,
+                                       self.hero.angle, FG_COLOR))
         for i, bullet in enumerate(self.bullets):
             wound = float(bullet.fall_time-time) / BULLET_LIFETIME
             bullet.update(self.fps, self.distance)
@@ -207,7 +218,7 @@ class Maze:
                         fallen.append(i)
                         break
             elif length(bullet.x, bullet.y, self.x, self.y) < self.distance:
-                self.hero.wound += wound
+                if not self.hero.spin_queue: self.hero.wound += wound
                 fallen.append(i)
         for i in reversed(fallen): self.bullets.pop(i)
 
@@ -277,7 +288,6 @@ class Maze:
         self.rangex = range(MIDDLE - w, MIDDLE + w + 1)
         self.rangey = range(MIDDLE - h, MIDDLE + h + 1)
         self.slashd = self.hero.R + self.distance/SQRT2
-        self.draw()
 
     def move(self, x, y):
         """Command the maze to move x step/frame faster to the left and
@@ -288,11 +298,7 @@ class Maze:
         self.down += y
         self.right, self.down = sign(self.right), sign(self.down)
 
-    def fire(self):
-        """Create a bullet shot from the hero."""
-        self.bullets.append(
-            Bullet(self.surface, self.x, self.y, self.hero.angle, FG_COLOR))
-
     def lose(self):
         """Handle loses."""
+        print('Your score is: {}'.format(int(self.score - INIT_SCORE)))
         quit()

@@ -26,7 +26,7 @@ from random import shuffle
 import pygame
 
 from .constants import *
-from .utils import round2, randsign, regpoly, fill_aapolygon, pos, sign
+from .utils import randsign, regpoly, fill_aapolygon, pos, sign
 
 
 class Hero:
@@ -38,42 +38,32 @@ class Hero:
         self.angle, self.color = pi / 4, TANGO['Aluminium']
         self.R = int((w * h / sin(pi*2/3) / 624) ** 0.5)
 
-        self.spin_speed = round2(fps / len(self.color))
-        self.spin_queue, self.slashing = deque(), False
-        self.wound = 0.0
-
-    def get_color(self):
-        """Return the color of the hero based on the amount of wounds."""
-        return self.color[int(self.wound)]
-
-    def slash(self, hold=False):
-        """Spin the hero. If the button is hold, delay before continue
-        each spin.
-        """
-        if self.slashing and not self.spin_queue:
-            if hold: self.spin_queue.extend([0] * (self.spin_speed >> 1))
-            self.spin_queue.extend([randsign()] * self.spin_speed)
-
-    def draw(self):
-        """Draw the hero."""
-        trigon = regpoly(3, self.R, self.angle, self.x, self.y)
-        fill_aapolygon(self.surface, trigon, self.get_color())
+        self.next_strike = 0
+        self.slashing = self.firing = False
+        self.spin_speed = fps / len(self.color)
+        self.spin_queue = self.wound = 0.0
 
     def update(self, fps):
         """Update the hero."""
-        self.spin_speed = round2(fps / (len(self.color)-self.wound))
+        old_speed, time = self.spin_speed, pygame.time.get_ticks()
+        self.spin_speed = fps / (len(self.color)-self.wound**0.5)
+        self.spin_queue *= self.spin_speed / old_speed
         self.wound -= HEAL_SPEED / len(self.color) / self.spin_speed
         if self.wound < 0: self.wound = 0.0
 
-        self.slash(hold=True)
-        direction = self.spin_queue.popleft() if self.spin_queue else 0
-        if direction:
-            self.angle += direction * pi * 2 / 3 / self.spin_speed
+        if self.slashing and time >= self.next_strike:
+            self.next_strike = time + ATTACK_SPEED
+            self.spin_queue = randsign() * self.spin_speed
+        if abs(self.spin_queue) > 0.5:
+            self.angle += sign(self.spin_queue) * pi / 2 / self.spin_speed
+            self.spin_queue -= sign(self.spin_queue)
         else:
             # Follow the mouse cursor
             x, y = pygame.mouse.get_pos()
             self.angle = atan2(y - self.y, x - self.x)
-        self.draw()
+            self.spin_queue = 0.0
+        trigon = regpoly(3, self.R, self.angle, self.x, self.y)
+        fill_aapolygon(self.surface, trigon, self.color[int(self.wound)])
 
     def resize(self):
         """Resize the hero."""
@@ -91,24 +81,27 @@ class Enemy:
         self.maze[x][y] = ENEMY
 
         self.awake = False
+        self.next_move = 0
         self.move_speed = fps / MOVE_SPEED
         self.offsetx = self.offsety = 0
         self.spin_speed = fps / len(self.color)
         self.spin_queue = self.wound = 0.0
+
+    def firable(self):
+        """Return True if the enemies should shoot the hero,
+        False otherwise.
+        """
+        if not self.awake or self.spin_queue or self.offsetx or self.offsety:
+            return False
+        else:
+            self.next_move = pygame.time.get_ticks() + ATTACK_SPEED
+            return True
 
     def pos(self, distance, middlex, middley):
         """Return coordinate of the center of the enemy."""
         x, y = pos(self.x, self.y, distance, middlex, middley)
         step = distance / self.move_speed
         return x + self.offsetx*step, y + self.offsety*step
-
-    def draw(self, distance, middlex, middley):
-        """Draw the enemy, given distance between grids and the middle grid."""
-        radious = distance/SQRT2 - self.awake*2
-        square = regpoly(4, radious, self.angle,
-                         *self.pos(distance, middlex, middley))
-        color = self.color[int(self.wound)] if self.awake else FG_COLOR
-        fill_aapolygon(self.surface, square, color)
 
     def place(self, x=0, y=0):
         """Move the enemy by (x, y) (in grids)."""
@@ -121,6 +114,7 @@ class Enemy:
 
         Return True if it moved, False otherwise.
         """
+        if self.next_move > pygame.time.get_ticks(): return False
         if self.offsetx:
             self.offsetx -= sign(self.offsetx)
             return True
@@ -152,7 +146,11 @@ class Enemy:
                 self.spin_queue -= sign(self.spin_queue)
             else:
                 self.angle, self.spin_queue = pi / 4, 0.0
-        self.draw(distance, middlex, middley)
+        radious = distance/SQRT2 - self.awake*2
+        square = regpoly(4, radious, self.angle,
+                         *self.pos(distance, middlex, middley))
+        color = self.color[int(self.wound)] if self.awake else FG_COLOR
+        fill_aapolygon(self.surface, square, color)
 
     def die(self):
         """Kill the enemy."""

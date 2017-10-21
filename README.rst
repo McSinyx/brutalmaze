@@ -47,5 +47,8 @@ Left, ``a``
 Right, ``d``
    Move right.
 
-Return, Left Mouse
-   Close-range attack.
+Left Mouse
+   Long-ranged attack.
+
+Return, Right Mouse
+   Close-ranged attack.
