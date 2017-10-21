@@ -26,7 +26,7 @@ from random import shuffle
 import pygame
 
 from .constants import *
-from .utils import randsign, regpoly, fill_aapolygon, pos, sign
+from .utils import round2, randsign, regpoly, fill_aapolygon, pos, sign
 
 
 class Hero:
@@ -38,7 +38,7 @@ class Hero:
         self.angle, self.color = pi / 4, TANGO['Aluminium']
         self.R = int((w * h / sin(pi*2/3) / 624) ** 0.5)
 
-        self.spin_speed = int(round(fps / len(self.color)))
+        self.spin_speed = round2(fps / len(self.color))
         self.spin_queue, self.slashing = deque(), False
         self.wound = 0.0
 
@@ -61,7 +61,7 @@ class Hero:
 
     def update(self, fps):
         """Update the hero."""
-        self.spin_speed = int(round(fps / (len(self.color)-self.wound)))
+        self.spin_speed = round2(fps / (len(self.color)-self.wound))
         self.wound -= HEAL_SPEED / len(self.color) / self.spin_speed
         if self.wound < 0: self.wound = 0.0
 
@@ -111,7 +111,7 @@ class Enemy:
         fill_aapolygon(self.surface, square, color)
 
     def place(self, x=0, y=0):
-        """Move the enemy by (x, y)."""
+        """Move the enemy by (x, y) (in grids)."""
         self.x += x
         self.y += y
         self.maze[self.x][self.y] = ENEMY

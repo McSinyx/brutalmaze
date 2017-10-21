@@ -25,7 +25,8 @@ import pygame
 
 from .characters import Hero, Enemy
 from .constants import *
-from .utils import pos, sign, cosin, length, regpoly, fill_aapolygon
+from .utils import round2, pos, sign, cosin, length, regpoly, fill_aapolygon
+from .weapons import Bullet
 
 __doc__ = 'brutalmaze module for the maze class'
 
@@ -68,12 +69,11 @@ class Maze:
         self.map = deque()
         for _ in range(MAZE_SIZE): self.map.extend(new_column())
         self.right = self.down = self.rotatex = self.rotatey = 0
-        self.enemies = []
+        self.bullets, self.enemies = [], []
         self.add_enemy()
         self.hero = Hero(self.surface, fps)
         self.map[MIDDLE][MIDDLE] = HERO
         self.slashd = self.hero.R + self.distance/SQRT2
-        self.draw()
 
     def add_enemy(self):
         """Add enough enemies."""
@@ -118,7 +118,9 @@ class Maze:
 
     def rotate(self, x, y):
         """Rotate the maze by (x, y)."""
+        if not x and not y: return
         for enemy in self.enemies: self.map[enemy.x][enemy.y] = EMPTY
+
         if x:
             self.offsetx = 0.0
             self.map.rotate(x)
@@ -158,7 +160,15 @@ class Maze:
                         self.map[c + k][LAST_ROW + j] = grid
 
     def slash(self):
-        """Slash the enemies."""
+        """Handle close-ranged attacks."""
+        for enemy in self.enemies:
+            if not enemy.spin_queue: continue
+            x, y = enemy.pos(self.distance, self.middlex, self.middley)
+            d = self.slashd - length(x, y, self.x, self.y)
+            if d >= 0:
+                self.hero.wound += d / self.hero.R / enemy.spin_speed
+
+        if not self.hero.slashing: return
         unit, killist = self.distance/SQRT2 * self.hero.spin_speed, []
         for i, enemy in enumerate(self.enemies):
             x, y = enemy.pos(self.distance, self.middlex, self.middley)
@@ -172,6 +182,35 @@ class Maze:
         for i in reversed(killist): self.enemies.pop(i)
         self.add_enemy()
 
+    def track_bullets(self):
+        """Handle the bullets."""
+        fallen, time = [], pygame.time.get_ticks()
+        for i, bullet in enumerate(self.bullets):
+            wound = float(bullet.fall_time-time) / BULLET_LIFETIME
+            bullet.update(self.fps, self.distance)
+            if wound < 0:
+                fallen.append(i)
+            elif bullet.color == FG_COLOR:
+                x = MIDDLE + round2((bullet.x-self.x) / self.distance)
+                y = MIDDLE + round2((bullet.y-self.y) / self.distance)
+                if self.map[x][y] == WALL:
+                    fallen.append(i)
+                    continue
+                for j, enemy in enumerate(self.enemies):
+                    x, y = enemy.pos(self.distance, self.middlex, self.middley)
+                    if length(bullet.x, bullet.y, x, y) < self.distance:
+                        enemy.wound += wound
+                        if enemy.wound >= len(enemy.color):
+                            self.score += enemy.wound
+                            enemy.die()
+                            self.enemies.pop(j)
+                        fallen.append(i)
+                        break
+            elif length(bullet.x, bullet.y, self.x, self.y) < self.distance:
+                self.hero.wound += wound
+                fallen.append(i)
+        for i in reversed(fallen): self.bullets.pop(i)
+
     def update(self, fps):
         """Update the maze."""
         self.offsetx *= fps / self.fps
@@ -179,7 +218,7 @@ class Maze:
         self.fps, self.speed = fps, fps / MOVE_SPEED
         self.step = self.distance / self.speed
 
-        modified, d = False, self.distance*1.5 - self.hero.R
+        dx, dy, d = 0, 0, self.distance*1.5 - self.hero.R
         if self.right:
             self.offsetx += self.right
             s = sign(self.offsetx) * 2
@@ -189,7 +228,7 @@ class Maze:
                 and abs(self.offsetx*self.step) > d):
                 self.offsetx -= self.right
             else:
-                modified = True
+                dx = self.right
         if self.down:
             self.offsety += self.down
             s = sign(self.offsety) * 2
@@ -199,9 +238,9 @@ class Maze:
                 and abs(self.offsety*self.step) > d):
                 self.offsety -= self.down
             else:
-                modified = True
+                dy = self.down
 
-        if modified:
+        if dx or dy:
             self.map[MIDDLE][MIDDLE] = EMPTY
             self.rotate(sign(self.offsetx) * (abs(self.offsetx)>=self.speed),
                         sign(self.offsety) * (abs(self.offsety)>=self.speed))
@@ -210,18 +249,14 @@ class Maze:
             self.middley = self.y + self.offsety*self.step
             for enemy in self.enemies:
                 if not enemy.awake: self.wake(enemy)
+            for bullet in self.bullets: bullet.place(dx, dy, self.step)
 
         self.draw()
         for enemy in self.enemies:
             enemy.update(fps, self.distance, self.middlex, self.middley)
         self.hero.update(fps)
-        if self.hero.slashing: self.slash()
-        for enemy in self.enemies:
-            if not enemy.spin_queue: continue
-            x, y = enemy.pos(self.distance, self.middlex, self.middley)
-            d = self.slashd - length(x, y, self.x, self.y)
-            if d >= 0:
-                self.hero.wound += d / self.hero.R / enemy.spin_speed
+        self.slash()
+        self.track_bullets()
         pygame.display.flip()
         pygame.display.set_caption('Brutal Maze - Score: {}'.format(
             int(self.score - INIT_SCORE)))
@@ -253,6 +288,11 @@ class Maze:
         self.down += y
         self.right, self.down = sign(self.right), sign(self.down)
 
+    def fire(self):
+        """Create a bullet shot from the hero."""
+        self.bullets.append(
+            Bullet(self.surface, self.x, self.y, self.hero.angle, FG_COLOR))
+
     def lose(self):
         """Handle loses."""
-        pygame.quit()
+        quit()

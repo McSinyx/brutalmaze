@@ -27,6 +27,11 @@ from pygame.gfxdraw import filled_polygon, aapolygon
 from .constants import *
 
 
+def round2(number):
+    """Round a number to an int."""
+    return int(round(number))
+
+
 def randsign():
     """Return either -1 or 1 (kind of) randomly."""
     return (pygame.time.get_ticks() & 1)*2 - 1

@@ -64,6 +64,8 @@ def main():
                 if event.button == 1:
                     maze.hero.slashing = True
                     maze.hero.slash()
+                if event.button == 3:
+                    maze.fire()
             elif event.type == MOUSEBUTTONUP:
                 if event.button == 1:
                     maze.hero.slashing = False
