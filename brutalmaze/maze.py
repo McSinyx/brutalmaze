@@ -22,6 +22,7 @@ from math import pi, atan, atan2, log
 from random import choice, getrandbits, uniform
 
 import pygame
+from pygame import RESIZABLE
 
 from .characters import Hero, Enemy
 from .constants import *
@@ -64,11 +65,12 @@ class Maze:
         self.rangex = range(MIDDLE - w, MIDDLE + w + 1)
         self.rangey = range(MIDDLE - h, MIDDLE + h + 1)
         self.offsetx = self.offsety = 0.0
-        self.score = INIT_SCORE
+        self.paused, self.score = False, INIT_SCORE
 
         self.map = deque()
         for _ in range(MAZE_SIZE): self.map.extend(new_column())
-        self.right = self.down = self.rotatex = self.rotatey = 0
+        self.up = self.left = self.down = self.right = 0
+        self.rotatex = self.rotatey = 0
         self.bullets, self.enemies = [], []
         self.add_enemy()
         self.hero = Hero(self.surface, fps)
@@ -85,8 +87,7 @@ class Maze:
             x, y = choice(walls)
             if all(self.map[x + a][y + b] == WALL for a, b in ADJACENT_GRIDS):
                 continue
-            self.enemies.append(
-                Enemy(self.surface, self.fps, self.map, choice(ENEMIES), x, y))
+            self.enemies.append(Enemy(self.surface, self.fps, self.map, x, y))
             walls.remove((x, y))
 
     def draw(self):
@@ -135,6 +136,7 @@ class Maze:
         for i, enemy in enumerate(self.enemies):
             enemy.place(x, y)
             if enemy.x not in self.rangex or enemy.y not in self.rangey:
+                self.score += enemy.wound
                 enemy.die()
                 killist.append(i)
         for i in reversed(killist): self.enemies.pop(i)
@@ -175,7 +177,7 @@ class Maze:
             d = length(x, y, self.x, self.y)
             if d <= self.slashd:
                 enemy.wound += (self.slashd-d) / unit
-                if enemy.wound >= len(enemy.color):
+                if enemy.wound >= ENEMY_HP:
                     self.score += enemy.wound
                     enemy.die()
                     killist.append(i)
@@ -186,11 +188,11 @@ class Maze:
         """Handle the bullets."""
         fallen, time = [], pygame.time.get_ticks()
         for enemy in self.enemies:
+            # Chance that an enemy fire increase from 25% to 50%
             if uniform(-2, 2) > (INIT_SCORE/self.score)**2 and enemy.firable():
                 x, y = enemy.pos(self.distance, self.middlex, self.middley)
-                self.bullets.append(
-                    Bullet(self.surface, x, y, atan2(self.y - y, self.x - x),
-                           enemy.color[0]))
+                angle, color = atan2(self.y - y, self.x - x), enemy.color[0]
+                self.bullets.append(Bullet(self.surface, x, y, angle, color))
         if (self.hero.firing and not self.hero.slashing
             and time >= self.hero.next_strike):
             self.hero.next_strike = time + ATTACK_SPEED
@@ -211,7 +213,7 @@ class Maze:
                     x, y = enemy.pos(self.distance, self.middlex, self.middley)
                     if length(bullet.x, bullet.y, x, y) < self.distance:
                         enemy.wound += wound
-                        if enemy.wound >= len(enemy.color):
+                        if enemy.wound >= ENEMY_HP:
                             self.score += enemy.wound
                             enemy.die()
                             self.enemies.pop(j)
@@ -224,32 +226,29 @@ class Maze:
 
     def update(self, fps):
         """Update the maze."""
+        if self.paused: return
         self.offsetx *= fps / self.fps
         self.offsety *= fps / self.fps
         self.fps, self.speed = fps, fps / MOVE_SPEED
         self.step = self.distance / self.speed
 
-        dx, dy, d = 0, 0, self.distance*1.5 - self.hero.R
-        if self.right:
-            self.offsetx += self.right
-            s = sign(self.offsetx) * 2
-            if ((self.map[MIDDLE - s][MIDDLE - 1]
-                 or self.map[MIDDLE - s][MIDDLE]
-                 or self.map[MIDDLE - s][MIDDLE + 1])
-                and abs(self.offsetx*self.step) > d):
-                self.offsetx -= self.right
-            else:
-                dx = self.right
-        if self.down:
-            self.offsety += self.down
-            s = sign(self.offsety) * 2
-            if ((self.map[MIDDLE - 1][MIDDLE - s]
-                 or self.map[MIDDLE][MIDDLE - s]
-                 or self.map[MIDDLE + 1][MIDDLE - s])
-                and abs(self.offsety*self.step) > d):
-                self.offsety -= self.down
-            else:
-                dy = self.down
+        d = self.distance*1.5 - self.hero.R
+        dx, dy = sign(self.right) - sign(self.left), sign(self.down) - sign(self.up)
+        self.offsetx += dx
+        self.offsety += dy
+        x, y = MIDDLE - sign(self.offsetx)*2, MIDDLE - sign(self.offsety)*2
+        if ((self.map[x][MIDDLE - 1] != EMPTY
+             or self.map[x][MIDDLE] != EMPTY
+             or self.map[x][MIDDLE + 1] != EMPTY)
+            and abs(self.offsetx*self.step) > d):
+            self.offsetx -= dx
+            dx = 0
+        if ((self.map[MIDDLE - 1][y] != EMPTY
+             or self.map[MIDDLE][y] != EMPTY
+             or self.map[MIDDLE + 1][y] != EMPTY)
+            and abs(self.offsety*self.step) > d):
+            self.offsety -= dy
+            dy = 0
 
         if dx or dy:
             self.map[MIDDLE][MIDDLE] = EMPTY
@@ -263,15 +262,15 @@ class Maze:
             for bullet in self.bullets: bullet.place(dx, dy, self.step)
 
         self.draw()
+        self.slash()
+        self.track_bullets()
         for enemy in self.enemies:
             enemy.update(fps, self.distance, self.middlex, self.middley)
         self.hero.update(fps)
-        self.slash()
-        self.track_bullets()
         pygame.display.flip()
         pygame.display.set_caption('Brutal Maze - Score: {}'.format(
             int(self.score - INIT_SCORE)))
-        if self.hero.wound + 1 > len(self.hero.color): self.lose()
+        if self.hero.wound + 1 > HERO_HP: self.lose()
 
     def resize(self, w, h):
         """Resize the maze."""
@@ -289,14 +288,14 @@ class Maze:
         self.rangey = range(MIDDLE - h, MIDDLE + h + 1)
         self.slashd = self.hero.R + self.distance/SQRT2
 
-    def move(self, x, y):
-        """Command the maze to move x step/frame faster to the left and
-        y step/frame faster upward so the hero will move in the reverse
-        direction.
+    def move(self, up=0, left=0, down=0, right=0):
+        """Make the maze to move in the given directions by moving the
+        maze in the reverse way.
         """
-        self.right += x
-        self.down += y
-        self.right, self.down = sign(self.right), sign(self.down)
+        self.up += up
+        self.left += left
+        self.down += down
+        self.right += right
 
     def lose(self):
         """Handle loses."""

@@ -20,8 +20,9 @@
 from collections import deque
 
 import pygame
+from pygame.locals import *
 
-from .constants import *
+from .constants import ICON, SIZE, INIT_FPS, MAX_FPS
 from .maze import Maze
 
 
@@ -38,25 +39,27 @@ def main():
             if event.type == QUIT:
                 going = False
             elif event.type == KEYDOWN:
-                if event.key in (K_UP, K_w):
-                    maze.move(0, 1)
+                if event.key in (K_ESCAPE, K_p):
+                    maze.paused ^= True
+                elif event.key in (K_UP, K_w):
+                    maze.move(up=-1)
                 elif event.key in (K_LEFT, K_a):
-                    maze.move(1, 0)
+                    maze.move(left=-1)
                 elif event.key in (K_DOWN, K_s):
-                    maze.move(0, -1)
+                    maze.move(down=-1)
                 elif event.key in (K_RIGHT, K_d):
-                    maze.move(-1, 0)
+                    maze.move(right=-1)
                 elif event.key == K_RETURN:
                     maze.hero.slashing = True
             elif event.type == KEYUP:
                 if event.key in (K_UP, K_w):
-                    maze.move(0, -1)
+                    maze.move(up=1)
                 elif event.key in (K_LEFT, K_a):
-                    maze.move(-1, 0)
+                    maze.move(left=1)
                 elif event.key in (K_DOWN, K_s):
-                    maze.move(0, 1)
+                    maze.move(down=1)
                 elif event.key in (K_RIGHT, K_d):
-                    maze.move(1, 0)
+                    maze.move(right=1)
                 elif event.key == K_RETURN:
                     maze.hero.slashing = False
             elif event.type == MOUSEBUTTONDOWN:
@@ -73,8 +76,11 @@ def main():
                 maze.resize(event.w, event.h)
         if len(flash_time) > 5:
             new_fps = 5000.0 / (flash_time[-1] - flash_time[0])
-            fps += -1 if new_fps < fps else 5
             flash_time.popleft()
+            if new_fps < fps:
+                fps -= 1
+            elif fps < MAX_FPS and not maze.paused:
+                fps += 5
         maze.update(fps)
         flash_time.append(pygame.time.get_ticks())
         clock.tick(fps)

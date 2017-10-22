@@ -24,9 +24,9 @@ setup(
         'Natural Language :: English',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Topic :: Games/Entertainment :: Role-Playing'],
+        'Topic :: Games/Entertainment :: Arcade'],
     keywords='',
     packages=['brutalmaze'],
     install_requires=['pygame>=1.9'],
-    package_data={'brutalmaze': ['*.xm']},
+    package_data={'brutalmaze': ['icon.png']},
     entry_points={'gui_scripts': ['brutalmaze = brutalmaze:main']})

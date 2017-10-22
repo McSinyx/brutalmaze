@@ -4,7 +4,7 @@ Brutal Maze
 Brutal Maze is a research hash and slash game with fast-paced action and a
 minimalist art style.
 
-.. image:: https://raw.githubusercontent.com/McSinyx/brutalmaze/master/brutalmaze/icon.png
+.. image:: https://raw.githubusercontent.com/McSinyx/brutalmaze/master/screenshot.png
 
 The game features a trigon trapped in an infinite maze. As our hero tries to
 escape, the maze's border turn into aggressive squares trying to stop him. Your
@@ -26,8 +26,8 @@ Installation
 Brutal Maze is written in Python and is compatible with both version 2 and 3.
 The installation procedure should be as simply as follow:
 
-* Make sure you have Python and `pip <https://pip.pypa.io/en/latest/>`_
-  installed on your system.
+* Install Python and `pip <https://pip.pypa.io/en/latest/>`_. Make sure the
+  directory for Python executables is your ``PATH``.
 * Clone the Github repository or download the Zip achieve and unpack.
 * Open Terminal in the directory containing the repo's folder and run
   ``pip install --user brutalmaze``.

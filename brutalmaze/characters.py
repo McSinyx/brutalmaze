@@ -17,16 +17,16 @@
 #
 # Copyright (C) 2017 Nguyễn Gia Phong
 
-__doc__ = 'brutalmaze module for hero and enemy classes'
-
 from collections import deque
 from math import atan2, sin, pi
-from random import shuffle
+from random import choice, shuffle
 
 import pygame
 
 from .constants import *
 from .utils import randsign, regpoly, fill_aapolygon, pos, sign
+
+__doc__ = 'brutalmaze module for hero and enemy classes'
 
 
 class Hero:
@@ -40,15 +40,15 @@ class Hero:
 
         self.next_strike = 0
         self.slashing = self.firing = False
-        self.spin_speed = fps / len(self.color)
+        self.spin_speed = fps / HERO_HP
         self.spin_queue = self.wound = 0.0
 
     def update(self, fps):
         """Update the hero."""
         old_speed, time = self.spin_speed, pygame.time.get_ticks()
-        self.spin_speed = fps / (len(self.color)-self.wound**0.5)
+        self.spin_speed = fps / (HERO_HP-self.wound**0.5)
         self.spin_queue *= self.spin_speed / old_speed
-        self.wound -= HEAL_SPEED / len(self.color) / self.spin_speed
+        self.wound -= HEAL_SPEED / self.spin_speed / HERO_HP
         if self.wound < 0: self.wound = 0.0
 
         if self.slashing and time >= self.next_strike:
@@ -74,9 +74,9 @@ class Hero:
 
 class Enemy:
     """Object representing an enemy."""
-    def __init__(self, surface, fps, maze, kind, x, y):
+    def __init__(self, surface, fps, maze, x, y):
         self.surface, self.maze = surface, maze
-        self.angle, self.color = pi / 4, TANGO[kind]
+        self.angle, self.color = pi / 4, TANGO[choice(ENEMIES)]
         self.x, self.y = x, y
         self.maze[x][y] = ENEMY
 
@@ -84,7 +84,7 @@ class Enemy:
         self.next_move = 0
         self.move_speed = fps / MOVE_SPEED
         self.offsetx = self.offsety = 0
-        self.spin_speed = fps / len(self.color)
+        self.spin_speed = fps / ENEMY_HP
         self.spin_queue = self.wound = 0.0
 
     def firable(self):
@@ -137,7 +137,7 @@ class Enemy:
     def update(self, fps, distance, middlex, middley):
         """Update the enemy."""
         if self.awake:
-            self.spin_speed, old_speed = fps / len(self.color), self.spin_speed
+            self.spin_speed, old_speed = fps / ENEMY_HP, self.spin_speed
             self.spin_queue *= self.spin_speed / old_speed
             if not self.spin_queue and not self.move(fps):
                 self.spin_queue = randsign() * self.spin_speed

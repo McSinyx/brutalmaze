@@ -18,7 +18,6 @@
 # Copyright (C) 2017 Nguyễn Gia Phong
 
 from pygame import image
-from pygame.locals import *
 from pkg_resources import resource_filename
 
 __doc__ = 'brutalmaze module for shared constants'
@@ -29,6 +28,7 @@ SQRT2 = 2 ** 0.5
 GOLDEN_MEAN = 5**0.5/2 + 0.5
 
 INIT_FPS = 30.0
+MAX_FPS = 144.0
 SIZE = 640, 480
 MAZE_SIZE = 10
 ROAD_WIDTH = 5  # grids
@@ -38,7 +38,7 @@ LAST_ROW = (MAZE_SIZE-1) * ROAD_WIDTH * 2
 INIT_SCORE = 208.2016
 MOVE_SPEED = 5  # grid/s
 BULLET_SPEED = 10   # grid/s
-HEAL_SPEED = 1.0    # HP/s
+HEAL_SPEED = 1  # HP/s
 ATTACK_SPEED = 333  # ms/strike
 BULLET_LIFETIME = 1000  # ms
 
@@ -56,5 +56,7 @@ TANGO = {'Butter': ((252, 233, 79), (237, 212, 0), (196, 160, 0)),
                        (136, 138, 133), (85, 87, 83), (46, 52, 54))}
 ENEMIES = ('Butter', 'Orange', 'Chocolate', 'Chameleon',
            'Sky Blue', 'Plum', 'Scarlet Red')
+ENEMY_HP = 3
+HERO_HP = 6
 BG_COLOR = TANGO['Aluminium'][-1]
 FG_COLOR = TANGO['Aluminium'][0]

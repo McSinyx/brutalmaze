@@ -17,14 +17,14 @@
 #
 # Copyright (C) 2017 Nguyễn Gia Phong
 
-__doc__ = 'brutalmaze module for weapon classes'
-
-from math import pi, cos, sin
+from math import cos, sin
 
 from pygame.time import get_ticks
 
-from .constants import *
-from .utils import randsign, regpoly, fill_aapolygon, pos, sign
+from .constants import BULLET_LIFETIME, BULLET_SPEED
+from .utils import regpoly, fill_aapolygon
+
+__doc__ = 'brutalmaze module for weapon classes'
 
 
 class Bullet:
