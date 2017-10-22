@@ -38,8 +38,14 @@ def main():
         for event in events:
             if event.type == QUIT:
                 going = False
+            elif event.type == VIDEORESIZE:
+                maze.resize(event.w, event.h)
             elif event.type == KEYDOWN:
-                if event.key in (K_ESCAPE, K_p):
+                if event.key == K_F2:   # new game
+                    maze.__init__((maze.w, maze.h), fps)
+                elif maze.hero.dead:
+                    continue
+                elif event.key in (K_ESCAPE, K_p):
                     maze.paused ^= True
                 elif event.key in (K_UP, K_w):
                     maze.move(up=-1)
@@ -51,6 +57,8 @@ def main():
                     maze.move(right=-1)
                 elif event.key == K_RETURN:
                     maze.hero.slashing = True
+            elif maze.hero.dead:
+                continue
             elif event.type == KEYUP:
                 if event.key in (K_UP, K_w):
                     maze.move(up=1)
@@ -72,8 +80,6 @@ def main():
                     maze.hero.firing = False
                 elif event.button == 3:
                     maze.hero.slashing = False
-            elif event.type == VIDEORESIZE:
-                maze.resize(event.w, event.h)
         if len(flash_time) > 5:
             new_fps = 5000.0 / (flash_time[-1] - flash_time[0])
             flash_time.popleft()

@@ -262,11 +262,11 @@ class Maze:
             for bullet in self.bullets: bullet.place(dx, dy, self.step)
 
         self.draw()
-        self.slash()
-        self.track_bullets()
         for enemy in self.enemies:
             enemy.update(fps, self.distance, self.middlex, self.middley)
         self.hero.update(fps)
+        self.slash()
+        self.track_bullets()
         pygame.display.flip()
         pygame.display.set_caption('Brutal Maze - Score: {}'.format(
             int(self.score - INIT_SCORE)))
@@ -299,5 +299,5 @@ class Maze:
 
     def lose(self):
         """Handle loses."""
-        print('Your score is: {}'.format(int(self.score - INIT_SCORE)))
-        quit()
+        self.hero.die()
+        self.up = self.left = self.down = self.right = 0

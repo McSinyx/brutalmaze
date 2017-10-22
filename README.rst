@@ -35,6 +35,12 @@ The installation procedure should be as simply as follow:
 Control
 -------
 
+F2
+   New game.
+
+Escape, ``p``
+   Pause.
+
 Up, ``w``
    Move up.
 

@@ -44,6 +44,8 @@ BULLET_LIFETIME = 1000  # ms
 
 EMPTY, WALL, HERO, ENEMY = range(4)
 ADJACENT_GRIDS = (1, 0), (0, 1), (-1, 0), (0, -1)
+SURROUND_HERO = set((MIDDLE + x, MIDDLE + y) for x, y in
+                    ADJACENT_GRIDS + ((1, 1), (-1, 1), (-1, -1), (1, -1)))
 
 TANGO = {'Butter': ((252, 233, 79), (237, 212, 0), (196, 160, 0)),
          'Orange': ((252, 175, 62), (245, 121, 0), (206, 92, 0)),

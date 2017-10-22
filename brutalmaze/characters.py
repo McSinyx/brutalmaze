@@ -39,7 +39,7 @@ class Hero:
         self.R = int((w * h / sin(pi*2/3) / 624) ** 0.5)
 
         self.next_strike = 0
-        self.slashing = self.firing = False
+        self.slashing = self.firing = self.dead = False
         self.spin_speed = fps / HERO_HP
         self.spin_queue = self.wound = 0.0
 
@@ -48,7 +48,7 @@ class Hero:
         old_speed, time = self.spin_speed, pygame.time.get_ticks()
         self.spin_speed = fps / (HERO_HP-self.wound**0.5)
         self.spin_queue *= self.spin_speed / old_speed
-        self.wound -= HEAL_SPEED / self.spin_speed / HERO_HP
+        if not self.dead: self.wound -= HEAL_SPEED / self.spin_speed / HERO_HP
         if self.wound < 0: self.wound = 0.0
 
         if self.slashing and time >= self.next_strike:
@@ -63,7 +63,15 @@ class Hero:
             self.angle = atan2(y - self.y, x - self.x)
             self.spin_queue = 0.0
         trigon = regpoly(3, self.R, self.angle, self.x, self.y)
-        fill_aapolygon(self.surface, trigon, self.color[int(self.wound)])
+        try:
+            fill_aapolygon(self.surface, trigon, self.color[int(self.wound)])
+        except IndexError:  # When the hero is wounded over his HP
+            self.wound = HERO_HP
+
+    def die(self):
+        """Handle the hero's death."""
+        self.dead = True
+        self.slashing = self.firing = False
 
     def resize(self):
         """Resize the hero."""
@@ -86,16 +94,6 @@ class Enemy:
         self.offsetx = self.offsety = 0
         self.spin_speed = fps / ENEMY_HP
         self.spin_queue = self.wound = 0.0
-
-    def firable(self):
-        """Return True if the enemies should shoot the hero,
-        False otherwise.
-        """
-        if not self.awake or self.spin_queue or self.offsetx or self.offsety:
-            return False
-        else:
-            self.next_move = pygame.time.get_ticks() + ATTACK_SPEED
-            return True
 
     def pos(self, distance, middlex, middley):
         """Return coordinate of the center of the enemy."""
@@ -152,6 +150,16 @@ class Enemy:
         color = self.color[int(self.wound)] if self.awake else FG_COLOR
         fill_aapolygon(self.surface, square, color)
 
+    def firable(self):
+        """Return True if the enemies should shoot the hero,
+        False otherwise.
+        """
+        if (not self.awake or self.spin_queue or self.offsetx or self.offsety
+            or (self.x, self.y) in SURROUND_HERO):
+            return False
+        self.next_move = pygame.time.get_ticks() + ATTACK_SPEED
+        return True
+
     def die(self):
-        """Kill the enemy."""
+        """Handle the enemy's death."""
         self.maze[self.x][self.y] = EMPTY if self.awake else WALL
