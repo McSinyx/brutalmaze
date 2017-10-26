@@ -19,7 +19,7 @@
 
 from collections import deque
 from math import pi, atan, atan2, log
-from random import choice, getrandbits, uniform
+from random import choice, getrandbits
 
 import pygame
 from pygame import RESIZABLE
@@ -56,7 +56,7 @@ class Maze:
     """Object representing the maze, including the characters."""
     def __init__(self, size, fps):
         self.w, self.h = size
-        self.fps, self.speed = fps, fps / MOVE_SPEED
+        self.fps, self.speed = fps, fps / HERO_SPEED
         self.surface = pygame.display.set_mode(size, RESIZABLE)
         self.distance = (self.w * self.h / 416) ** 0.5
         self.step = self.distance / self.speed
@@ -87,7 +87,7 @@ class Maze:
             x, y = choice(walls)
             if all(self.map[x + a][y + b] == WALL for a, b in ADJACENT_GRIDS):
                 continue
-            self.enemies.append(Enemy(self.surface, self.fps, self.map, x, y))
+            self.enemies.append(Enemy(self, x, y))
             walls.remove((x, y))
 
     def draw(self):
@@ -165,7 +165,7 @@ class Maze:
         """Handle close-ranged attacks."""
         for enemy in self.enemies:
             if not enemy.spin_queue: continue
-            x, y = enemy.pos(self.distance, self.middlex, self.middley)
+            x, y = enemy.pos()
             d = self.slashd - length(x, y, self.x, self.y)
             if d >= 0:
                 self.hero.wound += d / self.hero.R / enemy.spin_speed
@@ -173,7 +173,7 @@ class Maze:
         if not self.hero.spin_queue: return
         unit, killist = self.distance/SQRT2 * self.hero.spin_speed, []
         for i, enemy in enumerate(self.enemies):
-            x, y = enemy.pos(self.distance, self.middlex, self.middley)
+            x, y = enemy.pos()
             d = length(x, y, self.x, self.y)
             if d <= self.slashd:
                 enemy.wound += (self.slashd-d) / unit
@@ -187,12 +187,6 @@ class Maze:
     def track_bullets(self):
         """Handle the bullets."""
         fallen, time = [], pygame.time.get_ticks()
-        for enemy in self.enemies:
-            # Chance that an enemy fire increase from 25% to 50%
-            if uniform(-2, 2) > (INIT_SCORE/self.score)**2 and enemy.firable():
-                x, y = enemy.pos(self.distance, self.middlex, self.middley)
-                angle, color = atan2(self.y - y, self.x - x), enemy.color[0]
-                self.bullets.append(Bullet(self.surface, x, y, angle, color))
         if (self.hero.firing and not self.hero.slashing
             and time >= self.hero.next_strike):
             self.hero.next_strike = time + ATTACK_SPEED
@@ -210,9 +204,9 @@ class Maze:
                     fallen.append(i)
                     continue
                 for j, enemy in enumerate(self.enemies):
-                    x, y = enemy.pos(self.distance, self.middlex, self.middley)
+                    x, y = enemy.pos()
                     if length(bullet.x, bullet.y, x, y) < self.distance:
-                        enemy.wound += wound
+                        enemy.wound += FIRE_DAM
                         if enemy.wound >= ENEMY_HP:
                             self.score += enemy.wound
                             enemy.die()
@@ -220,7 +214,7 @@ class Maze:
                         fallen.append(i)
                         break
             elif length(bullet.x, bullet.y, self.x, self.y) < self.distance:
-                if not self.hero.spin_queue: self.hero.wound += wound
+                if not self.hero.spin_queue: self.hero.wound += FIRE_DAM
                 fallen.append(i)
         for i in reversed(fallen): self.bullets.pop(i)
 
@@ -229,12 +223,13 @@ class Maze:
         if self.paused: return
         self.offsetx *= fps / self.fps
         self.offsety *= fps / self.fps
-        self.fps, self.speed = fps, fps / MOVE_SPEED
+        self.fps, self.speed = fps, fps / HERO_SPEED
         self.step = self.distance / self.speed
 
         d = self.distance*1.5 - self.hero.R
-        dx, dy = sign(self.right) - sign(self.left), sign(self.down) - sign(self.up)
+        dx = sign(self.right) - sign(self.left)
         self.offsetx += dx
+        dy = sign(self.down) - sign(self.up)
         self.offsety += dy
         x, y = MIDDLE - sign(self.offsetx)*2, MIDDLE - sign(self.offsety)*2
         if ((self.map[x][MIDDLE - 1] != EMPTY
@@ -262,8 +257,7 @@ class Maze:
             for bullet in self.bullets: bullet.place(dx, dy, self.step)
 
         self.draw()
-        for enemy in self.enemies:
-            enemy.update(fps, self.distance, self.middlex, self.middley)
+        for enemy in self.enemies: enemy.update()
         self.hero.update(fps)
         self.slash()
         self.track_bullets()

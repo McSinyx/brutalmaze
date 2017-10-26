@@ -19,12 +19,13 @@
 
 from collections import deque
 from math import atan2, sin, pi
-from random import choice, shuffle
+from random import choice, shuffle, uniform
 
 import pygame
 
 from .constants import *
-from .utils import randsign, regpoly, fill_aapolygon, pos, sign
+from .utils import randsign, regpoly, fill_aapolygon, pos, sign, length
+from .weapons import Bullet
 
 __doc__ = 'brutalmaze module for hero and enemy classes'
 
@@ -82,37 +83,50 @@ class Hero:
 
 class Enemy:
     """Object representing an enemy."""
-    def __init__(self, surface, fps, maze, x, y):
-        self.surface, self.maze = surface, maze
+    def __init__(self, maze, x, y):
+        self.maze = maze
         self.angle, self.color = pi / 4, TANGO[choice(ENEMIES)]
         self.x, self.y = x, y
-        self.maze[x][y] = ENEMY
+        self.maze.map[x][y] = ENEMY
 
         self.awake = False
         self.next_move = 0
-        self.move_speed = fps / MOVE_SPEED
+        self.move_speed = self.maze.fps / ENEMY_SPEED
         self.offsetx = self.offsety = 0
-        self.spin_speed = fps / ENEMY_HP
+        self.spin_speed = self.maze.fps / ENEMY_HP
         self.spin_queue = self.wound = 0.0
 
-    def pos(self, distance, middlex, middley):
+    def pos(self):
         """Return coordinate of the center of the enemy."""
-        x, y = pos(self.x, self.y, distance, middlex, middley)
-        step = distance / self.move_speed
-        return x + self.offsetx*step, y + self.offsety*step
+        x, y = pos(self.x, self.y, self.maze.distance,
+                   self.maze.middlex, self.maze.middley)
+        return x + self.offsetx*self.maze.step, y + self.offsety*self.maze.step
 
     def place(self, x=0, y=0):
         """Move the enemy by (x, y) (in grids)."""
         self.x += x
         self.y += y
-        self.maze[self.x][self.y] = ENEMY
+        self.maze.map[self.x][self.y] = ENEMY
 
-    def move(self, fps):
+    def fire(self):
+        """Return True if the enemy shot the hero, False otherwise."""
+        x, y = self.pos()
+        if (length(x, y, self.maze.x, self.maze.y) > FIRANGE*self.maze.distance
+            or self.next_move > pygame.time.get_ticks()
+            or (self.x, self.y) in AROUND_HERO or self.offsetx or self.offsety
+            or uniform(-2, 2) < (INIT_SCORE/self.maze.score) ** 2):
+            return False
+        self.next_move = pygame.time.get_ticks() + ATTACK_SPEED
+        self.maze.bullets.append(Bullet(
+            self.maze.surface, x, y,
+            atan2(self.maze.y - y, self.maze.x - x), self.color[0]))
+        return True
+
+    def move(self):
         """Handle the movement of the enemy.
 
         Return True if it moved, False otherwise.
         """
-        if self.next_move > pygame.time.get_ticks(): return False
         if self.offsetx:
             self.offsetx -= sign(self.offsetx)
             return True
@@ -120,46 +134,36 @@ class Enemy:
             self.offsety -= sign(self.offsety)
             return True
 
-        self.move_speed = fps / MOVE_SPEED
+        self.move_speed = self.maze.fps / ENEMY_SPEED
         directions = [(sign(MIDDLE - self.x), 0), (0, sign(MIDDLE - self.y))]
         shuffle(directions)
+        directions.append(choice(CROSS))
         for x, y in directions:
-            if (x or y) and self.maze[self.x + x][self.y + y] == EMPTY:
+            if (x or y) and self.maze.map[self.x + x][self.y + y] == EMPTY:
                 self.offsetx = round(x * (1 - self.move_speed))
                 self.offsety = round(y * (1 - self.move_speed))
-                self.maze[self.x][self.y] = EMPTY
+                self.maze.map[self.x][self.y] = EMPTY
                 self.place(x, y)
                 return True
         return False
 
-    def update(self, fps, distance, middlex, middley):
+    def update(self):
         """Update the enemy."""
         if self.awake:
-            self.spin_speed, old_speed = fps / ENEMY_HP, self.spin_speed
+            self.spin_speed, old_speed = self.maze.fps / ENEMY_HP, self.spin_speed
             self.spin_queue *= self.spin_speed / old_speed
-            if not self.spin_queue and not self.move(fps):
+            if not self.spin_queue and not self.fire() and not self.move():
                 self.spin_queue = randsign() * self.spin_speed
             if abs(self.spin_queue) > 0.5:
                 self.angle += sign(self.spin_queue) * pi / 2 / self.spin_speed
                 self.spin_queue -= sign(self.spin_queue)
             else:
                 self.angle, self.spin_queue = pi / 4, 0.0
-        radious = distance/SQRT2 - self.awake*2
-        square = regpoly(4, radious, self.angle,
-                         *self.pos(distance, middlex, middley))
+        radious = self.maze.distance/SQRT2 - self.awake*2
+        square = regpoly(4, radious, self.angle, *self.pos())
         color = self.color[int(self.wound)] if self.awake else FG_COLOR
-        fill_aapolygon(self.surface, square, color)
-
-    def firable(self):
-        """Return True if the enemies should shoot the hero,
-        False otherwise.
-        """
-        if (not self.awake or self.spin_queue or self.offsetx or self.offsety
-            or (self.x, self.y) in SURROUND_HERO):
-            return False
-        self.next_move = pygame.time.get_ticks() + ATTACK_SPEED
-        return True
+        fill_aapolygon(self.maze.surface, square, color)
 
     def die(self):
         """Handle the enemy's death."""
-        self.maze[self.x][self.y] = EMPTY if self.awake else WALL
+        self.maze.map[self.x][self.y] = EMPTY if self.awake else WALL
