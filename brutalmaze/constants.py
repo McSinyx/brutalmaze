@@ -17,16 +17,19 @@
 #
 # Copyright (C) 2017 Nguyễn Gia Phong
 
-from pygame import image
-from pkg_resources import resource_filename
-
 __doc__ = 'brutalmaze module for shared constants'
 
+from pygame import image, K_UP, K_w, K_LEFT, K_a, K_DOWN, K_s, K_RIGHT, K_d
+from pkg_resources import resource_filename
+
 ICON = image.load(resource_filename('brutalmaze', 'icon.png'))
+UP = (K_UP, K_w)
+LEFT = (K_LEFT, K_a)
+DOWN = (K_DOWN, K_s)
+RIGHT = (K_RIGHT, K_d)
 
 SQRT2 = 2 ** 0.5
-GOLDEN_MEAN = 5**0.5/2 + 0.5
-
+INIT_SCORE = 5**0.5/2 + 0.5     # golden mean
 INIT_FPS = 30.0
 MAX_FPS = 144.0
 SIZE = 640, 480
@@ -35,7 +38,6 @@ ROAD_WIDTH = 5  # grids
 CELL_WIDTH = ROAD_WIDTH * 2     # grids
 MIDDLE = (MAZE_SIZE + MAZE_SIZE%2 - 1)*ROAD_WIDTH + ROAD_WIDTH//2
 LAST_ROW = (MAZE_SIZE-1) * ROAD_WIDTH * 2
-INIT_SCORE = 208.2016
 HEAL_SPEED = 1  # HP/s
 HERO_SPEED = 5  # grid/s
 ENEMY_SPEED = 6 # grid/s

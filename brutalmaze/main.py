@@ -22,8 +22,9 @@ from collections import deque
 import pygame
 from pygame.locals import *
 
-from .constants import ICON, SIZE, INIT_FPS, MAX_FPS
+from .constants import ICON, SIZE, INIT_FPS, MAX_FPS, UP, LEFT, DOWN, RIGHT
 from .maze import Maze
+from .utils import some
 
 
 def main():
@@ -43,43 +44,17 @@ def main():
             elif event.type == KEYDOWN:
                 if event.key == K_F2:   # new game
                     maze.__init__((maze.w, maze.h), fps)
-                elif maze.hero.dead:
-                    continue
                 elif event.key in (K_ESCAPE, K_p):
                     maze.paused ^= True
-                elif event.key in (K_UP, K_w):
-                    maze.move(up=-1)
-                elif event.key in (K_LEFT, K_a):
-                    maze.move(left=-1)
-                elif event.key in (K_DOWN, K_s):
-                    maze.move(down=-1)
-                elif event.key in (K_RIGHT, K_d):
-                    maze.move(right=-1)
-                elif event.key == K_RETURN:
-                    maze.hero.slashing = True
-            elif maze.hero.dead:
-                continue
-            elif event.type == KEYUP:
-                if event.key in (K_UP, K_w):
-                    maze.move(up=1)
-                elif event.key in (K_LEFT, K_a):
-                    maze.move(left=1)
-                elif event.key in (K_DOWN, K_s):
-                    maze.move(down=1)
-                elif event.key in (K_RIGHT, K_d):
-                    maze.move(right=1)
-                elif event.key == K_RETURN:
-                    maze.hero.slashing = False
-            elif event.type == MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    maze.hero.firing = True
-                elif event.button == 3:
-                    maze.hero.slashing = True
-            elif event.type == MOUSEBUTTONUP:
-                if event.button == 1:
-                    maze.hero.firing = False
-                elif event.button == 3:
-                    maze.hero.slashing = False
+
+        if not maze.hero.dead:
+            keys = pygame.key.get_pressed()
+            buttons = pygame.mouse.get_pressed()
+            maze.right = some(keys, LEFT) - some(keys, RIGHT)
+            maze.down = some(keys, UP) - some(keys, DOWN)
+            maze.hero.slashing = keys[K_RETURN] or buttons[2]
+            maze.hero.firing = buttons[0]
+
         if len(flash_time) > 5:
             new_fps = 5000.0 / (flash_time[-1] - flash_time[0])
             flash_time.popleft()

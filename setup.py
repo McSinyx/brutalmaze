@@ -15,7 +15,7 @@ setup(
     author_email='vn.mcsinyx@gmail.com',
     license='GPLv3+',
     classifiers=[
-        'Development Status :: 1 - Planning'
+        'Development Status :: 2 - Pre-Alpha',
         'Environment :: MacOS X',
         'Environment :: Win32 (MS Windows)',
         'Environment :: X11 Applications',
@@ -25,7 +25,7 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Topic :: Games/Entertainment :: Arcade'],
-    keywords='',
+    keywords='pygame action-game',
     packages=['brutalmaze'],
     install_requires=['pygame>=1.9'],
     package_data={'brutalmaze': ['icon.png']},

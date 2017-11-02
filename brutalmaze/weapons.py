@@ -17,14 +17,14 @@
 #
 # Copyright (C) 2017 Nguyễn Gia Phong
 
+__doc__ = 'brutalmaze module for weapon classes'
+
 from math import cos, sin
 
 from pygame.time import get_ticks
 
 from .constants import BULLET_LIFETIME, BULLET_SPEED
 from .utils import regpoly, fill_aapolygon
-
-__doc__ = 'brutalmaze module for weapon classes'
 
 
 class Bullet:
@@ -42,7 +42,13 @@ class Bullet:
         hexagon = regpoly(5, distance // 4, self.angle, self.x, self.y)
         fill_aapolygon(self.surface, hexagon, self.color)
 
-    def place(self, x, y, step):
-        """Move the bullet by (x, y) (in steps)."""
-        self.x += x * step
-        self.y += y * step
+    def place(self, x, y):
+        """Move the bullet by (x, y) (in pixels)."""
+        self.x += x
+        self.y += y
+
+    def length(self, x, y):
+        """Return the length of the line segment joining the center of
+        the bullet and the point (x, y).
+        """
+        return ((self.x-x)**2 + (self.y-y)**2)**0.5

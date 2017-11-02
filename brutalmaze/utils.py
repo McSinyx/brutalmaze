@@ -17,14 +17,21 @@
 #
 # Copyright (C) 2017 Nguyễn Gia Phong
 
+__doc__ = 'brutalmaze module for hero and enemy classes'
+
+from functools import reduce
 from math import cos, sin, pi
+from operator import or_
 
 import pygame
 from pygame.gfxdraw import filled_polygon, aapolygon
 
 from .constants import MIDDLE
 
-__doc__ = 'brutalmaze module for hero and enemy classes'
+
+def some(a, keys):
+    """Return True if there is a key k in keys that bool(a[k]) is True."""
+    return bool(reduce(or_, (a[k] for k in keys)))
 
 
 def round2(number):
@@ -53,11 +60,6 @@ def fill_aapolygon(surface, points, color):
     filled_polygon(surface, points, color)
 
 
-def pos(x, y, distance, middlex, middley):
-    """Return coordinate of the center of the grid (x, y)."""
-    return middlex + (x - MIDDLE)*distance, middley + (y - MIDDLE)*distance
-
-
 def sign(n):
     """Return the sign of number n."""
     return -1 if n < 0 else 1 if n else 0
@@ -66,10 +68,3 @@ def sign(n):
 def cosin(x):
     """Return the sum of cosine and sine of x (measured in radians)."""
     return cos(x) + sin(x)
-
-
-def length(x0, y0, x1, y1):
-    """Return the length of the line segment joining the two points
-    (x0, y0) and (x1, y1).
-    """
-    return ((x0-x1)**2 + (y0-y1)**2)**0.5

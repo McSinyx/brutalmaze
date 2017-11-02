@@ -17,6 +17,8 @@
 #
 # Copyright (C) 2017 Nguyễn Gia Phong
 
+__doc__ = 'brutalmaze module for hero and enemy classes'
+
 from collections import deque
 from math import atan2, sin, pi
 from random import choice, shuffle, uniform
@@ -24,10 +26,8 @@ from random import choice, shuffle, uniform
 import pygame
 
 from .constants import *
-from .utils import randsign, regpoly, fill_aapolygon, pos, sign, length
+from .utils import randsign, regpoly, fill_aapolygon, sign
 from .weapons import Bullet
-
-__doc__ = 'brutalmaze module for hero and enemy classes'
 
 
 class Hero:
@@ -98,9 +98,9 @@ class Enemy:
 
     def pos(self):
         """Return coordinate of the center of the enemy."""
-        x, y = pos(self.x, self.y, self.maze.distance,
-                   self.maze.middlex, self.maze.middley)
-        return x + self.offsetx*self.maze.step, y + self.offsety*self.maze.step
+        x, y = self.maze.pos(self.x, self.y)
+        step = self.maze.distance * HERO_SPEED / self.maze.fps
+        return x + self.offsetx*step, y + self.offsety*step
 
     def place(self, x=0, y=0):
         """Move the enemy by (x, y) (in grids)."""
@@ -111,7 +111,7 @@ class Enemy:
     def fire(self):
         """Return True if the enemy shot the hero, False otherwise."""
         x, y = self.pos()
-        if (length(x, y, self.maze.x, self.maze.y) > FIRANGE*self.maze.distance
+        if (self.maze.length(x, y) > FIRANGE*self.maze.distance
             or self.next_move > pygame.time.get_ticks()
             or (self.x, self.y) in AROUND_HERO or self.offsetx or self.offsety
             or uniform(-2, 2) < (INIT_SCORE/self.maze.score) ** 2):
@@ -163,6 +163,10 @@ class Enemy:
         square = regpoly(4, radious, self.angle, *self.pos())
         color = self.color[int(self.wound)] if self.awake else FG_COLOR
         fill_aapolygon(self.maze.surface, square, color)
+
+    def hit(self, wound):
+        """Handle the enemy when it's hit by a bullet."""
+        self.wound += wound
 
     def die(self):
         """Handle the enemy's death."""
