@@ -28,7 +28,15 @@ from .utils import regpoly, fill_aapolygon
 
 
 class Bullet:
-    """Object representing a bullet."""
+    """Object representing a bullet.
+
+    Attributes:
+        surface (pygame.Surface): the display to draw on
+        x, y (int): coordinates of the center of the bullet (in pixels)
+        angle (float): angle of the direction the bullet pointing (in radians)
+        color (pygame.Color): color of the bullet
+        fall_time (int): the tick that the bullet will fall down
+    """
     def __init__(self, surface, x, y, angle, color):
         self.surface = surface
         self.x, self.y, self.angle, self.color = x, y, angle, color

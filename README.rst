@@ -12,13 +12,14 @@ job is to help the trigon fight against those evil squares and find a way out
 (if there is any). Be aware that the more get killed, the more will show up and
 our hero will get weaker when wounded.
 
-As a research game, Brutal Maze has a few primary goals:
+Being a research game, Brutal Maze has a few primary goals:
 
 * Highly portable.
 * Auto-generated and infinite maze.
-* No binary art data.
-* Enemies with randomized attributes: stun, poison, etc.
-* Resizable in realtime.
+* No binary data for drawing.
+* Enemies with randomized attributes: stun, poison, camo, etc.
+* Somewhat a realistic physic and logic system.
+* Resizable game window in-game.
 
 Installation
 ------------
@@ -27,10 +28,10 @@ Brutal Maze is written in Python and is compatible with both version 2 and 3.
 The installation procedure should be as simply as follow:
 
 * Install Python and `pip <https://pip.pypa.io/en/latest/>`_. Make sure the
-  directory for Python executables is your ``PATH``.
-* Clone the Github repository or download the Zip achieve and unpack.
-* Open Terminal in the directory containing the repo's folder and run
-  ``pip install --user brutalmaze``.
+  directory for `Python scripts <https://docs.python.org/2/install/index.html#alternate-installation-the-user-scheme>`_
+  is your ``PATH``.
+* Open Terminal or Command Prompt and run ``pip install --user brutalmaze``.
+  Now you can lauch the game by running the command ``brutalmaze``.
 
 Control
 -------
@@ -54,7 +55,7 @@ Right, ``d``
    Move right.
 
 Left Mouse
-   Long-ranged attack.
+   Long-range attack.
 
 Return, Right Mouse
-   Close-ranged attack.
+   Close-range attack, also dodge from bullets.

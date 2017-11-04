@@ -20,7 +20,7 @@
 __doc__ = 'brutalmaze module for the maze class'
 
 from collections import deque
-from math import pi, atan, atan2, log
+from math import pi, atan2, log
 from random import choice, getrandbits
 
 import pygame
@@ -28,7 +28,7 @@ from pygame import RESIZABLE
 
 from .characters import Hero, Enemy
 from .constants import *
-from .utils import round2, sign, cosin, regpoly, fill_aapolygon
+from .utils import round2, sign, regpoly, fill_aapolygon
 from .weapons import Bullet
 
 
@@ -53,13 +53,33 @@ def new_column():
 
 
 class Maze:
-    """Object representing the maze, including the characters."""
+    """Object representing the maze, including the characters.
+
+    Attributes:
+        w, h: width and height of the display
+        fps: current frame rate
+        surface (pygame.Surface): the display to draw on
+        distance (float): distance between centers of grids (in px)
+        x, y (int): coordinates of the center of the hero (in px)
+        centerx, centery (float): center grid's center's coordinates (in px)
+        rangex, rangey: range of the index of the grids on display
+        paused (bool): flag indicates if the game is paused
+        score (float): current score
+        map (deque of deque): map of grids representing objects on the maze
+        down, right (int): direction the maze moving
+        rotatex, rotatey: grids rotated
+        bullets (list of Bullet): bullets flying
+        enemies (list of Enemy): alive enemies
+        hero (Hero): the hero
+        slashd (float): minimum distance for slashes to be effective
+    """
     def __init__(self, size, fps):
         self.w, self.h = size
         self.fps = fps
         self.surface = pygame.display.set_mode(size, RESIZABLE)
         self.distance = (self.w * self.h / 416) ** 0.5
-        self.middlex, self.middley = self.x, self.y = self.w >> 1, self.h >> 1
+        self.x, self.y = self.w // 2, self.h // 2
+        self.centerx, self.centery = self.w / 2.0, self.h / 2.0
         w, h = (int(i/self.distance/2 + 2) for i in size)
         self.rangex = range(MIDDLE - w, MIDDLE + w + 1)
         self.rangey = range(MIDDLE - h, MIDDLE + h + 1)
@@ -90,8 +110,8 @@ class Maze:
 
     def pos(self, x, y):
         """Return coordinate of the center of the grid (x, y)."""
-        return (self.middlex + (x - MIDDLE)*self.distance,
-                self.middley + (y - MIDDLE)*self.distance)
+        return (self.centerx + (x - MIDDLE)*self.distance,
+                self.centery + (y - MIDDLE)*self.distance)
 
     def draw(self):
         """Draw the maze."""
@@ -103,36 +123,19 @@ class Maze:
                 square = regpoly(4, self.distance / SQRT2, pi / 4, x, y)
                 fill_aapolygon(self.surface, square, FG_COLOR)
 
-    def wake(self, enemy):
-        """Wake the enemy up if it can see the hero."""
-        dx = (enemy.x-MIDDLE)*self.distance + self.middlex - self.x
-        dy = (enemy.y-MIDDLE)*self.distance + self.middley - self.y
-        mind = cosin(abs(atan(dy / dx)) if dx else 0) * self.distance
-        startx = starty = MIDDLE
-        stopx, stopy = enemy.x, enemy.y
-        if startx > stopx : startx, stopx = stopx, startx
-        if starty > stopy : starty, stopy = stopy, starty
-        for i in range(startx, stopx + 1):
-            for j in range(starty, stopy + 1):
-                if self.map[i][j] != WALL: continue
-                x, y = self.pos(i, j)
-                d = abs(dy*(x-self.x) - dx*(y-self.y)) / (dy**2 + dx**2)**0.5
-                if d <= mind: return
-        enemy.awake = True
-
     def rotate(self):
         """Rotate the maze if needed."""
-        x = int((self.middlex-self.x) * 2 / self.distance)
-        y = int((self.middley-self.y) * 2 / self.distance)
+        x = int((self.centerx-self.x) * 2 / self.distance)
+        y = int((self.centery-self.y) * 2 / self.distance)
         if x == y == 0: return
         for enemy in self.enemies: self.map[enemy.x][enemy.y] = EMPTY
         self.map[MIDDLE][MIDDLE] = EMPTY
         if x:
-            self.middlex -= x * self.distance
+            self.centerx -= x * self.distance
             self.map.rotate(x)
             self.rotatex += x
         if y:
-            self.middley -= y * self.distance
+            self.centery -= y * self.distance
             for d in self.map: d.rotate(y)
             self.rotatey += y
         self.map[MIDDLE][MIDDLE] = HERO
@@ -174,7 +177,7 @@ class Maze:
         return ((self.x-x)**2 + (self.y-y)**2)**0.5
 
     def slash(self):
-        """Handle close-ranged attacks."""
+        """Handle close-range attacks."""
         for enemy in self.enemies:
             if not enemy.spin_queue: continue
             x, y = enemy.pos()
@@ -249,14 +252,13 @@ class Maze:
         if self.paused: return
         self.fps, step = fps, self.distance * HERO_SPEED / fps
         dx = step * self.right * self.isvalid(step, dx=self.right)
-        self.middlex += dx
+        self.centerx += dx
         dy = step * self.down * self.isvalid(step, dy=self.down)
-        self.middley += dy
+        self.centery += dy
 
         if dx or dy:
             self.rotate()
-            for enemy in self.enemies:
-                if not enemy.awake: self.wake(enemy)
+            for enemy in self.enemies: enemy.wake()
             for bullet in self.bullets: bullet.place(dx, dy)
 
         self.draw()
@@ -275,12 +277,12 @@ class Maze:
         self.surface = pygame.display.set_mode(size, RESIZABLE)
         self.hero.resize()
 
-        offsetx = (self.middlex-self.x) / self.distance
-        offsety = (self.middley-self.y) / self.distance
+        offsetx = (self.centerx-self.x) / self.distance
+        offsety = (self.centery-self.y) / self.distance
         self.distance = (w * h / 416) ** 0.5
-        self.x, self.y = w >> 1, h >> 1
-        self.middlex = self.x + offsetx*self.distance
-        self.middley = self.y + offsety*self.distance
+        self.x, self.y = w // 2, h // 2
+        self.centerx = self.x + offsetx*self.distance
+        self.centery = self.y + offsety*self.distance
         w, h = int(w/self.distance/2 + 2), int(h/self.distance/2 + 2)
         self.rangex = range(MIDDLE - w, MIDDLE + w + 1)
         self.rangey = range(MIDDLE - h, MIDDLE + h + 1)

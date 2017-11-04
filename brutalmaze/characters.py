@@ -20,18 +20,33 @@
 __doc__ = 'brutalmaze module for hero and enemy classes'
 
 from collections import deque
-from math import atan2, sin, pi
+from math import atan, atan2, sin, pi
 from random import choice, shuffle, uniform
 
 import pygame
 
 from .constants import *
-from .utils import randsign, regpoly, fill_aapolygon, sign
+from .utils import sign, cosin, randsign, regpoly, fill_aapolygon
 from .weapons import Bullet
 
 
 class Hero:
-    """Object representing the hero."""
+    """Object representing the hero.
+
+    Attributes:
+        surface (pygame.Surface): the display to draw on
+        x, y (int): coordinates of the center of the hero (in pixels)
+        angle (float): angle of the direction the hero pointing (in radians)
+        color (tuple of pygame.Color): colors of the hero on different HPs
+        R (int): circumradius of the regular triangle representing the hero
+        next_strike (int): the tick that the hero can do the next attack
+        slashing (bool): flag indicates if the hero is doing close-range attack
+        firing (bool): flag indicates if the hero is doing long-range attack
+        dead (bool): flag indicates if the hero is dead
+        spin_speed (float): speed of spinning (in frames per slash)
+        spin_queue (float): frames left to finish spinning
+        wound (float): amount of wound
+    """
     def __init__(self, surface, fps):
         self.surface = surface
         w, h = self.surface.get_width(), self.surface.get_height()
@@ -82,15 +97,29 @@ class Hero:
 
 
 class Enemy:
-    """Object representing an enemy."""
+    """Object representing an enemy.
+
+    Attributes:
+        maze (Maze): the maze
+        x, y (int): coordinates of the center of the enemy (in grids)
+        angle (float): angle of the direction the enemy pointing (in radians)
+        color (tuple of pygame.Color): colors of the enemy on different HPs
+        awake (bool): flag indicates if the enemy is active
+        next_strike (int): the tick that the enemy can do the next attack
+        move_speed (float): speed of movement (in frames per grid)
+        offsetx, offsety (integer): steps moved from the center of the grid
+        spin_speed (float): speed of spinning (in frames per slash)
+        spin_queue (float): frames left to finish spinning
+        wound (float): amount of wound
+    """
     def __init__(self, maze, x, y):
         self.maze = maze
-        self.angle, self.color = pi / 4, TANGO[choice(ENEMIES)]
         self.x, self.y = x, y
         self.maze.map[x][y] = ENEMY
+        self.angle, self.color = pi / 4, TANGO[choice(ENEMIES)]
 
         self.awake = False
-        self.next_move = 0
+        self.next_strike = 0
         self.move_speed = self.maze.fps / ENEMY_SPEED
         self.offsetx = self.offsety = 0
         self.spin_speed = self.maze.fps / ENEMY_HP
@@ -108,15 +137,33 @@ class Enemy:
         self.y += y
         self.maze.map[self.x][self.y] = ENEMY
 
+    def wake(self):
+        """Wake the enemy up if it can see the hero."""
+        if self.awake: return
+        startx = starty = MIDDLE
+        stopx, stopy, distance = self.x, self.y, self.maze.distance
+        if startx > stopx: startx, stopx = stopx, startx
+        if starty > stopy: starty, stopy = stopy, starty
+        dx = (self.x-MIDDLE)*distance + self.maze.centerx - self.maze.x
+        dy = (self.y-MIDDLE)*distance + self.maze.centery - self.maze.y
+        mind = cosin(abs(atan(dy / dx)) if dx else 0) * distance
+        def length(x, y): return abs(dy*x - dx*y) / (dy**2 + dx**2)**0.5
+        for i in range(startx, stopx + 1):
+            for j in range(starty, stopy + 1):
+                if self.maze.map[i][j] != WALL: continue
+                x, y = self.maze.pos(i, j)
+                if length(x - self.maze.x, y - self.maze.y) <= mind: return
+        self.awake = True
+
     def fire(self):
         """Return True if the enemy shot the hero, False otherwise."""
         x, y = self.pos()
         if (self.maze.length(x, y) > FIRANGE*self.maze.distance
-            or self.next_move > pygame.time.get_ticks()
+            or self.next_strike > pygame.time.get_ticks()
             or (self.x, self.y) in AROUND_HERO or self.offsetx or self.offsety
             or uniform(-2, 2) < (INIT_SCORE/self.maze.score) ** 2):
             return False
-        self.next_move = pygame.time.get_ticks() + ATTACK_SPEED
+        self.next_strike = pygame.time.get_ticks() + ATTACK_SPEED
         self.maze.bullets.append(Bullet(
             self.maze.surface, x, y,
             atan2(self.maze.y - y, self.maze.x - x), self.color[0]))
