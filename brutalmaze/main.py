@@ -50,8 +50,8 @@ def main():
         if not maze.hero.dead:
             keys = pygame.key.get_pressed()
             buttons = pygame.mouse.get_pressed()
-            maze.right = some(keys, LEFT) - some(keys, RIGHT)
-            maze.down = some(keys, UP) - some(keys, DOWN)
+            maze.move(some(keys, LEFT) - some(keys, RIGHT),
+                      some(keys, UP) - some(keys, DOWN), fps)
             maze.hero.slashing = keys[K_RETURN] or buttons[2]
             maze.hero.firing = buttons[0]
 

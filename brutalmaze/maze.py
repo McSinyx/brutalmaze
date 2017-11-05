@@ -66,7 +66,7 @@ class Maze:
         paused (bool): flag indicates if the game is paused
         score (float): current score
         map (deque of deque): map of grids representing objects on the maze
-        down, right (int): direction the maze moving
+        vx, vy (float): velocity of the maze movement (in pixels per frame)
         rotatex, rotatey: grids rotated
         bullets (list of Bullet): bullets flying
         enemies (list of Enemy): alive enemies
@@ -87,7 +87,7 @@ class Maze:
 
         self.map = deque()
         for _ in range(MAZE_SIZE): self.map.extend(new_column())
-        self.down = self.right = 0
+        self.vx = self.vy = 0.0
         self.rotatex = self.rotatey = 0
         self.bullets, self.enemies = [], []
         self.add_enemy()
@@ -233,27 +233,27 @@ class Maze:
                 fallen.append(i)
         for i in reversed(fallen): self.bullets.pop(i)
 
-    def isvalid(self, step, dx=0, dy=0):
-        """Return True if it is valid to move by (dx, dy) (in steps),
-        False otherwise.
+    def valid_move(self, vx=0.0, vy=0.0):
+        """Return dx or dy if it it valid to move the maze in that
+        velocity, otherwise return 0.0.
         """
         d = self.distance/2 + self.hero.R
-        herox, heroy = self.x - step*dx, self.y - step*dy
+        herox, heroy, dx, dy = self.x - vx, self.y - vy, sign(vx), sign(vy)
         for x in range(MIDDLE - dx - 1, MIDDLE - dx + 2):
             for y in range(MIDDLE - dy - 1, MIDDLE - dy + 2):
                 gridx, gridy = self.pos(x, y)
                 if (max(abs(herox - gridx), abs(heroy - gridy)) < d
                     and self.map[x][y] == WALL):
-                    return False
-        return True
+                    return 0.0
+        return vx or vy
 
     def update(self, fps):
         """Update the maze."""
         if self.paused: return
-        self.fps, step = fps, self.distance * HERO_SPEED / fps
-        dx = step * self.right * self.isvalid(step, dx=self.right)
+        self.fps = fps
+        dx = self.valid_move(vx=self.vx)
         self.centerx += dx
-        dy = step * self.down * self.isvalid(step, dy=self.down)
+        dy = self.valid_move(vy=self.vy)
         self.centery += dy
 
         if dx or dy:
@@ -270,6 +270,27 @@ class Maze:
         pygame.display.set_caption('Brutal Maze - Score: {}'.format(
             int(self.score - INIT_SCORE)))
         if self.hero.wound + 1 > HERO_HP: self.lose()
+
+    def move(self, x, y, fps):
+        """Command the hero to move faster in the given direction."""
+        velocity = self.distance * HERO_SPEED / fps
+        accel = velocity * HERO_SPEED / fps
+        if not x:
+            self.vx -= sign(self.vx) * accel
+            if abs(self.vx) < accel: self.vx = 0.0
+        elif x * self.vx < 0:
+            self.vx += x * 2 * accel
+        else:
+            self.vx += x * accel
+            if abs(self.vx) > velocity: self.vx = x * velocity
+        if not y:
+            self.vy -= sign(self.vy) * accel
+            if abs(self.vy) < accel: self.vy = 0.0
+        elif y * self.vy < 0:
+            self.vy += y * 2 * accel
+        else:
+            self.vy += y * accel
+            if abs(self.vy) > velocity: self.vy = y * velocity
 
     def resize(self, w, h):
         """Resize the maze."""
@@ -291,4 +312,4 @@ class Maze:
     def lose(self):
         """Handle loses."""
         self.hero.die()
-        self.down = self.right = 0
+        self.vx = self.vy = 0.0
