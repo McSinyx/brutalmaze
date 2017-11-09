@@ -21,7 +21,7 @@ __doc__ = 'brutalmaze module for hero and enemy classes'
 
 from collections import deque
 from math import atan, atan2, sin, pi
-from random import choice, shuffle, uniform
+from random import choice, randrange, shuffle
 
 import pygame
 
@@ -161,7 +161,7 @@ class Enemy:
         if (self.maze.length(x, y) > FIRANGE*self.maze.distance
             or self.next_strike > pygame.time.get_ticks()
             or (self.x, self.y) in AROUND_HERO or self.offsetx or self.offsety
-            or uniform(-2, 2) < (INIT_SCORE/self.maze.score) ** 2):
+            or randrange((self.maze.hero.slashing+self.maze.isfast()+1) * 3)):
             return False
         self.next_strike = pygame.time.get_ticks() + ATTACK_SPEED
         self.maze.bullets.append(Bullet(
@@ -180,6 +180,7 @@ class Enemy:
         if self.offsety:
             self.offsety -= sign(self.offsety)
             return True
+        if self.next_strike > pygame.time.get_ticks(): return False
 
         self.move_speed = self.maze.fps / ENEMY_SPEED
         directions = [(sign(MIDDLE - self.x), 0), (0, sign(MIDDLE - self.y))]

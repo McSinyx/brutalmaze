@@ -1,8 +1,8 @@
 Brutal Maze
 ===========
 
-Brutal Maze is a research hash and slash game with fast-paced action and a
-minimalist art style.
+Brutal Maze is a hash and slash game with fast-paced action and a minimalist
+art style.
 
 .. image:: https://raw.githubusercontent.com/McSinyx/brutalmaze/master/screenshot.png
 

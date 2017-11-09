@@ -239,12 +239,17 @@ class Maze:
         """
         d = self.distance/2 + self.hero.R
         herox, heroy, dx, dy = self.x - vx, self.y - vy, sign(vx), sign(vy)
-        for x in range(MIDDLE - dx - 1, MIDDLE - dx + 2):
-            for y in range(MIDDLE - dy - 1, MIDDLE - dy + 2):
-                gridx, gridy = self.pos(x, y)
-                if (max(abs(herox - gridx), abs(heroy - gridy)) < d
-                    and self.map[x][y] == WALL):
+        for gridx in range(MIDDLE - dx - 1, MIDDLE - dx + 2):
+            for gridy in range(MIDDLE - dy - 1, MIDDLE - dy + 2):
+                x, y = self.pos(gridx, gridy)
+                if (max(abs(herox - x), abs(heroy - y)) < d
+                    and self.map[gridx][gridy] == WALL):
                     return 0.0
+        for enemy in self.enemies:
+            x, y = self.pos(enemy.x, enemy.y)
+            if (max(abs(herox - x), abs(heroy - y)) * 2 < self.distance
+                and enemy.awake):
+                return 0.0
         return vx or vy
 
     def update(self, fps):
@@ -277,7 +282,7 @@ class Maze:
         accel = velocity * HERO_SPEED / fps
         if not x:
             self.vx -= sign(self.vx) * accel
-            if abs(self.vx) < accel: self.vx = 0.0
+            if abs(self.vx) < accel * 2: self.vx = 0.0
         elif x * self.vx < 0:
             self.vx += x * 2 * accel
         else:
@@ -285,7 +290,7 @@ class Maze:
             if abs(self.vx) > velocity: self.vx = x * velocity
         if not y:
             self.vy -= sign(self.vy) * accel
-            if abs(self.vy) < accel: self.vy = 0.0
+            if abs(self.vy) < accel * 2: self.vy = 0.0
         elif y * self.vy < 0:
             self.vy += y * 2 * accel
         else:
@@ -308,6 +313,10 @@ class Maze:
         self.rangex = range(MIDDLE - w, MIDDLE + w + 1)
         self.rangey = range(MIDDLE - h, MIDDLE + h + 1)
         self.slashd = self.hero.R + self.distance/SQRT2
+
+    def isfast(self):
+        """Return if the hero is moving faster than HERO_SPEED."""
+        return (self.vx**2+self.vy**2)**0.5*self.fps > HERO_SPEED*self.distance
 
     def lose(self):
         """Handle loses."""
