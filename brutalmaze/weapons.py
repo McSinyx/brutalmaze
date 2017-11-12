@@ -23,7 +23,7 @@ from math import cos, sin
 
 from pygame.time import get_ticks
 
-from .constants import BULLET_LIFETIME, BULLET_SPEED
+from .constants import BULLET_LIFETIME, BULLET_SPEED, ENEMY_HP, TANGO
 from .utils import regpoly, fill_aapolygon
 
 
@@ -34,7 +34,7 @@ class Bullet:
         surface (pygame.Surface): the display to draw on
         x, y (int): coordinates of the center of the bullet (in pixels)
         angle (float): angle of the direction the bullet pointing (in radians)
-        color (pygame.Color): color of the bullet
+        color (str): bullet's color name
         fall_time (int): the tick that the bullet will fall down
     """
     def __init__(self, surface, x, y, angle, color):
@@ -47,8 +47,12 @@ class Bullet:
         s = distance * BULLET_SPEED / fps
         self.x += s * cos(self.angle)
         self.y += s * sin(self.angle)
-        hexagon = regpoly(5, distance // 4, self.angle, self.x, self.y)
-        fill_aapolygon(self.surface, hexagon, self.color)
+        pentagon = regpoly(5, distance // 4, self.angle, self.x, self.y)
+        value = int((1-(self.fall_time-get_ticks())/BULLET_LIFETIME)*ENEMY_HP)
+        try:
+            fill_aapolygon(self.surface, pentagon, TANGO[self.color][value])
+        except IndexError:
+            pass
 
     def place(self, x, y):
         """Move the bullet by (x, y) (in pixels)."""

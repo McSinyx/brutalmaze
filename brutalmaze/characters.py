@@ -22,11 +22,12 @@ __doc__ = 'brutalmaze module for hero and enemy classes'
 from collections import deque
 from math import atan, atan2, sin, pi
 from random import choice, randrange, shuffle
+from sys import modules
 
 import pygame
 
 from .constants import *
-from .utils import sign, cosin, randsign, regpoly, fill_aapolygon
+from .utils import sign, cosin, randsign, regpoly, fill_aapolygon, choices
 from .weapons import Bullet
 
 
@@ -52,7 +53,7 @@ class Hero:
         w, h = self.surface.get_width(), self.surface.get_height()
         self.x, self.y = w >> 1, h >> 1
         self.angle, self.color = pi / 4, TANGO['Aluminium']
-        self.R = int((w * h / sin(pi*2/3) / 624) ** 0.5)
+        self.R = (w * h / sin(pi*2/3) / 624) ** 0.5
 
         self.next_strike = 0
         self.slashing = self.firing = self.dead = False
@@ -103,7 +104,7 @@ class Enemy:
         maze (Maze): the maze
         x, y (int): coordinates of the center of the enemy (in grids)
         angle (float): angle of the direction the enemy pointing (in radians)
-        color (tuple of pygame.Color): colors of the enemy on different HPs
+        color (str): enemy's color name
         awake (bool): flag indicates if the enemy is active
         next_strike (int): the tick that the enemy can do the next attack
         move_speed (float): speed of movement (in frames per grid)
@@ -112,11 +113,11 @@ class Enemy:
         spin_queue (float): frames left to finish spinning
         wound (float): amount of wound
     """
-    def __init__(self, maze, x, y):
+    def __init__(self, maze, x, y, color):
         self.maze = maze
         self.x, self.y = x, y
         self.maze.map[x][y] = ENEMY
-        self.angle, self.color = pi / 4, TANGO[choice(ENEMIES)]
+        self.angle, self.color = pi / 4, color
 
         self.awake = False
         self.next_strike = 0
@@ -138,8 +139,12 @@ class Enemy:
         self.maze.map[self.x][self.y] = ENEMY
 
     def wake(self):
-        """Wake the enemy up if it can see the hero."""
-        if self.awake: return
+        """Wake the enemy up if it can see the hero.
+
+        Return None if the enemy is already awake, True if the function
+        has just woken it, False otherwise.
+        """
+        if self.awake: return None
         startx = starty = MIDDLE
         stopx, stopy, distance = self.x, self.y, self.maze.distance
         if startx > stopx: startx, stopx = stopx, startx
@@ -152,11 +157,13 @@ class Enemy:
             for j in range(starty, stopy + 1):
                 if self.maze.map[i][j] != WALL: continue
                 x, y = self.maze.pos(i, j)
-                if length(x - self.maze.x, y - self.maze.y) <= mind: return
+                if length(x - self.maze.x, y - self.maze.y) <= mind:
+                    return False
         self.awake = True
+        return True
 
     def fire(self):
-        """Return True if the enemy shot the hero, False otherwise."""
+        """Return True if the enemy has just fired, False otherwise."""
         x, y = self.pos()
         if (self.maze.length(x, y) > FIRANGE*self.maze.distance
             or self.next_strike > pygame.time.get_ticks()
@@ -166,14 +173,11 @@ class Enemy:
         self.next_strike = pygame.time.get_ticks() + ATTACK_SPEED
         self.maze.bullets.append(Bullet(
             self.maze.surface, x, y,
-            atan2(self.maze.y - y, self.maze.x - x), self.color[0]))
+            atan2(self.maze.y - y, self.maze.x - x), self.color))
         return True
 
     def move(self):
-        """Handle the movement of the enemy.
-
-        Return True if it moved, False otherwise.
-        """
+        """Return True if it has just moved, False otherwise."""
         if self.offsetx:
             self.offsetx -= sign(self.offsetx)
             return True
@@ -195,6 +199,13 @@ class Enemy:
                 return True
         return False
 
+    def draw(self):
+        """Draw the enemy."""
+        radious = self.maze.distance/SQRT2 - self.awake*2
+        square = regpoly(4, radious, self.angle, *self.pos())
+        color = TANGO[self.color][int(self.wound)] if self.awake else FG_COLOR
+        fill_aapolygon(self.maze.surface, square, color)
+
     def update(self):
         """Update the enemy."""
         if self.awake:
@@ -207,15 +218,85 @@ class Enemy:
                 self.spin_queue -= sign(self.spin_queue)
             else:
                 self.angle, self.spin_queue = pi / 4, 0.0
-        radious = self.maze.distance/SQRT2 - self.awake*2
-        square = regpoly(4, radious, self.angle, *self.pos())
-        color = self.color[int(self.wound)] if self.awake else FG_COLOR
-        fill_aapolygon(self.maze.surface, square, color)
+        self.draw()
 
     def hit(self, wound):
-        """Handle the enemy when it's hit by a bullet."""
+        """Handle the enemy when it's attacked."""
         self.wound += wound
 
     def die(self):
         """Handle the enemy's death."""
-        self.maze.map[self.x][self.y] = EMPTY if self.awake else WALL
+        if self.awake:
+            self.maze.map[self.x][self.y] = EMPTY
+            if self.maze.enemy_weights[self.color] > INIT_WEIGHT:
+                self.maze.enemy_weights[self.color] -= 1
+        else:
+            self.maze.map[self.x][self.y] = WALL
+
+
+class Butter(Enemy):
+    """Object representing an enemy of Butter type."""
+    def __init__(self, maze, x, y):
+        Enemy.__init__(self, maze, x, y, 'Butter')
+
+
+class Orange(Enemy):
+    """Object representing an enemy of Orange type."""
+    def __init__(self, maze, x, y):
+        Enemy.__init__(self, maze, x, y, 'Orange')
+
+
+class Chocolate(Enemy):
+    """Object representing an enemy of Chocolate type."""
+    def __init__(self, maze, x, y):
+        Enemy.__init__(self, maze, x, y, 'Chocolate')
+
+
+class Chameleon(Enemy):
+    """Object representing an enemy of Chameleon type.
+
+    Additional attributes:
+        visible (int): the tick until which the Chameleon is visible
+    """
+    def __init__(self, maze, x, y):
+        Enemy.__init__(self, maze, x, y, 'Chameleon')
+        self.visible = 0
+
+    def wake(self):
+        """Wake the Chameleon up if it can see the hero."""
+        if Enemy.wake(self) is True:
+            self.visible = pygame.time.get_ticks() + 1000//ENEMY_SPEED
+
+    def draw(self):
+        """Draw the Chameleon."""
+        if not self.awake or pygame.time.get_ticks() <= self.visible:
+            Enemy.draw(self)
+
+    def hit(self, wound):
+        """Handle the Chameleon when it's hit by a bullet."""
+        self.visible = pygame.time.get_ticks() + 1000//ENEMY_SPEED
+        self.wound += wound
+
+
+class SkyBlue(Enemy):
+    """Object representing an enemy of Sky Blue type."""
+    def __init__(self, maze, x, y):
+        Enemy.__init__(self, maze, x, y, 'SkyBlue')
+
+
+class Plum(Enemy):
+    """Object representing an enemy of Plum type."""
+    def __init__(self, maze, x, y):
+        Enemy.__init__(self, maze, x, y, 'Plum')
+
+
+class ScarletRed(Enemy):
+    """Object representing an enemy of Scarlet Red type."""
+    def __init__(self, maze, x, y):
+        Enemy.__init__(self, maze, x, y, 'ScarletRed')
+
+
+def new_enemy(maze, x, y):
+    """Return an enemy of a random type in the grid (x, y)."""
+    color = choices(maze.enemy_weights)
+    return getattr(modules[__name__], color)(maze, x, y)

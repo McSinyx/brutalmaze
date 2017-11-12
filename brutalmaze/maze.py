@@ -26,7 +26,7 @@ from random import choice, getrandbits
 import pygame
 from pygame import RESIZABLE
 
-from .characters import Hero, Enemy
+from .characters import Hero, new_enemy
 from .constants import *
 from .utils import round2, sign, regpoly, fill_aapolygon
 from .weapons import Bullet
@@ -69,6 +69,7 @@ class Maze:
         vx, vy (float): velocity of the maze movement (in pixels per frame)
         rotatex, rotatey: grids rotated
         bullets (list of Bullet): bullets flying
+        enemy_weights (dict): probabilities of enemies to be created
         enemies (list of Enemy): alive enemies
         hero (Hero): the hero
         slashd (float): minimum distance for slashes to be effective
@@ -90,6 +91,7 @@ class Maze:
         self.vx = self.vy = 0.0
         self.rotatex = self.rotatey = 0
         self.bullets, self.enemies = [], []
+        self.enemy_weights = {color: INIT_WEIGHT for color in ENEMIES}
         self.add_enemy()
         self.hero = Hero(self.surface, fps)
         self.map[MIDDLE][MIDDLE] = HERO
@@ -105,7 +107,7 @@ class Maze:
             x, y = choice(walls)
             if all(self.map[x + a][y + b] == WALL for a, b in ADJACENT_GRIDS):
                 continue
-            self.enemies.append(Enemy(self, x, y))
+            self.enemies.append(new_enemy(self, x, y))
             walls.remove((x, y))
 
     def pos(self, x, y):
@@ -176,6 +178,11 @@ class Maze:
         """
         return ((self.x-x)**2 + (self.y-y)**2)**0.5
 
+    def hit(self, wound, color):
+        """Handle the hero when he loses HP."""
+        self.hero.wound += wound
+        self.enemy_weights[color] += wound
+
     def slash(self):
         """Handle close-range attacks."""
         for enemy in self.enemies:
@@ -183,7 +190,7 @@ class Maze:
             x, y = enemy.pos()
             d = self.slashd - self.length(x, y)
             if d >= 0:
-                self.hero.wound += d / self.hero.R / enemy.spin_speed
+                self.hit(d / self.hero.R / enemy.spin_speed, enemy.color)
 
         if not self.hero.spin_queue: return
         unit, killist = self.distance/SQRT2 * self.hero.spin_speed, []
@@ -206,13 +213,13 @@ class Maze:
             and time >= self.hero.next_strike):
             self.hero.next_strike = time + ATTACK_SPEED
             self.bullets.append(Bullet(self.surface, self.x, self.y,
-                                       self.hero.angle, FG_COLOR))
+                                       self.hero.angle, 'Aluminium'))
         for i, bullet in enumerate(self.bullets):
             wound = float(bullet.fall_time-time) / BULLET_LIFETIME
             bullet.update(self.fps, self.distance)
             if wound < 0:
                 fallen.append(i)
-            elif bullet.color == FG_COLOR:
+            elif bullet.color == 'Aluminium':
                 x = MIDDLE + round2((bullet.x-self.x) / self.distance)
                 y = MIDDLE + round2((bullet.y-self.y) / self.distance)
                 if self.map[x][y] == WALL:
@@ -229,7 +236,7 @@ class Maze:
                         fallen.append(i)
                         break
             elif bullet.length(self.x, self.y) < self.distance:
-                if not self.hero.spin_queue: self.hero.wound += wound
+                if not self.hero.spin_queue: self.hit(wound, bullet.color)
                 fallen.append(i)
         for i in reversed(fallen): self.bullets.pop(i)
 

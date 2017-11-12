@@ -22,6 +22,7 @@ __doc__ = 'brutalmaze module for hero and enemy classes'
 from functools import reduce
 from math import cos, sin, pi
 from operator import or_
+from random import uniform
 
 import pygame
 from pygame.gfxdraw import filled_polygon, aapolygon
@@ -68,3 +69,15 @@ def sign(n):
 def cosin(x):
     """Return the sum of cosine and sine of x (measured in radians)."""
     return cos(x) + sin(x)
+
+
+def choices(d):
+    """Choose a random key from a dict which has values being relative
+    weights of the coresponding keys.
+    """
+    population, weights = tuple(d.keys()), tuple(d.values())
+    cum_weights = [weights[0]]
+    for weight in weights[1:]: cum_weights.append(cum_weights[-1] + weight)
+    num = uniform(0, cum_weights[-1])
+    for i, w in enumerate(cum_weights):
+        if num <= w: return population[i]

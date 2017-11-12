@@ -57,13 +57,14 @@ TANGO = {'Butter': ((252, 233, 79), (237, 212, 0), (196, 160, 0)),
          'Orange': ((252, 175, 62), (245, 121, 0), (206, 92, 0)),
          'Chocolate': ((233, 185, 110), (193, 125, 17), (143, 89, 2)),
          'Chameleon': ((138, 226, 52), (115, 210, 22), (78, 154, 6)),
-         'Sky Blue': ((114, 159, 207), (52, 101, 164), (32, 74, 135)),
+         'SkyBlue': ((114, 159, 207), (52, 101, 164), (32, 74, 135)),
          'Plum': ((173, 127, 168), (117, 80, 123), (92, 53, 102)),
-         'Scarlet Red': ((239, 41, 41), (204, 0, 0), (164, 0, 0)),
+         'ScarletRed': ((239, 41, 41), (204, 0, 0), (164, 0, 0)),
          'Aluminium': ((238, 238, 236), (211, 215, 207), (186, 189, 182),
                        (136, 138, 133), (85, 87, 83), (46, 52, 54))}
-ENEMIES = ('Butter', 'Orange', 'Chocolate', 'Chameleon',
-           'Sky Blue', 'Plum', 'Scarlet Red')
+ENEMIES = ['Butter', 'Orange', 'Chocolate', 'Chameleon',
+           'SkyBlue', 'Plum', 'ScarletRed']
+INIT_WEIGHT = 11.25
 ENEMY_HP = 3
 HERO_HP = 6
 BG_COLOR = TANGO['Aluminium'][-1]
