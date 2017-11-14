@@ -176,7 +176,7 @@ class Enemy:
             atan2(self.maze.y - y, self.maze.x - x), self.color))
         return True
 
-    def move(self):
+    def move(self, speed=ENEMY_SPEED):
         """Return True if it has just moved, False otherwise."""
         if self.offsetx:
             self.offsetx -= sign(self.offsetx)
@@ -186,7 +186,7 @@ class Enemy:
             return True
         if self.next_strike > pygame.time.get_ticks(): return False
 
-        self.move_speed = self.maze.fps / ENEMY_SPEED
+        self.move_speed = self.maze.fps / speed
         directions = [(sign(MIDDLE - self.x), 0), (0, sign(MIDDLE - self.y))]
         shuffle(directions)
         directions.append(choice(CROSS))
@@ -198,6 +198,14 @@ class Enemy:
                 self.place(x, y)
                 return True
         return False
+
+    def slash(self):
+        """Handle the enemy's close-range attack."""
+        if not self.spin_queue: return
+        x, y = self.pos()
+        d = self.maze.slashd - self.maze.length(x, y)
+        if d >= 0:
+            self.maze.hit(d / self.maze.hero.R / self.spin_speed, self.color)
 
     def draw(self):
         """Draw the enemy."""
@@ -294,6 +302,24 @@ class ScarletRed(Enemy):
     """Object representing an enemy of Scarlet Red type."""
     def __init__(self, maze, x, y):
         Enemy.__init__(self, maze, x, y, 'ScarletRed')
+
+    def fire(self):
+        """Scarlet Red doesn't shoot."""
+        return False
+
+    def move(self):
+        return Enemy.move(self, ENEMY_SPEED * SQRT2)
+
+    def slash(self):
+        """Handle the Scarlet Red's close-range attack."""
+        if not self.spin_queue: return
+        x, y = self.pos()
+        d = self.maze.slashd - self.maze.length(x, y)
+        wound = d / self.maze.hero.R / self.spin_speed
+        if wound >= 0:
+            self.maze.hit(wound, self.color)
+            self.wound -= wound
+            if self.wound < 0: self.wound = 0.0
 
 
 def new_enemy(maze, x, y):

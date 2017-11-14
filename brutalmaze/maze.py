@@ -185,13 +185,7 @@ class Maze:
 
     def slash(self):
         """Handle close-range attacks."""
-        for enemy in self.enemies:
-            if not enemy.spin_queue: continue
-            x, y = enemy.pos()
-            d = self.slashd - self.length(x, y)
-            if d >= 0:
-                self.hit(d / self.hero.R / enemy.spin_speed, enemy.color)
-
+        for enemy in self.enemies: enemy.slash()
         if not self.hero.spin_queue: return
         unit, killist = self.distance/SQRT2 * self.hero.spin_speed, []
         for i, enemy in enumerate(self.enemies):
