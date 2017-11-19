@@ -21,7 +21,7 @@ __doc__ = 'brutalmaze module for the maze class'
 
 from collections import deque
 from math import pi, atan2, log
-from random import choice, getrandbits
+from random import choice, getrandbits, uniform
 
 import pygame
 from pygame import RESIZABLE
@@ -72,6 +72,7 @@ class Maze:
         enemy_weights (dict): probabilities of enemies to be created
         enemies (list of Enemy): alive enemies
         hero (Hero): the hero
+        next_move (int): the tick that the hero gets mobilized
         slashd (float): minimum distance for slashes to be effective
     """
     def __init__(self, size, fps):
@@ -91,11 +92,11 @@ class Maze:
         self.vx = self.vy = 0.0
         self.rotatex = self.rotatey = 0
         self.bullets, self.enemies = [], []
-        self.enemy_weights = {color: INIT_WEIGHT for color in ENEMIES}
+        self.enemy_weights = {color: MINW for color in ENEMIES}
         self.add_enemy()
         self.hero = Hero(self.surface, fps)
         self.map[MIDDLE][MIDDLE] = HERO
-        self.slashd = self.hero.R + self.distance/SQRT2
+        self.next_move, self.slashd = 0, self.hero.R + self.distance/SQRT2
 
     def add_enemy(self):
         """Add enough enemies."""
@@ -180,8 +181,19 @@ class Maze:
 
     def hit(self, wound, color):
         """Handle the hero when he loses HP."""
-        self.hero.wound += wound
-        self.enemy_weights[color] += wound
+        fx = (uniform(0, sum(self.enemy_weights.values()))
+              < self.enemy_weights[color])
+        time = pygame.time.get_ticks()
+        if color == 'Butter' and fx:
+            self.hero.wound += 1.0
+        elif color == 'Orange' and fx:
+            self.hero.next_heal = max(self.hero.next_heal, time) + wound*1000
+        elif color == 'SkyBlue' and fx:
+            self.next_move = max(self.next_move, time) + wound*1000
+        else:
+            self.hero.wound += wound
+        if self.enemy_weights[color] + wound < MAXW:
+            self.enemy_weights[color] += wound
 
     def slash(self):
         """Handle close-range attacks."""
@@ -279,9 +291,10 @@ class Maze:
 
     def move(self, x, y, fps):
         """Command the hero to move faster in the given direction."""
+        stunned = pygame.time.get_ticks() < self.next_move
         velocity = self.distance * HERO_SPEED / fps
         accel = velocity * HERO_SPEED / fps
-        if not x:
+        if stunned or not x:
             self.vx -= sign(self.vx) * accel
             if abs(self.vx) < accel * 2: self.vx = 0.0
         elif x * self.vx < 0:
@@ -289,7 +302,7 @@ class Maze:
         else:
             self.vx += x * accel
             if abs(self.vx) > velocity: self.vx = x * velocity
-        if not y:
+        if stunned or not y:
             self.vy -= sign(self.vy) * accel
             if abs(self.vy) < accel * 2: self.vy = 0.0
         elif y * self.vy < 0:

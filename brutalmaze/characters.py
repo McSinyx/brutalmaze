@@ -40,6 +40,7 @@ class Hero:
         angle (float): angle of the direction the hero pointing (in radians)
         color (tuple of pygame.Color): colors of the hero on different HPs
         R (int): circumradius of the regular triangle representing the hero
+        next_heal (int): the tick that the hero gains back healing ability
         next_strike (int): the tick that the hero can do the next attack
         slashing (bool): flag indicates if the hero is doing close-range attack
         firing (bool): flag indicates if the hero is doing long-range attack
@@ -55,7 +56,7 @@ class Hero:
         self.angle, self.color = pi / 4, TANGO['Aluminium']
         self.R = (w * h / sin(pi*2/3) / 624) ** 0.5
 
-        self.next_strike = 0
+        self.next_heal = self.next_strike = 0
         self.slashing = self.firing = self.dead = False
         self.spin_speed = fps / HERO_HP
         self.spin_queue = self.wound = 0.0
@@ -65,8 +66,9 @@ class Hero:
         old_speed, time = self.spin_speed, pygame.time.get_ticks()
         self.spin_speed = fps / (HERO_HP-self.wound**0.5)
         self.spin_queue *= self.spin_speed / old_speed
-        if not self.dead: self.wound -= HEAL_SPEED / self.spin_speed / HERO_HP
-        if self.wound < 0: self.wound = 0.0
+        if not self.dead and time > self.next_heal:
+            self.wound -= HEAL_SPEED / self.spin_speed / HERO_HP
+            if self.wound < 0: self.wound = 0.0
 
         if self.slashing and time >= self.next_strike:
             self.next_strike = time + ATTACK_SPEED
@@ -200,12 +202,14 @@ class Enemy:
         return False
 
     def slash(self):
-        """Handle the enemy's close-range attack."""
-        if not self.spin_queue: return
-        x, y = self.pos()
-        d = self.maze.slashd - self.maze.length(x, y)
-        if d >= 0:
-            self.maze.hit(d / self.maze.hero.R / self.spin_speed, self.color)
+        """Return the enemy's close-range damage."""
+        if self.spin_queue:
+            d = self.maze.slashd - self.maze.length(*self.pos())
+            wound = d / self.maze.hero.R / self.spin_speed
+            if wound >= 0:
+                self.maze.hit(wound, self.color)
+                return wound
+        return 0.0
 
     def draw(self):
         """Draw the enemy."""
@@ -236,8 +240,8 @@ class Enemy:
         """Handle the enemy's death."""
         if self.awake:
             self.maze.map[self.x][self.y] = EMPTY
-            if self.maze.enemy_weights[self.color] > INIT_WEIGHT:
-                self.maze.enemy_weights[self.color] -= 1
+            if self.maze.enemy_weights[self.color] > MINW + 1.5:
+                self.maze.enemy_weights[self.color] -= 1.5
         else:
             self.maze.map[self.x][self.y] = WALL
 
@@ -312,14 +316,8 @@ class ScarletRed(Enemy):
 
     def slash(self):
         """Handle the Scarlet Red's close-range attack."""
-        if not self.spin_queue: return
-        x, y = self.pos()
-        d = self.maze.slashd - self.maze.length(x, y)
-        wound = d / self.maze.hero.R / self.spin_speed
-        if wound >= 0:
-            self.maze.hit(wound, self.color)
-            self.wound -= wound
-            if self.wound < 0: self.wound = 0.0
+        self.wound -= Enemy.slash(self)
+        if self.wound < 0: self.wound = 0.0
 
 
 def new_enemy(maze, x, y):

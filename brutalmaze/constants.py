@@ -45,8 +45,6 @@ BULLET_SPEED = 15   # grid/s
 ATTACK_SPEED = 333  # ms/strike
 FIRANGE = 6     # grids
 BULLET_LIFETIME = 1000.0 * FIRANGE / (BULLET_SPEED-HERO_SPEED)  # ms
-FIRE_DAM = 1# / SQRT2    # HP
-
 EMPTY, WALL, HERO, ENEMY = range(4)
 ADJACENT_GRIDS = (1, 0), (0, 1), (-1, 0), (0, -1)
 CROSS = ADJACENT_GRIDS + ((0, 0),)
@@ -64,7 +62,7 @@ TANGO = {'Butter': ((252, 233, 79), (237, 212, 0), (196, 160, 0)),
                        (136, 138, 133), (85, 87, 83), (46, 52, 54))}
 ENEMIES = ['Butter', 'Orange', 'Chocolate', 'Chameleon',
            'SkyBlue', 'Plum', 'ScarletRed']
-INIT_WEIGHT = 11.25
+MINW, MAXW = 24, 36
 ENEMY_HP = 3
 HERO_HP = 6
 BG_COLOR = TANGO['Aluminium'][-1]
