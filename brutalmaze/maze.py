@@ -108,8 +108,15 @@ class Maze:
             x, y = choice(walls)
             if all(self.map[x + a][y + b] == WALL for a, b in ADJACENT_GRIDS):
                 continue
-            self.enemies.append(new_enemy(self, x, y))
-            walls.remove((x, y))
+            enemy = new_enemy(self, x, y)
+            self.enemies.append(enemy)
+            if enemy.color == 'Plum':
+                for e in self.enemies:
+                    if e.color == 'Plum' and e.awake: x, y = e.x, e.y
+            try:
+                walls.remove((x, y))
+            except ValueError:
+                enemy.x, enemy.y = x, y
 
     def pos(self, x, y):
         """Return coordinate of the center of the grid (x, y)."""

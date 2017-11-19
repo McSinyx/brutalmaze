@@ -246,24 +246,6 @@ class Enemy:
             self.maze.map[self.x][self.y] = WALL
 
 
-class Butter(Enemy):
-    """Object representing an enemy of Butter type."""
-    def __init__(self, maze, x, y):
-        Enemy.__init__(self, maze, x, y, 'Butter')
-
-
-class Orange(Enemy):
-    """Object representing an enemy of Orange type."""
-    def __init__(self, maze, x, y):
-        Enemy.__init__(self, maze, x, y, 'Orange')
-
-
-class Chocolate(Enemy):
-    """Object representing an enemy of Chocolate type."""
-    def __init__(self, maze, x, y):
-        Enemy.__init__(self, maze, x, y, 'Chocolate')
-
-
 class Chameleon(Enemy):
     """Object representing an enemy of Chameleon type.
 
@@ -290,18 +272,6 @@ class Chameleon(Enemy):
         self.wound += wound
 
 
-class SkyBlue(Enemy):
-    """Object representing an enemy of Sky Blue type."""
-    def __init__(self, maze, x, y):
-        Enemy.__init__(self, maze, x, y, 'SkyBlue')
-
-
-class Plum(Enemy):
-    """Object representing an enemy of Plum type."""
-    def __init__(self, maze, x, y):
-        Enemy.__init__(self, maze, x, y, 'Plum')
-
-
 class ScarletRed(Enemy):
     """Object representing an enemy of Scarlet Red type."""
     def __init__(self, maze, x, y):
@@ -323,4 +293,7 @@ class ScarletRed(Enemy):
 def new_enemy(maze, x, y):
     """Return an enemy of a random type in the grid (x, y)."""
     color = choices(maze.enemy_weights)
-    return getattr(modules[__name__], color)(maze, x, y)
+    try:
+        return getattr(modules[__name__], color)(maze, x, y)
+    except AttributeError:
+        return Enemy(maze, x, y, color)
