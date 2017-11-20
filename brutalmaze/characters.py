@@ -128,9 +128,9 @@ class Enemy:
         self.spin_speed = self.maze.fps / ENEMY_HP
         self.spin_queue = self.wound = 0.0
 
-    def pos(self):
+    def get_pos(self):
         """Return coordinate of the center of the enemy."""
-        x, y = self.maze.pos(self.x, self.y)
+        x, y = self.maze.get_pos(self.x, self.y)
         step = self.maze.distance * HERO_SPEED / self.maze.fps
         return x + self.offsetx*step, y + self.offsety*step
 
@@ -154,20 +154,20 @@ class Enemy:
         dx = (self.x-MIDDLE)*distance + self.maze.centerx - self.maze.x
         dy = (self.y-MIDDLE)*distance + self.maze.centery - self.maze.y
         mind = cosin(abs(atan(dy / dx)) if dx else 0) * distance
-        def length(x, y): return abs(dy*x - dx*y) / (dy**2 + dx**2)**0.5
+        def get_distance(x, y): return abs(dy*x - dx*y) / (dy**2 + dx**2)**0.5
         for i in range(startx, stopx + 1):
             for j in range(starty, stopy + 1):
                 if self.maze.map[i][j] != WALL: continue
-                x, y = self.maze.pos(i, j)
-                if length(x - self.maze.x, y - self.maze.y) <= mind:
+                x, y = self.maze.get_pos(i, j)
+                if get_distance(x - self.maze.x, y - self.maze.y) <= mind:
                     return False
         self.awake = True
         return True
 
     def fire(self):
         """Return True if the enemy has just fired, False otherwise."""
-        x, y = self.pos()
-        if (self.maze.length(x, y) > FIRANGE*self.maze.distance
+        x, y = self.get_pos()
+        if (self.maze.get_distance(x, y) > FIRANGE*self.maze.distance
             or self.next_strike > pygame.time.get_ticks()
             or (self.x, self.y) in AROUND_HERO or self.offsetx or self.offsety
             or randrange((self.maze.hero.slashing+self.maze.isfast()+1) * 3)):
@@ -204,7 +204,7 @@ class Enemy:
     def slash(self):
         """Return the enemy's close-range damage."""
         if self.spin_queue:
-            d = self.maze.slashd - self.maze.length(*self.pos())
+            d = self.maze.slashd - self.maze.get_distance(*self.get_pos())
             wound = d / self.maze.hero.R / self.spin_speed
             if wound >= 0:
                 self.maze.hit(wound, self.color)
@@ -214,15 +214,15 @@ class Enemy:
     def draw(self):
         """Draw the enemy."""
         radious = self.maze.distance/SQRT2 - self.awake*2
-        square = regpoly(4, radious, self.angle, *self.pos())
+        square = regpoly(4, radious, self.angle, *self.get_pos())
         color = TANGO[self.color][int(self.wound)] if self.awake else FG_COLOR
         fill_aapolygon(self.maze.surface, square, color)
 
     def update(self):
         """Update the enemy."""
         if self.awake:
-            self.spin_speed, old_speed = self.maze.fps / ENEMY_HP, self.spin_speed
-            self.spin_queue *= self.spin_speed / old_speed
+            self.spin_speed, tmp = self.maze.fps / ENEMY_HP, self.spin_speed
+            self.spin_queue *= self.spin_speed / tmp
             if not self.spin_queue and not self.fire() and not self.move():
                 self.spin_queue = randsign() * self.spin_speed
             if abs(self.spin_queue) > 0.5:

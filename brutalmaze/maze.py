@@ -32,7 +32,7 @@ from .utils import round2, sign, regpoly, fill_aapolygon
 from .weapons import Bullet
 
 
-def cell(bit, upper=True):
+def new_cell(bit, upper=True):
     """Return a half of a cell of the maze based on the given bit."""
     if bit: return deque([WALL]*ROAD_WIDTH + [EMPTY]*ROAD_WIDTH)
     if upper: return deque([WALL] * (ROAD_WIDTH<<1))
@@ -45,8 +45,8 @@ def new_column():
     upper, lower = deque(), deque()
     for _ in range(MAZE_SIZE):
         b = getrandbits(1)
-        upper.extend(cell(b))
-        lower.extend(cell(b, False))
+        upper.extend(new_cell(b))
+        lower.extend(new_cell(b, False))
     for _ in range(ROAD_WIDTH): column.append(upper.__copy__())
     for _ in range(ROAD_WIDTH): column.append(lower.__copy__())
     return column
@@ -100,25 +100,24 @@ class Maze:
 
     def add_enemy(self):
         """Add enough enemies."""
-        walls = []
+        walls, plum = [], None
         for i in self.rangex:
             for j in self.rangey:
                 if self.map[i][j] == WALL: walls.append((i, j))
+        for enemy in self.enemies:
+            if enemy.color == 'Plum' and enemy.awake: plum = enemy
         while walls and len(self.enemies) < log(self.score, INIT_SCORE):
             x, y = choice(walls)
             if all(self.map[x + a][y + b] == WALL for a, b in ADJACENT_GRIDS):
                 continue
             enemy = new_enemy(self, x, y)
             self.enemies.append(enemy)
-            if enemy.color == 'Plum':
-                for e in self.enemies:
-                    if e.color == 'Plum' and e.awake: x, y = e.x, e.y
-            try:
+            if plum is None or enemy.color != 'Plum':
                 walls.remove((x, y))
-            except ValueError:
-                enemy.x, enemy.y = x, y
+            else:
+                enemy.x, enemy.y, enemy.wound = plum.x, plum.y, plum.wound
 
-    def pos(self, x, y):
+    def get_pos(self, x, y):
         """Return coordinate of the center of the grid (x, y)."""
         return (self.centerx + (x - MIDDLE)*self.distance,
                 self.centery + (y - MIDDLE)*self.distance)
@@ -129,7 +128,7 @@ class Maze:
         for i in self.rangex:
             for j in self.rangey:
                 if self.map[i][j] != WALL: continue
-                x, y = self.pos(i, j)
+                x, y = self.get_pos(i, j)
                 square = regpoly(4, self.distance / SQRT2, pi / 4, x, y)
                 fill_aapolygon(self.surface, square, FG_COLOR)
 
@@ -180,9 +179,9 @@ class Maze:
                     for k in range(ROAD_WIDTH):
                         self.map[c + k][LAST_ROW + j] = grid
 
-    def length(self, x, y):
-        """Return the length of the line segment joining the center of
-        the maze and the point (x, y).
+    def get_distance(self, x, y):
+        """Return the distance from the center of the maze to the point
+        (x, y).
         """
         return ((self.x-x)**2 + (self.y-y)**2)**0.5
 
@@ -208,8 +207,8 @@ class Maze:
         if not self.hero.spin_queue: return
         unit, killist = self.distance/SQRT2 * self.hero.spin_speed, []
         for i, enemy in enumerate(self.enemies):
-            x, y = enemy.pos()
-            d = self.length(x, y)
+            x, y = enemy.get_pos()
+            d = self.get_distance(x, y)
             if d <= self.slashd:
                 enemy.hit((self.slashd-d) / unit)
                 if enemy.wound >= ENEMY_HP:
@@ -239,8 +238,8 @@ class Maze:
                     fallen.append(i)
                     continue
                 for j, enemy in enumerate(self.enemies):
-                    x, y = enemy.pos()
-                    if bullet.length(x, y) < self.distance:
+                    x, y = enemy.get_pos()
+                    if bullet.get_distance(x, y) < self.distance:
                         enemy.hit(wound)
                         if enemy.wound >= ENEMY_HP:
                             self.score += enemy.wound
@@ -248,7 +247,7 @@ class Maze:
                             self.enemies.pop(j)
                         fallen.append(i)
                         break
-            elif bullet.length(self.x, self.y) < self.distance:
+            elif bullet.get_distance(self.x, self.y) < self.distance:
                 if not self.hero.spin_queue: self.hit(wound, bullet.color)
                 fallen.append(i)
         for i in reversed(fallen): self.bullets.pop(i)
@@ -261,12 +260,12 @@ class Maze:
         herox, heroy, dx, dy = self.x - vx, self.y - vy, sign(vx), sign(vy)
         for gridx in range(MIDDLE - dx - 1, MIDDLE - dx + 2):
             for gridy in range(MIDDLE - dy - 1, MIDDLE - dy + 2):
-                x, y = self.pos(gridx, gridy)
+                x, y = self.get_pos(gridx, gridy)
                 if (max(abs(herox - x), abs(heroy - y)) < d
                     and self.map[gridx][gridy] == WALL):
                     return 0.0
         for enemy in self.enemies:
-            x, y = self.pos(enemy.x, enemy.y)
+            x, y = self.get_pos(enemy.x, enemy.y)
             if (max(abs(herox - x), abs(heroy - y)) * 2 < self.distance
                 and enemy.awake):
                 return 0.0

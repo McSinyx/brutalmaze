@@ -59,8 +59,6 @@ class Bullet:
         self.x += x
         self.y += y
 
-    def length(self, x, y):
-        """Return the length of the line segment joining the center of
-        the bullet and the point (x, y).
-        """
+    def get_distance(self, x, y):
+        """Return the from the center of the bullet to the point (x, y)."""
         return ((self.x-x)**2 + (self.y-y)**2)**0.5
