@@ -100,22 +100,17 @@ class Maze:
 
     def add_enemy(self):
         """Add enough enemies."""
-        walls, plum = [], None
-        for i in self.rangex:
-            for j in self.rangey:
-                if self.map[i][j] == WALL: walls.append((i, j))
-        for enemy in self.enemies:
-            if enemy.color == 'Plum' and enemy.awake: plum = enemy
+        walls = [(i, j) for i in self.rangex for j in self.rangey
+                 if self.map[i][j] == WALL]
+        plums = [e for e in self.enemies if e.color == 'Plum' and e.awake]
+        plum = choice(plums) if plums else None
         while walls and len(self.enemies) < log(self.score, INIT_SCORE):
             x, y = choice(walls)
             if all(self.map[x + a][y + b] == WALL for a, b in ADJACENT_GRIDS):
                 continue
             enemy = new_enemy(self, x, y)
             self.enemies.append(enemy)
-            if plum is None or enemy.color != 'Plum':
-                walls.remove((x, y))
-            else:
-                enemy.x, enemy.y, enemy.wound = plum.x, plum.y, plum.wound
+            if plum is None or not plum.clone(enemy): walls.remove((x, y))
 
     def get_pos(self, x, y):
         """Return coordinate of the center of the grid (x, y)."""
@@ -171,11 +166,11 @@ class Maze:
             self.rotatey = 0
             for i in range(MAZE_SIZE):
                 b, c = getrandbits(1), (i-1)*CELL_WIDTH + self.rotatex
-                for j, grid in enumerate(cell(b)):
+                for j, grid in enumerate(new_cell(b)):
                     for k in range(ROAD_WIDTH):
                         self.map[c + k][LAST_ROW + j] = grid
                 c += ROAD_WIDTH
-                for j, grid in enumerate(cell(b, False)):
+                for j, grid in enumerate(new_cell(b, False)):
                     for k in range(ROAD_WIDTH):
                         self.map[c + k][LAST_ROW + j] = grid
 
@@ -190,7 +185,7 @@ class Maze:
         fx = (uniform(0, sum(self.enemy_weights.values()))
               < self.enemy_weights[color])
         time = pygame.time.get_ticks()
-        if color == 'Butter' and fx:
+        if (color == 'Butter' or color == 'ScarletRed') and fx:
             self.hero.wound += 1.0
         elif color == 'Orange' and fx:
             self.hero.next_heal = max(self.hero.next_heal, time) + wound*1000

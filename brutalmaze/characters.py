@@ -186,7 +186,9 @@ class Enemy:
         if self.offsety:
             self.offsety -= sign(self.offsety)
             return True
-        if self.next_strike > pygame.time.get_ticks(): return False
+        if (self.next_strike > pygame.time.get_ticks()
+            or (self.x, self.y) in AROUND_HERO):
+            return False
 
         self.move_speed = self.maze.fps / speed
         directions = [(sign(MIDDLE - self.x), 0), (0, sign(MIDDLE - self.y))]
@@ -247,7 +249,7 @@ class Enemy:
 
 
 class Chameleon(Enemy):
-    """Object representing an enemy of Chameleon type.
+    """Object representing an enemy of Chameleon.
 
     Additional attributes:
         visible (int): the tick until which the Chameleon is visible
@@ -272,8 +274,25 @@ class Chameleon(Enemy):
         self.wound += wound
 
 
+class Plum(Enemy):
+    """Object representing an enemy of Plum."""
+    def __init__(self, maze, x, y):
+        Enemy.__init__(self, maze, x, y, 'Plum')
+
+    def clone(self, other):
+        """Turn the other enemy into a clone of this Plum and return
+        True if that enemy is also a Plum, otherwise return False.
+        """
+        if other.color != 'Plum': return False
+        other.x, other.y, other.angle = self.x, self.y, self.angle
+        other.awake, other.next_strike = True, self.next_strike
+        other.offsetx, other.offsety = self.offsetx, self.offsety
+        other.spin_queue, other.wound = self.spin_queue, self.wound
+        return True
+
+
 class ScarletRed(Enemy):
-    """Object representing an enemy of Scarlet Red type."""
+    """Object representing an enemy of Scarlet Red."""
     def __init__(self, maze, x, y):
         Enemy.__init__(self, maze, x, y, 'ScarletRed')
 
