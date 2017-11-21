@@ -47,7 +47,6 @@ FIRANGE = 6     # grids
 BULLET_LIFETIME = 1000.0 * FIRANGE / (BULLET_SPEED-HERO_SPEED)  # ms
 EMPTY, WALL, HERO, ENEMY = range(4)
 ADJACENT_GRIDS = (1, 0), (0, 1), (-1, 0), (0, -1)
-CROSS = ADJACENT_GRIDS + ((0, 0),)
 AROUND_HERO = set((MIDDLE + x, MIDDLE + y) for x, y in
                   ADJACENT_GRIDS + ((1, 1), (-1, 1), (-1, -1), (1, -1)))
 

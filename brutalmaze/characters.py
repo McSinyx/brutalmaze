@@ -186,14 +186,12 @@ class Enemy:
         if self.offsety:
             self.offsety -= sign(self.offsety)
             return True
-        if (self.next_strike > pygame.time.get_ticks()
-            or (self.x, self.y) in AROUND_HERO):
-            return False
+        if self.next_strike > pygame.time.get_ticks(): return False
 
         self.move_speed = self.maze.fps / speed
         directions = [(sign(MIDDLE - self.x), 0), (0, sign(MIDDLE - self.y))]
         shuffle(directions)
-        directions.append(choice(CROSS))
+        directions.append(choice((choice(ADJACENT_GRIDS), (0, 0))))
         for x, y in directions:
             if (x or y) and self.maze.map[self.x + x][self.y + y] == EMPTY:
                 self.offsetx = round(x * (1 - self.move_speed))

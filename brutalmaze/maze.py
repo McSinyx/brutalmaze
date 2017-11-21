@@ -247,7 +247,7 @@ class Maze:
                 fallen.append(i)
         for i in reversed(fallen): self.bullets.pop(i)
 
-    def valid_move(self, vx=0.0, vy=0.0):
+    def is_valid_move(self, vx=0.0, vy=0.0):
         """Return dx or dy if it it valid to move the maze in that
         velocity, otherwise return 0.0.
         """
@@ -270,9 +270,9 @@ class Maze:
         """Update the maze."""
         if self.paused: return
         self.fps = fps
-        dx = self.valid_move(vx=self.vx)
+        dx = self.is_valid_move(vx=self.vx)
         self.centerx += dx
-        dy = self.valid_move(vy=self.vy)
+        dy = self.is_valid_move(vy=self.vy)
         self.centery += dy
 
         if dx or dy:
