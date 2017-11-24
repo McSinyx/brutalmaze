@@ -63,10 +63,11 @@ class Hero:
 
     def update(self, fps):
         """Update the hero."""
+        if self.dead: return
         old_speed, time = self.spin_speed, pygame.time.get_ticks()
         self.spin_speed = fps / (HERO_HP-self.wound**0.5)
         self.spin_queue *= self.spin_speed / old_speed
-        if not self.dead and time > self.next_heal:
+        if time > self.next_heal:
             self.wound -= HEAL_SPEED / self.spin_speed / HERO_HP
             if self.wound < 0: self.wound = 0.0
 
@@ -82,10 +83,7 @@ class Hero:
             self.angle = atan2(y - self.y, x - self.x)
             self.spin_queue = 0.0
         trigon = regpoly(3, self.R, self.angle, self.x, self.y)
-        try:
-            fill_aapolygon(self.surface, trigon, self.color[int(self.wound)])
-        except IndexError:  # When the hero is wounded over his HP
-            self.wound = HERO_HP
+        fill_aapolygon(self.surface, trigon, self.color[int(self.wound)])
 
     def die(self):
         """Handle the hero's death."""

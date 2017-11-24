@@ -186,7 +186,7 @@ class Maze:
               < self.enemy_weights[color])
         time = pygame.time.get_ticks()
         if (color == 'Butter' or color == 'ScarletRed') and fx:
-            self.hero.wound += 1.0
+            self.hero.wound += wound * 2.5
         elif color == 'Orange' and fx:
             self.hero.next_heal = max(self.hero.next_heal, time) + wound*1000
         elif color == 'SkyBlue' and fx:
@@ -195,6 +195,7 @@ class Maze:
             self.hero.wound += wound
         if self.enemy_weights[color] + wound < MAXW:
             self.enemy_weights[color] += wound
+        if self.hero.wound > HERO_HP: self.lose()
 
     def slash(self):
         """Handle close-range attacks."""
@@ -288,7 +289,6 @@ class Maze:
         pygame.display.flip()
         pygame.display.set_caption('Brutal Maze - Score: {}'.format(
             int(self.score - INIT_SCORE)))
-        if self.hero.wound + 1 > HERO_HP: self.lose()
 
     def move(self, x, y, fps):
         """Command the hero to move faster in the given direction."""

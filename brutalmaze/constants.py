@@ -63,6 +63,6 @@ ENEMIES = ['Butter', 'Orange', 'Chocolate', 'Chameleon',
            'SkyBlue', 'Plum', 'ScarletRed']
 MINW, MAXW = 24, 36
 ENEMY_HP = 3
-HERO_HP = 6
+HERO_HP = 5
 BG_COLOR = TANGO['Aluminium'][-1]
 FG_COLOR = TANGO['Aluminium'][0]
