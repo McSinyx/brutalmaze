@@ -110,7 +110,10 @@ class Maze:
                 continue
             enemy = new_enemy(self, x, y)
             self.enemies.append(enemy)
-            if plum is None or not plum.clone(enemy): walls.remove((x, y))
+            if plum is None or not plum.clone(enemy):
+                walls.remove((x, y))
+            else:
+                self.map[x][y] = WALL
 
     def get_pos(self, x, y):
         """Return coordinate of the center of the grid (x, y)."""
