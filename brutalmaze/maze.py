@@ -183,8 +183,11 @@ class Maze:
         """
         return ((self.x-x)**2 + (self.y-y)**2)**0.5
 
-    def hit(self, wound, color):
+    def hit(self, wound, color, per_frame=False):
         """Handle the hero when he loses HP."""
+        if not per_frame:
+            self.hero.sfx_shot.set_volume(wound)
+            self.hero.sfx_shot.play()
         fx = (uniform(0, sum(self.enemy_weights.values()))
               < self.enemy_weights[color])
         time = pygame.time.get_ticks()
@@ -198,7 +201,7 @@ class Maze:
             self.hero.wound += wound
         if self.enemy_weights[color] + wound < MAXW:
             self.enemy_weights[color] += wound
-        if self.hero.wound > HERO_HP: self.lose()
+        if self.hero.wound > HERO_HP and not self.hero.dead: self.lose()
 
     def slash(self):
         """Handle close-range attacks."""
@@ -209,7 +212,7 @@ class Maze:
             x, y = enemy.get_pos()
             d = self.get_distance(x, y)
             if d <= self.slashd:
-                enemy.hit((self.slashd-d) / unit)
+                enemy.hit((self.slashd-d) / unit, per_frame=True)
                 if enemy.wound >= ENEMY_HP:
                     self.score += enemy.wound
                     enemy.die()
@@ -338,5 +341,7 @@ class Maze:
 
     def lose(self):
         """Handle loses."""
-        self.hero.die()
+        self.hero.dead = True
+        self.hero.slashing = self.hero.firing = False
         self.vx = self.vy = 0.0
+        pygame.mixer.Sound(SFX_LOSE).play()

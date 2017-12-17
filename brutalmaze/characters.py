@@ -61,9 +61,13 @@ class Hero:
         self.spin_speed = fps / HERO_HP
         self.spin_queue = self.wound = 0.0
 
+        self.sfx_shot = pygame.mixer.Sound(SFX_SHOT_HERO)
+
     def update(self, fps):
         """Update the hero."""
-        if self.dead: return
+        if self.dead:
+            self.spin_queue = 0
+            return
         old_speed, time = self.spin_speed, pygame.time.get_ticks()
         self.spin_speed = fps / (HERO_HP-self.wound**0.5)
         self.spin_queue *= self.spin_speed / old_speed
@@ -84,11 +88,6 @@ class Hero:
             self.spin_queue = 0.0
         trigon = regpoly(3, self.R, self.angle, self.x, self.y)
         fill_aapolygon(self.surface, trigon, self.color[int(self.wound)])
-
-    def die(self):
-        """Handle the hero's death."""
-        self.dead = True
-        self.slashing = self.firing = False
 
     def resize(self):
         """Resize the hero."""
@@ -125,6 +124,8 @@ class Enemy:
         self.offsetx = self.offsety = 0
         self.spin_speed = self.maze.fps / ENEMY_HP
         self.spin_queue = self.wound = 0.0
+
+        self.sfx_shot = pygame.mixer.Sound(SFX_SHOT_ENEMY)
 
     def get_pos(self):
         """Return coordinate of the center of the enemy."""
@@ -205,7 +206,7 @@ class Enemy:
             d = self.maze.slashd - self.maze.get_distance(*self.get_pos())
             wound = d / self.maze.hero.R / self.spin_speed
             if wound >= 0:
-                self.maze.hit(wound, self.color)
+                self.maze.hit(wound, self.color, per_frame=True)
                 return wound
         return 0.0
 
@@ -230,9 +231,12 @@ class Enemy:
                 self.angle, self.spin_queue = pi / 4, 0.0
         self.draw()
 
-    def hit(self, wound):
+    def hit(self, wound, per_frame=False):
         """Handle the enemy when it's attacked."""
         self.wound += wound
+        if not per_frame:
+            self.sfx_shot.set_volume(wound)
+            self.sfx_shot.play()
 
     def die(self):
         """Handle the enemy's death."""
@@ -264,10 +268,10 @@ class Chameleon(Enemy):
         if not self.awake or pygame.time.get_ticks() <= self.visible:
             Enemy.draw(self)
 
-    def hit(self, wound):
-        """Handle the Chameleon when it's hit by a bullet."""
+    def hit(self, wound, per_frame=False):
+        """Handle the Chameleon when it's attacked."""
         self.visible = pygame.time.get_ticks() + 1000//ENEMY_SPEED
-        self.wound += wound
+        Enemy.hit(self, wound, per_frame)
 
 
 class Plum(Enemy):

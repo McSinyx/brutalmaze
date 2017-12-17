@@ -22,14 +22,17 @@ from collections import deque
 import pygame
 from pygame.locals import *
 
-from .constants import ICON, SIZE, INIT_FPS, MAX_FPS, UP, LEFT, DOWN, RIGHT
+from .constants import *
 from .maze import Maze
 from .utils import some
 
 
 def main():
     """Start game and main loop."""
+    pygame.mixer.pre_init(frequency=44100)
     pygame.init()
+    pygame.mixer.music.load(MUSIC)
+    pygame.mixer.music.play(-1)
     pygame.display.set_icon(ICON)
     pygame.fastevent.init()
     maze, clock = Maze(SIZE, INIT_FPS), pygame.time.Clock()

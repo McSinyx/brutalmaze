@@ -20,9 +20,15 @@
 __doc__ = 'brutalmaze module for shared constants'
 
 from pygame import image, K_UP, K_w, K_LEFT, K_a, K_DOWN, K_s, K_RIGHT, K_d
+from pygame.mixer import Sound
 from pkg_resources import resource_filename
 
 ICON = image.load(resource_filename('brutalmaze', 'icon.png'))
+MUSIC = resource_filename('brutalmaze', 'soundfx/music.ogg')
+SFX_SHOT_ENEMY = resource_filename('brutalmaze', 'soundfx/shot-enemy.ogg')
+SFX_SHOT_HERO = resource_filename('brutalmaze', 'soundfx/shot-hero.ogg')
+SFX_LOSE = resource_filename('brutalmaze', 'soundfx/lose.ogg')
+
 UP = (K_UP, K_w)
 LEFT = (K_LEFT, K_a)
 DOWN = (K_DOWN, K_s)
