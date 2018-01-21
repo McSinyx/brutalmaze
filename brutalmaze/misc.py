@@ -81,3 +81,9 @@ def choices(d):
     num = uniform(0, cum_weights[-1])
     for i, w in enumerate(cum_weights):
         if num <= w: return population[i]
+
+
+def play(sound, volume):
+    """Play a pygame.mixer.Sound at the given volume."""
+    sound.set_volume(volume)
+    sound.play()

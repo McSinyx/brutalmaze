@@ -25,10 +25,12 @@ from random import choice, getrandbits, uniform
 
 import pygame
 from pygame import RESIZABLE
+from pygame.mixer import Sound, set_num_channels
+from pygame.time import get_ticks
 
 from .characters import Hero, new_enemy
 from .constants import *
-from .utils import round2, sign, regpoly, fill_aapolygon
+from .misc import round2, sign, regpoly, fill_aapolygon, play
 from .weapons import Bullet
 
 
@@ -73,7 +75,11 @@ class Maze:
         enemies (list of Enemy): alive enemies
         hero (Hero): the hero
         next_move (int): the tick that the hero gets mobilized
+        next_slashfx (int): the tick to play next slash effect of the hero
         slashd (float): minimum distance for slashes to be effective
+        sfx_slash (Sound): sound effect indicating an enemy get slashed
+        sfx_shot (Sound): sound effect indicating an enemy get shot
+        sfx_lose (Sound): sound effect to be played when you lose
     """
     def __init__(self, size, fps):
         self.w, self.h = size
@@ -96,7 +102,12 @@ class Maze:
         self.add_enemy()
         self.hero = Hero(self.surface, fps)
         self.map[MIDDLE][MIDDLE] = HERO
-        self.next_move, self.slashd = 0, self.hero.R + self.distance/SQRT2
+        self.next_move = self.next_slashfx = 0
+        self.slashd = self.hero.R + self.distance/SQRT2
+
+        self.sfx_slash = Sound(SFX_SLASH_ENEMY)
+        self.sfx_shot = Sound(SFX_SHOT_ENEMY)
+        self.sfx_lose = Sound(SFX_LOSE)
 
     def add_enemy(self):
         """Add enough enemies."""
@@ -104,7 +115,8 @@ class Maze:
                  if self.map[i][j] == WALL]
         plums = [e for e in self.enemies if e.color == 'Plum' and e.awake]
         plum = choice(plums) if plums else None
-        while walls and len(self.enemies) < log(self.score, INIT_SCORE):
+        num = log(self.score, INIT_SCORE)
+        while walls and len(self.enemies) < num:
             x, y = choice(walls)
             if all(self.map[x + a][y + b] == WALL for a, b in ADJACENT_GRIDS):
                 continue
@@ -114,6 +126,7 @@ class Maze:
                 walls.remove((x, y))
             else:
                 self.map[x][y] = WALL
+        set_num_channels(int(num * 3))
 
     def get_pos(self, x, y):
         """Return coordinate of the center of the grid (x, y)."""
@@ -183,14 +196,11 @@ class Maze:
         """
         return ((self.x-x)**2 + (self.y-y)**2)**0.5
 
-    def hit(self, wound, color, per_frame=False):
+    def hit_hero(self, wound, color):
         """Handle the hero when he loses HP."""
-        if not per_frame:
-            self.hero.sfx_shot.set_volume(wound)
-            self.hero.sfx_shot.play()
         fx = (uniform(0, sum(self.enemy_weights.values()))
               < self.enemy_weights[color])
-        time = pygame.time.get_ticks()
+        time = get_ticks()
         if (color == 'Butter' or color == 'ScarletRed') and fx:
             self.hero.wound += wound * 2.5
         elif color == 'Orange' and fx:
@@ -207,12 +217,15 @@ class Maze:
         """Handle close-range attacks."""
         for enemy in self.enemies: enemy.slash()
         if not self.hero.spin_queue: return
-        unit, killist = self.distance/SQRT2 * self.hero.spin_speed, []
+        killist = []
         for i, enemy in enumerate(self.enemies):
-            x, y = enemy.get_pos()
-            d = self.get_distance(x, y)
-            if d <= self.slashd:
-                enemy.hit((self.slashd-d) / unit, per_frame=True)
+            d = self.slashd - self.get_distance(*enemy.get_pos())
+            if d > 0:
+                wound, time = d * SQRT2 / self.distance, get_ticks()
+                if time >= self.next_slashfx:
+                    play(self.sfx_slash, wound)
+                    self.next_slashfx = time + ATTACK_SPEED
+                enemy.hit(wound / self.hero.spin_speed)
                 if enemy.wound >= ENEMY_HP:
                     self.score += enemy.wound
                     enemy.die()
@@ -222,7 +235,7 @@ class Maze:
 
     def track_bullets(self):
         """Handle the bullets."""
-        fallen, time = [], pygame.time.get_ticks()
+        fallen, time = [], get_ticks()
         if (self.hero.firing and not self.hero.slashing
             and time >= self.hero.next_strike):
             self.hero.next_strike = time + ATTACK_SPEED
@@ -240,6 +253,7 @@ class Maze:
                     fallen.append(i)
                     continue
                 for j, enemy in enumerate(self.enemies):
+                    if not enemy.awake: continue
                     x, y = enemy.get_pos()
                     if bullet.get_distance(x, y) < self.distance:
                         enemy.hit(wound)
@@ -247,10 +261,15 @@ class Maze:
                             self.score += enemy.wound
                             enemy.die()
                             self.enemies.pop(j)
+                        play(self.sfx_shot, wound)
                         fallen.append(i)
                         break
             elif bullet.get_distance(self.x, self.y) < self.distance:
-                if not self.hero.spin_queue: self.hit(wound, bullet.color)
+                if self.hero.spin_queue:
+                    play(bullet.sfx_missed, wound)
+                else:
+                    self.hit_hero(wound, bullet.color)
+                    play(bullet.sfx_hit, wound)
                 fallen.append(i)
         for i in reversed(fallen): self.bullets.pop(i)
 
@@ -298,7 +317,7 @@ class Maze:
 
     def move(self, x, y, fps):
         """Command the hero to move faster in the given direction."""
-        stunned = pygame.time.get_ticks() < self.next_move
+        stunned = get_ticks() < self.next_move
         velocity = self.distance * HERO_SPEED / fps
         accel = velocity * HERO_SPEED / fps
         if stunned or not x:
@@ -344,4 +363,4 @@ class Maze:
         self.hero.dead = True
         self.hero.slashing = self.hero.firing = False
         self.vx = self.vy = 0.0
-        pygame.mixer.Sound(SFX_LOSE).play()
+        self.sfx_lose.play()

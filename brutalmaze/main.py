@@ -24,7 +24,7 @@ from pygame.locals import *
 
 from .constants import *
 from .maze import Maze
-from .utils import some
+from .misc import some
 
 
 def main():

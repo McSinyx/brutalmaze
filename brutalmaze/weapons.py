@@ -22,9 +22,10 @@ __doc__ = 'brutalmaze module for weapon classes'
 from math import cos, sin
 
 from pygame.time import get_ticks
+from pygame.mixer import Sound
 
-from .constants import BULLET_LIFETIME, BULLET_SPEED, ENEMY_HP, TANGO
-from .utils import regpoly, fill_aapolygon
+from .constants import *
+from .misc import regpoly, fill_aapolygon
 
 
 class Bullet:
@@ -36,11 +37,18 @@ class Bullet:
         angle (float): angle of the direction the bullet pointing (in radians)
         color (str): bullet's color name
         fall_time (int): the tick that the bullet will fall down
+        sfx_hit (Sound): sound effect indicating the bullet hits the target
+        sfx_missed (Sound): sound effect indicating the bullet hits the target
     """
     def __init__(self, surface, x, y, angle, color):
         self.surface = surface
         self.x, self.y, self.angle, self.color = x, y, angle, color
         self.fall_time = get_ticks() + BULLET_LIFETIME
+        # Sound effects of bullets shot by hero are stored in Maze to avoid
+        # unnecessary duplication
+        if color != 'Aluminium':
+            self.sfx_hit = Sound(SFX_SHOT_HERO)
+            self.sfx_missed = Sound(SFX_MISSED)
 
     def update(self, fps, distance):
         """Update the bullet."""

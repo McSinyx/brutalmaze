@@ -27,7 +27,7 @@ from sys import modules
 import pygame
 
 from .constants import *
-from .utils import sign, cosin, randsign, regpoly, fill_aapolygon, choices
+from .misc import sign, cosin, randsign, regpoly, fill_aapolygon, choices, play
 from .weapons import Bullet
 
 
@@ -61,12 +61,10 @@ class Hero:
         self.spin_speed = fps / HERO_HP
         self.spin_queue = self.wound = 0.0
 
-        self.sfx_shot = pygame.mixer.Sound(SFX_SHOT_HERO)
-
     def update(self, fps):
         """Update the hero."""
         if self.dead:
-            self.spin_queue = 0
+            self.spin_queue = 0.0
             return
         old_speed, time = self.spin_speed, pygame.time.get_ticks()
         self.spin_speed = fps / (HERO_HP-self.wound**0.5)
@@ -111,6 +109,7 @@ class Enemy:
         spin_speed (float): speed of spinning (in frames per slash)
         spin_queue (float): frames left to finish spinning
         wound (float): amount of wound
+        sfx_slash (Sound): sound effect indicating close-range attack damage
     """
     def __init__(self, maze, x, y, color):
         self.maze = maze
@@ -125,7 +124,7 @@ class Enemy:
         self.spin_speed = self.maze.fps / ENEMY_HP
         self.spin_queue = self.wound = 0.0
 
-        self.sfx_shot = pygame.mixer.Sound(SFX_SHOT_ENEMY)
+        self.sfx_slash = pygame.mixer.Sound(SFX_SLASH_HERO)
 
     def get_pos(self):
         """Return coordinate of the center of the enemy."""
@@ -200,15 +199,17 @@ class Enemy:
                 return True
         return False
 
-    def slash(self):
+    def get_slash(self):
         """Return the enemy's close-range damage."""
-        if self.spin_queue:
-            d = self.maze.slashd - self.maze.get_distance(*self.get_pos())
-            wound = d / self.maze.hero.R / self.spin_speed
-            if wound >= 0:
-                self.maze.hit(wound, self.color, per_frame=True)
-                return wound
-        return 0.0
+        d = self.maze.slashd - self.maze.get_distance(*self.get_pos())
+        wound = d / self.maze.hero.R
+        return wound if wound > 0 else 0.0
+
+    def slash(self):
+        """Return the enemy's close-range damage per frame."""
+        wound = self.get_slash() / self.spin_speed
+        if self.spin_queue: self.maze.hit_hero(wound, self.color)
+        return wound
 
     def draw(self):
         """Draw the enemy."""
@@ -224,6 +225,7 @@ class Enemy:
             self.spin_queue *= self.spin_speed / tmp
             if not self.spin_queue and not self.fire() and not self.move():
                 self.spin_queue = randsign() * self.spin_speed
+                play(self.sfx_slash, self.get_slash())
             if abs(self.spin_queue) > 0.5:
                 self.angle += sign(self.spin_queue) * pi / 2 / self.spin_speed
                 self.spin_queue -= sign(self.spin_queue)
@@ -231,12 +233,9 @@ class Enemy:
                 self.angle, self.spin_queue = pi / 4, 0.0
         self.draw()
 
-    def hit(self, wound, per_frame=False):
+    def hit(self, wound):
         """Handle the enemy when it's attacked."""
         self.wound += wound
-        if not per_frame:
-            self.sfx_shot.set_volume(wound)
-            self.sfx_shot.play()
 
     def die(self):
         """Handle the enemy's death."""
@@ -268,10 +267,10 @@ class Chameleon(Enemy):
         if not self.awake or pygame.time.get_ticks() <= self.visible:
             Enemy.draw(self)
 
-    def hit(self, wound, per_frame=False):
+    def hit(self, wound):
         """Handle the Chameleon when it's attacked."""
         self.visible = pygame.time.get_ticks() + 1000//ENEMY_SPEED
-        Enemy.hit(self, wound, per_frame)
+        Enemy.hit(self, wound)
 
 
 class Plum(Enemy):
