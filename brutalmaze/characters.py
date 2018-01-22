@@ -41,6 +41,7 @@ class Hero:
         color (tuple of pygame.Color): colors of the hero on different HPs
         R (int): circumradius of the regular triangle representing the hero
         next_heal (int): the tick that the hero gains back healing ability
+        next_beat (int): the tick to play next heart beat
         next_strike (int): the tick that the hero can do the next attack
         slashing (bool): flag indicates if the hero is doing close-range attack
         firing (bool): flag indicates if the hero is doing long-range attack
@@ -48,6 +49,7 @@ class Hero:
         spin_speed (float): speed of spinning (in frames per slash)
         spin_queue (float): frames left to finish spinning
         wound (float): amount of wound
+        sfx_heart (Sound): heart beat sound effect
     """
     def __init__(self, surface, fps):
         self.surface = surface
@@ -56,10 +58,12 @@ class Hero:
         self.angle, self.color = pi / 4, TANGO['Aluminium']
         self.R = (w * h / sin(pi*2/3) / 624) ** 0.5
 
-        self.next_heal = self.next_strike = 0
+        self.next_heal = self.next_beat = self.next_strike = 0
         self.slashing = self.firing = self.dead = False
         self.spin_speed = fps / HERO_HP
         self.spin_queue = self.wound = 0.0
+
+        self.sfx_heart = pygame.mixer.Sound(SFX_HEART)
 
     def update(self, fps):
         """Update the hero."""
@@ -72,6 +76,10 @@ class Hero:
         if time > self.next_heal:
             self.wound -= HEAL_SPEED / self.spin_speed / HERO_HP
             if self.wound < 0: self.wound = 0.0
+        if time > self.next_beat:
+            wound = self.wound / HERO_HP
+            play(self.sfx_heart, wound ** 0.5)
+            self.next_beat = time + MIN_BEAT*(2-wound)
 
         if self.slashing and time >= self.next_strike:
             self.next_strike = time + ATTACK_SPEED
@@ -264,7 +272,8 @@ class Chameleon(Enemy):
 
     def draw(self):
         """Draw the Chameleon."""
-        if not self.awake or pygame.time.get_ticks() <= self.visible:
+        if (not self.awake or self.spin_queue
+            or pygame.time.get_ticks() <= self.visible):
             Enemy.draw(self)
 
     def hit(self, wound):

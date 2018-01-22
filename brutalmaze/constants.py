@@ -30,6 +30,7 @@ SFX_SLASH_HERO = resource_filename('brutalmaze', 'soundfx/slash-hero.ogg')
 SFX_SHOT_ENEMY = resource_filename('brutalmaze', 'soundfx/shot-enemy.ogg')
 SFX_SHOT_HERO = resource_filename('brutalmaze', 'soundfx/shot-hero.ogg')
 SFX_MISSED = resource_filename('brutalmaze', 'soundfx/missed.ogg')
+SFX_HEART = resource_filename('brutalmaze', 'soundfx/heart.ogg')
 SFX_LOSE = resource_filename('brutalmaze', 'soundfx/lose.ogg')
 
 UP = (K_UP, K_w)
@@ -73,5 +74,6 @@ ENEMIES = ['Butter', 'Orange', 'Chocolate', 'Chameleon',
 MINW, MAXW = 24, 36
 ENEMY_HP = 3
 HERO_HP = 5
+MIN_BEAT = 526
 BG_COLOR = TANGO['Aluminium'][-1]
 FG_COLOR = TANGO['Aluminium'][0]
