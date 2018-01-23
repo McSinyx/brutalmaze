@@ -171,6 +171,7 @@ class Enemy:
 
     def fire(self):
         """Return True if the enemy has just fired, False otherwise."""
+        if self.maze.hero.dead: return False
         x, y = self.get_pos()
         if (self.maze.get_distance(x, y) > FIRANGE*self.maze.distance
             or self.next_strike > pygame.time.get_ticks()
@@ -196,7 +197,8 @@ class Enemy:
         self.move_speed = self.maze.fps / speed
         directions = [(sign(MIDDLE - self.x), 0), (0, sign(MIDDLE - self.y))]
         shuffle(directions)
-        directions.append(choice((choice(ADJACENT_GRIDS), (0, 0))))
+        directions.append(choice(ADJACENT_GRIDS))
+        if self.maze.hero.dead: directions = choice(ADJACENT_GRIDS),
         for x, y in directions:
             if (x or y) and self.maze.map[self.x + x][self.y + y] == EMPTY:
                 self.offsetx = round(x * (1 - self.move_speed))
@@ -232,7 +234,8 @@ class Enemy:
             self.spin_queue *= self.spin_speed / tmp
             if not self.spin_queue and not self.fire() and not self.move():
                 self.spin_queue = randsign() * self.spin_speed
-                play(self.sfx_slash, self.get_slash())
+                if not self.maze.hero.dead:
+                    play(self.sfx_slash, self.get_slash())
             if abs(self.spin_queue) > 0.5:
                 self.angle += sign(self.spin_queue) * pi / 2 / self.spin_speed
                 self.spin_queue -= sign(self.spin_queue)
