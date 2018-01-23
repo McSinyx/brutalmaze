@@ -77,9 +77,8 @@ class Hero:
             self.wound -= HEAL_SPEED / self.spin_speed / HERO_HP
             if self.wound < 0: self.wound = 0.0
         if time > self.next_beat:
-            wound = self.wound / HERO_HP
-            play(self.sfx_heart, wound ** 0.5)
-            self.next_beat = time + MIN_BEAT*(2-wound)
+            self.sfx_heart.play()
+            self.next_beat = time + MIN_BEAT*(2 - self.wound/HERO_HP)
 
         if self.slashing and time >= self.next_strike:
             self.next_strike = time + ATTACK_SPEED

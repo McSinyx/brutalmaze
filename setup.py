@@ -28,5 +28,5 @@ setup(
     keywords='pygame action-game arcade-game maze',
     packages=['brutalmaze'],
     install_requires=['pygame>=1.9'],
-    package_data={'brutalmaze': ['icon.png', '*.ogg']},
+    package_data={'brutalmaze': ['icon.png', 'soundfx/*.ogg']},
     entry_points={'gui_scripts': ['brutalmaze = brutalmaze:main']})
