@@ -181,9 +181,8 @@ class Enemy:
             or randrange((self.maze.hero.slashing+self.maze.isfast()+1) * 3)):
             return False
         self.next_strike = get_ticks() + ATTACK_SPEED
-        self.maze.bullets.append(Bullet(
-            self.maze.surface, x, y,
-            atan2(self.maze.y - y, self.maze.x - x), self.color))
+        self.maze.bullets.append(
+            Bullet(self.maze.surface, x, y, self.get_angle() + pi, self.color))
         return True
 
     def move(self, speed=ENEMY_SPEED):
@@ -222,6 +221,14 @@ class Enemy:
         if self.spin_queue: self.maze.hit_hero(wound, self.color)
         return wound
 
+    def get_angle(self, reversed=False):
+        """Return the angle of the vector whose initial point is
+        the center of the screen and terminal point is the center of
+        the enemy.
+        """
+        x, y = self.get_pos()
+        return atan2(y - self.maze.y, x - self.maze.x)
+
     def draw(self):
         """Draw the enemy."""
         radious = self.maze.distance/SQRT2 - self.awake*2
@@ -237,7 +244,7 @@ class Enemy:
             if not self.spin_queue and not self.fire() and not self.move():
                 self.spin_queue = randsign() * self.spin_speed
                 if not self.maze.hero.dead:
-                    play(self.sfx_slash, self.get_slash())
+                    play(self.sfx_slash, self.get_slash(), self.get_angle())
             if abs(self.spin_queue) > 0.5:
                 self.angle += sign(self.spin_queue) * pi / 2 / self.spin_speed
                 self.spin_queue -= sign(self.spin_queue)

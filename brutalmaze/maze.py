@@ -20,7 +20,7 @@
 __doc__ = 'brutalmaze module for the maze class'
 
 from collections import deque
-from math import pi, atan2, log
+from math import pi, log
 from random import choice, getrandbits, uniform
 
 import pygame
@@ -224,7 +224,7 @@ class Maze:
             if d > 0:
                 wound, time = d * SQRT2 / self.distance, get_ticks()
                 if time >= self.next_slashfx:
-                    play(self.sfx_slash, wound)
+                    play(self.sfx_slash, wound, enemy.get_angle())
                     self.next_slashfx = time + ATTACK_SPEED
                 enemy.hit(wound / self.hero.spin_speed)
                 if enemy.wound >= ENEMY_HP:
@@ -262,15 +262,15 @@ class Maze:
                             self.score += enemy.wound
                             enemy.die()
                             self.enemies.pop(j)
-                        play(self.sfx_shot, wound)
+                        play(self.sfx_shot, wound, bullet.angle)
                         fallen.append(i)
                         break
             elif bullet.get_distance(self.x, self.y) < self.distance:
                 if self.hero.spin_queue:
-                    play(bullet.sfx_missed, wound)
+                    play(bullet.sfx_missed, wound, bullet.angle + pi)
                 else:
                     self.hit_hero(wound, bullet.color)
-                    play(bullet.sfx_hit, wound)
+                    play(bullet.sfx_hit, wound, bullet.angle + pi)
                 fallen.append(i)
         for i in reversed(fallen): self.bullets.pop(i)
 

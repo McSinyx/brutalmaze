@@ -83,7 +83,18 @@ def choices(d):
         if num <= w: return population[i]
 
 
-def play(sound, volume):
+def play(sound, volume, angle=None):
     """Play a pygame.mixer.Sound at the given volume."""
-    sound.set_volume(volume)
-    sound.play()
+    if angle is None:
+        sound.set_volume(volume)
+        sound.play()
+    else:
+        delta = cos(angle)
+        volumes = [volume * (1-delta), volume * (1+delta)]
+        for i, v in enumerate(volumes):
+            if v > 1:
+                volumes[i - 1] += v - 1
+                volumes[i] = 1.0
+        sound.set_volume(1.0)
+        channel = sound.play()
+        channel.set_volume(*volumes)
