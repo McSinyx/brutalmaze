@@ -136,6 +136,7 @@ class Maze:
     def draw(self):
         """Draw the maze."""
         self.surface.fill(BG_COLOR)
+        if get_ticks() < self.next_move: return
         for i in self.rangex:
             for j in self.rangey:
                 if self.map[i][j] != WALL: continue
@@ -249,7 +250,7 @@ class Maze:
             elif bullet.color == 'Aluminium':
                 x = MIDDLE + round2((bullet.x-self.x) / self.distance)
                 y = MIDDLE + round2((bullet.y-self.y) / self.distance)
-                if self.map[x][y] == WALL:
+                if self.map[x][y] == WALL and time >= self.next_move:
                     fallen.append(i)
                     continue
                 for j, enemy in enumerate(self.enemies):

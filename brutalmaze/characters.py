@@ -25,6 +25,8 @@ from random import choice, randrange, shuffle
 from sys import modules
 
 import pygame
+from pygame.mixer import Sound
+from pygame.time import get_ticks
 
 from .constants import *
 from .misc import sign, cosin, randsign, regpoly, fill_aapolygon, choices, play
@@ -63,14 +65,14 @@ class Hero:
         self.spin_speed = fps / HERO_HP
         self.spin_queue = self.wound = 0.0
 
-        self.sfx_heart = pygame.mixer.Sound(SFX_HEART)
+        self.sfx_heart = Sound(SFX_HEART)
 
     def update(self, fps):
         """Update the hero."""
         if self.dead:
             self.spin_queue = 0.0
             return
-        old_speed, time = self.spin_speed, pygame.time.get_ticks()
+        old_speed, time = self.spin_speed, get_ticks()
         self.spin_speed = fps / (HERO_HP-self.wound**0.5)
         self.spin_queue *= self.spin_speed / old_speed
         if time > self.next_heal:
@@ -131,7 +133,7 @@ class Enemy:
         self.spin_speed = self.maze.fps / ENEMY_HP
         self.spin_queue = self.wound = 0.0
 
-        self.sfx_slash = pygame.mixer.Sound(SFX_SLASH_HERO)
+        self.sfx_slash = Sound(SFX_SLASH_HERO)
 
     def get_pos(self):
         """Return coordinate of the center of the enemy."""
@@ -174,11 +176,11 @@ class Enemy:
         if self.maze.hero.dead: return False
         x, y = self.get_pos()
         if (self.maze.get_distance(x, y) > FIRANGE*self.maze.distance
-            or self.next_strike > pygame.time.get_ticks()
+            or get_ticks() < self.next_strike
             or (self.x, self.y) in AROUND_HERO or self.offsetx or self.offsety
             or randrange((self.maze.hero.slashing+self.maze.isfast()+1) * 3)):
             return False
-        self.next_strike = pygame.time.get_ticks() + ATTACK_SPEED
+        self.next_strike = get_ticks() + ATTACK_SPEED
         self.maze.bullets.append(Bullet(
             self.maze.surface, x, y,
             atan2(self.maze.y - y, self.maze.x - x), self.color))
@@ -192,7 +194,7 @@ class Enemy:
         if self.offsety:
             self.offsety -= sign(self.offsety)
             return True
-        if self.next_strike > pygame.time.get_ticks(): return False
+        if get_ticks() < self.next_strike: return False
 
         self.move_speed = self.maze.fps / speed
         directions = [(sign(MIDDLE - self.x), 0), (0, sign(MIDDLE - self.y))]
@@ -241,7 +243,7 @@ class Enemy:
                 self.spin_queue -= sign(self.spin_queue)
             else:
                 self.angle, self.spin_queue = pi / 4, 0.0
-        self.draw()
+        if self.awake or get_ticks() >= self.maze.next_move: self.draw()
 
     def hit(self, wound):
         """Handle the enemy when it's attacked."""
@@ -270,17 +272,17 @@ class Chameleon(Enemy):
     def wake(self):
         """Wake the Chameleon up if it can see the hero."""
         if Enemy.wake(self) is True:
-            self.visible = pygame.time.get_ticks() + 1000//ENEMY_SPEED
+            self.visible = get_ticks() + 1000//ENEMY_SPEED
 
     def draw(self):
         """Draw the Chameleon."""
         if (not self.awake or self.spin_queue
-            or pygame.time.get_ticks() <= self.visible):
+            or get_ticks() < max(self.visible, self.maze.next_move)):
             Enemy.draw(self)
 
     def hit(self, wound):
         """Handle the Chameleon when it's attacked."""
-        self.visible = pygame.time.get_ticks() + 1000//ENEMY_SPEED
+        self.visible = get_ticks() + 1000//ENEMY_SPEED
         Enemy.hit(self, wound)
 
 
