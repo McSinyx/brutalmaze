@@ -169,6 +169,8 @@ class Enemy:
                 if get_distance(x - self.maze.x, y - self.maze.y) <= mind:
                     return False
         self.awake = True
+        play(self.maze.sfx_spawn, self.maze.get_distance(*self.get_pos()),
+             self.get_angle() + pi)
         return True
 
     def fire(self):

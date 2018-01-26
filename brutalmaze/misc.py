@@ -85,6 +85,8 @@ def choices(d):
 
 def play(sound, volume, angle=None):
     """Play a pygame.mixer.Sound at the given volume."""
+    if pygame.mixer.find_channel() is None:
+        pygame.mixer.set_num_channels(pygame.mixer.get_num_channels() + 1)
     if angle is None:
         sound.set_volume(volume)
         sound.play()

@@ -25,6 +25,7 @@ from pkg_resources import resource_filename
 
 ICON = image.load(resource_filename('brutalmaze', 'icon.png'))
 MUSIC = resource_filename('brutalmaze', 'soundfx/music.ogg')
+SFX_SPAWN = resource_filename('brutalmaze', 'soundfx/spawn.ogg')
 SFX_SLASH_ENEMY = resource_filename('brutalmaze', 'soundfx/slash-enemy.ogg')
 SFX_SLASH_HERO = resource_filename('brutalmaze', 'soundfx/slash-hero.ogg')
 SFX_SHOT_ENEMY = resource_filename('brutalmaze', 'soundfx/shot-enemy.ogg')

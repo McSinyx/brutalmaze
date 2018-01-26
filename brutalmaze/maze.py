@@ -25,7 +25,7 @@ from random import choice, getrandbits, uniform
 
 import pygame
 from pygame import RESIZABLE
-from pygame.mixer import Sound, set_num_channels
+from pygame.mixer import Sound
 from pygame.time import get_ticks
 
 from .characters import Hero, new_enemy
@@ -105,6 +105,7 @@ class Maze:
         self.next_move = self.next_slashfx = 0
         self.slashd = self.hero.R + self.distance/SQRT2
 
+        self.sfx_spawn = Sound(SFX_SPAWN)
         self.sfx_slash = Sound(SFX_SLASH_ENEMY)
         self.sfx_shot = Sound(SFX_SHOT_ENEMY)
         self.sfx_lose = Sound(SFX_LOSE)
@@ -126,7 +127,6 @@ class Maze:
                 walls.remove((x, y))
             else:
                 self.map[x][y] = WALL
-        set_num_channels(int(num * 3))
 
     def get_pos(self, x, y):
         """Return coordinate of the center of the grid (x, y)."""
