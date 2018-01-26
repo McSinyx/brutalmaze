@@ -220,7 +220,7 @@ class Maze:
         if not self.hero.spin_queue: return
         killist = []
         for i, enemy in enumerate(self.enemies):
-            d = self.slashd - self.get_distance(*enemy.get_pos())
+            d = self.slashd - enemy.get_distance()
             if d > 0:
                 wound, time = d * SQRT2 / self.distance, get_ticks()
                 if time >= self.next_slashfx:

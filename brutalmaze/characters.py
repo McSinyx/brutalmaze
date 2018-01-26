@@ -141,6 +141,12 @@ class Enemy:
         step = self.maze.distance * HERO_SPEED / self.maze.fps
         return x + self.offsetx*step, y + self.offsety*step
 
+    def get_distance(self):
+        """Return the distance from the center of the enemy to
+        the center of the maze.
+        """
+        return self.maze.get_distance(*self.get_pos())
+
     def place(self, x=0, y=0):
         """Move the enemy by (x, y) (in grids)."""
         self.x += x
@@ -169,7 +175,8 @@ class Enemy:
                 if get_distance(x - self.maze.x, y - self.maze.y) <= mind:
                     return False
         self.awake = True
-        play(self.maze.sfx_spawn, self.maze.get_distance(*self.get_pos()),
+        play(self.maze.sfx_spawn,
+             1 - self.get_distance()/self.maze.get_distance(0, 0)/2,
              self.get_angle() + pi)
         return True
 
@@ -213,8 +220,7 @@ class Enemy:
 
     def get_slash(self):
         """Return the enemy's close-range damage."""
-        d = self.maze.slashd - self.maze.get_distance(*self.get_pos())
-        wound = d / self.maze.hero.R
+        wound = (self.maze.slashd - self.get_distance()) / self.maze.hero.R
         return wound if wound > 0 else 0.0
 
     def slash(self):
