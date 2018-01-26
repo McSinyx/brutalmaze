@@ -309,9 +309,10 @@ class Maze:
 
         self.draw()
         for enemy in self.enemies: enemy.update()
-        self.hero.update(fps)
-        self.slash()
-        self.track_bullets()
+        if not self.hero.dead:
+            self.hero.update(fps)
+            self.slash()
+            self.track_bullets()
         pygame.display.flip()
         pygame.display.set_caption('Brutal Maze - Score: {}'.format(
             int(self.score - INIT_SCORE)))

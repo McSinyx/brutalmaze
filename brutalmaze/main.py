@@ -47,7 +47,7 @@ def main():
             elif event.type == KEYDOWN:
                 if event.key == K_F2:   # new game
                     maze.__init__((maze.w, maze.h), fps)
-                elif event.key in (K_ESCAPE, K_p):
+                elif event.key in (K_ESCAPE, K_p) and not maze.hero.dead:
                     maze.paused ^= True
 
         if not maze.hero.dead:
