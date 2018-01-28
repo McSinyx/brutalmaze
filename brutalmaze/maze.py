@@ -365,4 +365,4 @@ class Maze:
         self.hero.dead = True
         self.hero.slashing = self.hero.firing = False
         self.vx = self.vy = 0.0
-        self.sfx_lose.play()
+        play(self.sfx_lose)
