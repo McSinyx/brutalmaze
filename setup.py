@@ -7,7 +7,7 @@ with open('README.rst') as f:
 
 setup(
     name='brutalmaze',
-    version='0.4.2',
+    version='0.5.0',
     description='A hash and slash game with fast-paced action and a minimalist art style',
     long_description=long_description,
     url='https://github.com/McSinyx/brutalmaze',
@@ -27,6 +27,6 @@ setup(
         'Topic :: Games/Entertainment :: Arcade'],
     keywords='pygame action-game arcade-game maze',
     packages=['brutalmaze'],
-    install_requires=['pygame>=1.9'],
-    package_data={'brutalmaze': ['icon.png', 'soundfx/*.ogg']},
+    install_requires=['appdirs', 'pygame>=1.9'],
+    package_data={'brutalmaze': ['icon.png', 'soundfx/*.ogg', 'settings.ini']},
     entry_points={'gui_scripts': ['brutalmaze = brutalmaze:main']})

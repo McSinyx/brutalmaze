@@ -18,7 +18,14 @@
 # Copyright (C) 2017 Nguyễn Gia Phong
 
 from collections import deque
+try:
+    from configparser import ConfigParser   # Python 3
+except ImportError:
+    from ConfigParser import ConfigParser   # Python 2
+from os.path import join
 
+from appdirs import AppDirs
+from pkg_resources import resource_filename
 import pygame
 from pygame.locals import *
 
@@ -29,21 +36,36 @@ from .misc import some
 
 def main():
     """Start game and main loop."""
+    # Read configuration file
+    dirs = AppDirs(appname='brutalmaze')
+    config = ConfigParser()
+    if not config.read(join(dirs.user_config_dir, 'settings.ini')):
+        if not config.read(join(dirs.site_config_dir, 'settings.ini')):
+            config.read(resource_filename('brutalmaze', 'settings.ini'))
+    scrtype = RESIZABLE
+    if config.getboolean('Graphics', 'OpenGL'):
+        surftype |= OPENGL | DOUBLEBUF
+    fps = config.getfloat('Graphics', 'Maximum FPS')
+
+    # Initialization
     pygame.mixer.pre_init(frequency=44100)
     pygame.init()
     pygame.mixer.music.load(MUSIC)
     pygame.mixer.music.play(-1)
     pygame.display.set_icon(ICON)
     pygame.fastevent.init()
-    maze, clock = Maze(SIZE, INIT_FPS), pygame.time.Clock()
-    fps, flash_time, going = INIT_FPS, deque(), True
+    maze = Maze((config.getint('Graphics', 'Screen width'),
+                 config.getint('Graphics', 'Screen height')), scrtype, fps)
+    clock, flash_time, going = pygame.time.Clock(), deque(), True
+
+    # Main loop
     while going:
         events = pygame.fastevent.get()
         for event in events:
             if event.type == QUIT:
                 going = False
             elif event.type == VIDEORESIZE:
-                maze.resize(event.w, event.h)
+                maze.resize((event.w, event.h), scrtype)
             elif event.type == KEYDOWN:
                 if event.key == K_F2:   # new game
                     maze.__init__((maze.w, maze.h), fps)

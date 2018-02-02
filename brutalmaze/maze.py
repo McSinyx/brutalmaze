@@ -81,10 +81,10 @@ class Maze:
         sfx_shot (Sound): sound effect indicating an enemy get shot
         sfx_lose (Sound): sound effect to be played when you lose
     """
-    def __init__(self, size, fps):
+    def __init__(self, size, scrtype, fps):
         self.w, self.h = size
         self.fps = fps
-        self.surface = pygame.display.set_mode(size, RESIZABLE)
+        self.surface = pygame.display.set_mode(size, scrtype)
         self.distance = (self.w * self.h / 416) ** 0.5
         self.x, self.y = self.w // 2, self.h // 2
         self.centerx, self.centery = self.w / 2.0, self.h / 2.0
@@ -339,10 +339,10 @@ class Maze:
             self.vy += y * accel
             if abs(self.vy) > velocity: self.vy = y * velocity
 
-    def resize(self, w, h):
+    def resize(self, size, scrtype):
         """Resize the maze."""
-        size = self.w, self.h = w, h
-        self.surface = pygame.display.set_mode(size, RESIZABLE)
+        self.w, self.h = size
+        self.surface = pygame.display.set_mode(size, scrtype)
         self.hero.resize()
 
         offsetx = (self.centerx-self.x) / self.distance
