@@ -17,35 +17,88 @@
 #
 # Copyright (C) 2017 Nguyễn Gia Phong
 
+import re
 from collections import deque
-try:
-    from configparser import ConfigParser   # Python 3
-except ImportError:
-    from ConfigParser import ConfigParser   # Python 2
+try:                    # Python 3
+    from configparser import ConfigParser, NoOptionError, NoSectionError
+except ImportError:     # Python 2
+    from ConfigParser import ConfigParser, NoOptionError, NoSectionError
 from os.path import join
 
-from appdirs import AppDirs
+from appdirs import user_config_dir, site_config_dir
 from pkg_resources import resource_filename
 import pygame
-from pygame.locals import *
+from pygame import DOUBLEBUF, KEYDOWN, OPENGL, QUIT, RESIZABLE, VIDEORESIZE
 
 from .constants import *
 from .maze import Maze
-from .misc import some
+
+
+USER_CONFIG = join(user_config_dir('brutalmaze'), 'settings.ini')
+SITE_CONFIG = join(site_config_dir('brutalmaze'), 'settings.ini')
+DEFAULT_BINDINGS = {'New game': 'F2', 'Pause': 'p',
+                    'Move left': 'Left', 'Move right': 'Right',
+                    'Move up': 'Up', 'Move down': 'Down',
+                    'Long-range attack': 'Mouse1',
+                    'Close-range attack': 'Mouse3'}
+
+
+def getconf(config, section, option, valtype=str, fallback=None):
+    """Return an option value for a given section from a ConfigParser
+    object.
+
+    If the key is not found, return the fallback value.
+    """
+    if fallback is None: fallback = valtype()
+    try:
+        if valtype == str:
+            return config.get(section, option)
+        elif valtype == bool:
+            return config.getboolean(section, option)
+        elif valtype == float:
+            return config.getfloat(section, option)
+        elif valtype == int:
+            return config.getint(section, option)
+    except NoSectionError, NoOptionError:
+        return fallback
 
 
 def main():
     """Start game and main loop."""
     # Read configuration file
-    dirs = AppDirs(appname='brutalmaze')
     config = ConfigParser()
-    if not config.read(join(dirs.user_config_dir, 'settings.ini')):
-        if not config.read(join(dirs.site_config_dir, 'settings.ini')):
-            config.read(resource_filename('brutalmaze', 'settings.ini'))
+    conf = config.read(USER_CONFIG)
+    if not conf: conf = config.read(SITE_CONFIG)
+    conf = conf[0] if conf else ''
+
+    # Read graphics configurations
+    width = getconf(config, 'Graphics', 'Screen width', int, 640)
+    height = getconf(config, 'Graphics', 'Screen height', int, 480)
     scrtype = RESIZABLE
-    if config.getboolean('Graphics', 'OpenGL'):
-        surftype |= OPENGL | DOUBLEBUF
-    fps = config.getfloat('Graphics', 'Maximum FPS')
+    if getconf(config, 'Graphics', 'OpenGL', bool):
+        scrtype |= OPENGL | DOUBLEBUF
+    fps = getconf(config, 'Graphics', 'Maximum FPS', float, 60.0)
+
+    # Read control configurations
+    key, mouse = {}, {}
+    for cmd, bind in DEFAULT_BINDINGS.items():
+        i = getconf(config, 'Control', cmd, fallback=bind).lower()
+        if re.match('mouse[1-3]$', i):
+            if cmd not in ('Long-range attack', 'Close-range attack'):
+                print('File "{}", section Control'.format(conf))
+                print('\tOne does not simply {} using a mouse'.format(cmd))
+                quit()
+            mouse[cmd] = int(i[-1]) - 1
+            continue
+        if len(i) == 1:
+            key[cmd] = ord(i)
+            continue
+        try:
+            key[cmd] = getattr(pygame, 'K_{}'.format(i.upper()))
+        except AttributeError:
+            print('File "{}", section Control, option {}'.format(conf, cmd))
+            print('\t"{}" is not recognized as a valid input'.format(i))
+            quit()
 
     # Initialization
     pygame.mixer.pre_init(frequency=44100)
@@ -54,8 +107,7 @@ def main():
     pygame.mixer.music.play(-1)
     pygame.display.set_icon(ICON)
     pygame.fastevent.init()
-    maze = Maze((config.getint('Graphics', 'Screen width'),
-                 config.getint('Graphics', 'Screen height')), scrtype, fps)
+    maze = Maze((width, height), scrtype, fps)
     clock, flash_time, going = pygame.time.Clock(), deque(), True
 
     # Main loop
@@ -67,19 +119,26 @@ def main():
             elif event.type == VIDEORESIZE:
                 maze.resize((event.w, event.h), scrtype)
             elif event.type == KEYDOWN:
-                if event.key == K_F2:   # new game
-                    maze.__init__((maze.w, maze.h), fps)
-                elif event.key in (K_ESCAPE, K_p) and not maze.hero.dead:
+                if event.key == key['New game']:
+                    maze.__init__((maze.w, maze.h), scrtype, fps)
+                elif event.key == key['Pause'] and not maze.hero.dead:
                     maze.paused ^= True
 
         if not maze.hero.dead:
             keys = pygame.key.get_pressed()
+            maze.move(keys[key['Move left']] - keys[key['Move right']],
+                      keys[key['Move up']] - keys[key['Move down']], fps)
             buttons = pygame.mouse.get_pressed()
-            maze.move(some(keys, LEFT) - some(keys, RIGHT),
-                      some(keys, UP) - some(keys, DOWN), fps)
-            maze.hero.slashing = keys[K_RETURN] or buttons[2]
-            maze.hero.firing = buttons[0]
+            try:
+                maze.hero.firing = keys[key['Long-range attack']]
+            except KeyError:
+                maze.hero.firing = buttons[mouse['Long-range attack']]
+            try:
+                maze.hero.slashing = keys[key['Close-range attack']]
+            except KeyError:
+                maze.hero.slashing = buttons[mouse['Close-range attack']]
 
+        # Compare current FPS with the average of the last 5 seconds
         if len(flash_time) > 5:
             new_fps = 5000.0 / (flash_time[-1] - flash_time[0])
             flash_time.popleft()

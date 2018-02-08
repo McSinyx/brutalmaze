@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# characters.py - module for shared functions and macros
+# misc.py - module for miscellaneous functions
 # This file is part of brutalmaze
 #
 # brutalmaze is free software: you can redistribute it and/or modify
@@ -19,20 +19,13 @@
 
 __doc__ = 'brutalmaze module for hero and enemy classes'
 
-from functools import reduce
 from math import cos, sin, pi
-from operator import or_
 from random import uniform
 
 import pygame
 from pygame.gfxdraw import filled_polygon, aapolygon
 
 from .constants import MIDDLE
-
-
-def some(a, keys):
-    """Return True if there is a key k in keys that bool(a[k]) is True."""
-    return bool(reduce(or_, (a[k] for k in keys)))
 
 
 def round2(number):
