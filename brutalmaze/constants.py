@@ -19,9 +19,20 @@
 
 __doc__ = 'brutalmaze module for shared constants'
 
-from pygame import image, K_UP, K_w, K_LEFT, K_a, K_DOWN, K_s, K_RIGHT, K_d
-from pygame.mixer import Sound
+from os.path import join
+
+from appdirs import user_config_dir, site_config_dir
 from pkg_resources import resource_filename
+from pygame import image
+from pygame.mixer import Sound
+
+USER_CONFIG = join(user_config_dir('brutalmaze'), 'settings.ini')
+SITE_CONFIG = join(site_config_dir('brutalmaze'), 'settings.ini')
+DEFAULT_BINDINGS = {'New game': 'F2', 'Pause': 'p',
+                    'Move left': 'Left', 'Move right': 'Right',
+                    'Move up': 'Up', 'Move down': 'Down',
+                    'Long-range attack': 'Mouse1',
+                    'Close-range attack': 'Mouse3'}
 
 ICON = image.load(resource_filename('brutalmaze', 'icon.png'))
 MUSIC = resource_filename('brutalmaze', 'soundfx/music.ogg')
@@ -34,16 +45,8 @@ SFX_MISSED = resource_filename('brutalmaze', 'soundfx/missed.ogg')
 SFX_HEART = resource_filename('brutalmaze', 'soundfx/heart.ogg')
 SFX_LOSE = resource_filename('brutalmaze', 'soundfx/lose.ogg')
 
-UP = (K_UP, K_w)
-LEFT = (K_LEFT, K_a)
-DOWN = (K_DOWN, K_s)
-RIGHT = (K_RIGHT, K_d)
-
 SQRT2 = 2 ** 0.5
 INIT_SCORE = 5**0.5/2 + 0.5     # golden mean
-INIT_FPS = 30.0
-MAX_FPS = 60.0
-SIZE = 640, 480
 MAZE_SIZE = 10
 ROAD_WIDTH = 5  # grids
 CELL_WIDTH = ROAD_WIDTH * 2     # grids

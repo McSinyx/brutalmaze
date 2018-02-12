@@ -17,15 +17,13 @@
 #
 # Copyright (C) 2017 Nguyễn Gia Phong
 
-__doc__ = 'brutalmaze module for hero and enemy classes'
+__doc__ = 'module for miscellaneous functions'
 
 from math import cos, sin, pi
 from random import uniform
 
 import pygame
 from pygame.gfxdraw import filled_polygon, aapolygon
-
-from .constants import MIDDLE
 
 
 def round2(number):
