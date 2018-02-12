@@ -25,8 +25,6 @@ from random import uniform
 import pygame
 from pygame.gfxdraw import filled_polygon, aapolygon
 
-from .constants import MIDDLE
-
 
 def round2(number):
     """Round a number to an int."""

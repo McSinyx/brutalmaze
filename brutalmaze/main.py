@@ -23,24 +23,12 @@ try:                    # Python 3
     from configparser import ConfigParser, NoOptionError, NoSectionError
 except ImportError:     # Python 2
     from ConfigParser import ConfigParser, NoOptionError, NoSectionError
-from os.path import join
 
-from appdirs import user_config_dir, site_config_dir
-from pkg_resources import resource_filename
 import pygame
 from pygame import DOUBLEBUF, KEYDOWN, OPENGL, QUIT, RESIZABLE, VIDEORESIZE
 
-from .constants import *
+from .constants import USER_CONFIG, SITE_CONFIG, DEFAULT_BINDINGS, ICON, MUSIC
 from .maze import Maze
-
-
-USER_CONFIG = join(user_config_dir('brutalmaze'), 'settings.ini')
-SITE_CONFIG = join(site_config_dir('brutalmaze'), 'settings.ini')
-DEFAULT_BINDINGS = {'New game': 'F2', 'Pause': 'p',
-                    'Move left': 'Left', 'Move right': 'Right',
-                    'Move up': 'Up', 'Move down': 'Down',
-                    'Long-range attack': 'Mouse1',
-                    'Close-range attack': 'Mouse3'}
 
 
 def getconf(config, section, option, valtype=str, fallback=None):
@@ -77,7 +65,7 @@ def main():
     scrtype = RESIZABLE
     if getconf(config, 'Graphics', 'OpenGL', bool):
         scrtype |= OPENGL | DOUBLEBUF
-    fps = getconf(config, 'Graphics', 'Maximum FPS', float, 60.0)
+    fps = max_fps = getconf(config, 'Graphics', 'Maximum FPS', float, 60.0)
 
     # Read control configurations
     key, mouse = {}, {}
@@ -144,7 +132,7 @@ def main():
             flash_time.popleft()
             if new_fps < fps:
                 fps -= 1
-            elif fps < MAX_FPS and not maze.paused:
+            elif fps < max_fps and not maze.paused:
                 fps += 5
         maze.update(fps)
         flash_time.append(pygame.time.get_ticks())

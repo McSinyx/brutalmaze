@@ -19,7 +19,6 @@
 
 __doc__ = 'brutalmaze module for hero and enemy classes'
 
-from collections import deque
 from math import atan, atan2, sin, pi
 from random import choice, randrange, shuffle
 from sys import modules
@@ -138,7 +137,7 @@ class Enemy:
     def get_pos(self):
         """Return coordinate of the center of the enemy."""
         x, y = self.maze.get_pos(self.x, self.y)
-        step = self.maze.distance * HERO_SPEED / self.maze.fps
+        step = self.maze.distance * ENEMY_SPEED / self.maze.fps
         return x + self.offsetx*step, y + self.offsety*step
 
     def get_distance(self):

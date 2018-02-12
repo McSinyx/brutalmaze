@@ -15,7 +15,7 @@ setup(
     author_email='vn.mcsinyx@gmail.com',
     license='GPLv3+',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Environment :: MacOS X',
         'Environment :: Win32 (MS Windows)',
         'Environment :: X11 Applications',
@@ -28,5 +28,5 @@ setup(
     keywords='pygame action-game arcade-game maze',
     packages=['brutalmaze'],
     install_requires=['appdirs', 'pygame>=1.9'],
-    package_data={'brutalmaze': ['icon.png', 'soundfx/*.ogg', 'settings.ini']},
+    package_data={'brutalmaze': ['icon.png', 'soundfx/*.ogg']},
     entry_points={'gui_scripts': ['brutalmaze = brutalmaze:main']})
