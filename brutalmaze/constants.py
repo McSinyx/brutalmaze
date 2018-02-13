@@ -19,20 +19,9 @@
 
 __doc__ = 'brutalmaze module for shared constants'
 
-from os.path import join
-
-from appdirs import user_config_dir, site_config_dir
 from pkg_resources import resource_filename
 from pygame import image
 from pygame.mixer import Sound
-
-USER_CONFIG = join(user_config_dir('brutalmaze'), 'settings.ini')
-SITE_CONFIG = join(site_config_dir('brutalmaze'), 'settings.ini')
-DEFAULT_BINDINGS = {'New game': 'F2', 'Pause': 'p',
-                    'Move left': 'Left', 'Move right': 'Right',
-                    'Move up': 'Up', 'Move down': 'Down',
-                    'Long-range attack': 'Mouse1',
-                    'Close-range attack': 'Mouse3'}
 
 ICON = image.load(resource_filename('brutalmaze', 'icon.png'))
 MUSIC = resource_filename('brutalmaze', 'soundfx/music.ogg')
