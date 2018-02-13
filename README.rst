@@ -1,7 +1,7 @@
 Brutal Maze
 ===========
 
-Brutal Maze is a hash and slash game with fast-paced action and a minimalist
+Brutal Maze is a hack and slash game with fast-paced action and a minimalist
 art style.
 
 .. image:: https://raw.githubusercontent.com/McSinyx/brutalmaze/master/screenshot.png
@@ -31,27 +31,25 @@ The installation procedure should be as simply as follow:
   directory for `Python scripts <https://docs.python.org/2/install/index.html#alternate-installation-the-user-scheme>`_
   is in your ``$PATH``.
 * Open Terminal or Command Prompt and run ``pip install --user brutalmaze``.
-  Now you can lauch the game by running the command ``brutalmaze``.
+  Now you can launch the game by running the command ``brutalmaze``.
 
 For more information, see the `Installation <https://github.com/McSinyx/brutalmaze/wiki/Installation>`_
 from Brutal Maze wiki.
 
-Control
--------
+Configuration
+-------------
 
-F2
-   New game.
-Escape, ``p``
-   Pause.
-Up, ``w``
-   Move up.
-Down, ``s``
-   Move down.
-Left, ``a``
-   Move left.
-Right, ``d``
-   Move right.
-Left Mouse
-   Long-range attack.
-Return, Right Mouse
-   Close-range attack, also dodge from bullets.
+Brutal Maze reads settings from both configuration file and command-line
+arguments. These settings are read in the following order:
+
+1. System-wide configuration file [1]_
+2. Local configuration file [1]_
+3. Manually set configuration file [2]_
+4. Command-line arguments [3]_
+
+The later-read preferences will overide the previous ones.
+
+.. [1] These will be listed as fallback config in the help message
+   (``brutalmaze --help``).
+.. [2] This can be set using ``brutalmaze --config PATH``.
+.. [3] Listed in the help message.

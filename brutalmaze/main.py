@@ -133,7 +133,7 @@ def main():
     config = ConfigReader(filenames)
     config.parse_graphics()
 
-    # Parse command line arguments
+    # Parse command-line arguments
     parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
     parser.add_argument('-v', '--version', action='version',
                         version='Brutal Maze {}'.format(__version__))
