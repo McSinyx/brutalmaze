@@ -17,16 +17,17 @@
 #
 # Copyright (C) 2017 Nguyễn Gia Phong
 
-__version__ = '0.5.1'
+__version__ = '0.5.2'
 
 import re
-from argparse import ArgumentParser, RawTextHelpFormatter
+from argparse import ArgumentParser, FileType, RawTextHelpFormatter
 from collections import deque
 try:                    # Python 3
     from configparser import ConfigParser, NoOptionError, NoSectionError
 except ImportError:     # Python 2
     from ConfigParser import ConfigParser, NoOptionError, NoSectionError
 from os.path import join, pathsep
+from sys import stdout
 
 
 import pygame
@@ -41,75 +42,38 @@ class ConfigReader:
     """Object reading and processing INI configuration file for
     Brutal Maze.
     """
-    DEFAULT_BINDINGS = (('New game', 'new', 'F2'),
-                        ('Pause', 'pause', 'p'),
-                        ('Move left', 'left', 'Left'),
-                        ('Move right', 'right', 'Right'),
-                        ('Move up', 'up', 'Up'),
-                        ('Move down', 'down', 'Down'),
-                        ('Long-range attack', 'shot', 'Mouse1'),
-                        ('Close-range attack', 'slash', 'Mouse3'))
+    DEFAULT_BINDINGS = (('New game', 'new'), ('Pause', 'pause'),
+                        ('Move left', 'left'), ('Move right', 'right'),
+                        ('Move up', 'up'), ('Move down', 'down'),
+                        ('Long-range attack', 'shot'),
+                        ('Close-range attack', 'slash'))
     WEIRD_MOUSE_ERR = '{}: Mouse is not a suitable control'
     INVALID_CONTROL_ERR = '{}: {} is not recognized as a valid control key'
 
     def __init__(self, filenames):
         self.config = ConfigParser()
+        self.config.read(SETTINGS)  # default configuration
         self.config.read(filenames)
-
-    def _getconf(self, section, option, val_t):
-        if val_t == str:
-            return self.config.get(section, option)
-        elif val_t == bool:
-            return self.config.getboolean(section, option)
-        elif val_t == float:
-            return self.config.getfloat(section, option)
-        elif val_t == int:
-            return self.config.getint(section, option)
-
-    def getconf(self, section, option, val_t=str, fallback=None):
-        """Return the value of the option in the given section.
-
-        If the value is not found, return fallback.
-        """
-        try:
-            return self._getconf(section, option, val_t)
-        except NoSectionError, NoOptionError:
-            return val_t() if fallback is None else fallback
-
-    def setconf(self, name, section, option, val_t=str, fallback=None):
-        """Set the named attribute to the value of the option in
-        the given section.
-
-        If the value is not found and attribute does not exist,
-        use fallback.
-        """
-        try:
-            setattr(self, name, self._getconf(section, option, val_t))
-        except NoSectionError, NoOptionError:
-            try:
-                getattr(self, name)
-            except AttributeError:
-                setattr(self, name, val_t() if fallback is None else fallback)
 
     def parse_graphics(self):
         """Parse graphics configurations."""
-        self.setconf('width', 'Graphics', 'Screen width', int, 640)
-        self.setconf('height', 'Graphics', 'Screen height', int, 480)
-        self.setconf('opengl', 'Graphics', 'OpenGL', bool)
-        self.setconf('max_fps', 'Graphics', 'Maximum FPS', float, 60.0)
+        self.size = (self.config.getint('Graphics', 'Screen width'),
+                     self.config.getint('Graphics', 'Screen height'))
+        self.opengl = self.config.getboolean('Graphics', 'OpenGL')
+        self.max_fps = self.config.getfloat('Graphics', 'Maximum FPS')
 
     def parse_control(self):
         """Parse control configurations."""
         self.key, self.mouse = {}, {}
-        for cmd, alias, bind in self.DEFAULT_BINDINGS:
-            i = self.getconf('Control', cmd, fallback=bind).lower()
-            if re.match('mouse[1-3]$', i):
+        for cmd, alias in self.CONTROL_ALIASES:
+            i = self.config.get('Control', cmd)
+            if re.match('mouse[1-3]$', i.lower()):
                 if alias not in ('shot', 'slash'):
                     raise ValueError(self.WEIRD_MOUSE_ERR.format(cmd))
                 self.mouse[alias] = int(i[-1]) - 1
                 continue
             if len(i) == 1:
-                self.key[alias] = ord(i)
+                self.key[alias] = ord(i.lower())
                 continue
             try:
                 self.key[alias] = getattr(pygame, 'K_{}'.format(i.upper()))
@@ -118,7 +82,7 @@ class ConfigReader:
 
     def read_args(self, arguments):
         """Read and parse a ArgumentParser.Namespace."""
-        if arguments.size is not None: self.width, self.height = arguments.size
+        if arguments.size is not None: self.size = arguments.size
         if arguments.opengl is not None: self.opengl = arguments.opengl
         if arguments.max_fps is not None: self.max_fps = arguments.max_fps
 
@@ -138,13 +102,16 @@ def main():
     parser.add_argument('-v', '--version', action='version',
                         version='Brutal Maze {}'.format(__version__))
     parser.add_argument(
+        '--write-config', nargs='?', const=stdout, type=FileType('w'),
+        metavar='PATH', dest='defaultcfg',
+        help='write default config and exit, if PATH not specified use stdout')
+    parser.add_argument(
         '-c', '--config', metavar='PATH',
         help='location of the configuration file (fallback: {})'.format(
             pathsep.join(filenames)))
     parser.add_argument(
         '-s', '--size', type=int, nargs=2, metavar=('X', 'Y'),
-        help='the desired screen size (fallback: {}x{})'.format(config.width,
-                                                                config.height))
+        help='the desired screen size (fallback: {}x{})'.format(*config.size))
     parser.add_argument(
         '--opengl', action='store_true', default=None,
         help='enable OpenGL (fallback: {})'.format(config.opengl))
@@ -154,6 +121,10 @@ def main():
         '-f', '--max-fps', type=float, metavar='FPS',
         help='the desired maximum FPS (fallback: {})'.format(config.max_fps))
     args = parser.parse_args()
+    if args.defaultcfg is not None:
+        with open(SETTINGS) as settings: args.defaultcfg.write(settings.read())
+        args.defaultcfg.close()
+        exit()
 
     # Manipulate config
     if args.config: config.config.read(args.config)
@@ -170,7 +141,7 @@ def main():
     pygame.fastevent.init()
     clock, flash_time, fps = pygame.time.Clock(), deque(), config.max_fps
     scrtype = (config.opengl and DOUBLEBUF|OPENGL) | RESIZABLE
-    maze = Maze((config.width, config.height), scrtype, fps)
+    maze = Maze(config.size, scrtype, fps)
 
     # Main loop
     going = True

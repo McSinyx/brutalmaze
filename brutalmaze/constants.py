@@ -23,6 +23,7 @@ from pkg_resources import resource_filename
 from pygame import image
 from pygame.mixer import Sound
 
+SETTINGS = resource_filename('brutalmaze', 'settings.ini')
 ICON = image.load(resource_filename('brutalmaze', 'icon.png'))
 MUSIC = resource_filename('brutalmaze', 'soundfx/music.ogg')
 SFX_SPAWN = resource_filename('brutalmaze', 'soundfx/spawn.ogg')

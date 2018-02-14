@@ -39,17 +39,22 @@ from Brutal Maze wiki.
 Configuration
 -------------
 
-Brutal Maze reads settings from both configuration file and command-line
-arguments. These settings are read in the following order:
+Brutal Maze supports both configuration file and command-line options.
+Apparently one can change settings for graphics and control in the config file
+and set graphics options using in CLI. These settings are read in the following
+order:
 
+0. Default configuration [0]_
 1. System-wide configuration file [1]_
 2. Local configuration file [1]_
 3. Manually set configuration file [2]_
-4. Command-line arguments [3]_
+4. Command-line arguments
 
 The later-read preferences will overide the previous ones.
 
+.. [0] This can be copied to desired location by ``brutalmaze --write-config
+   PATH``. ``brutalmaze --write-config`` alone will print the file to stdout.
 .. [1] These will be listed as fallback config in the help message
-   (``brutalmaze --help``).
-.. [2] This can be set using ``brutalmaze --config PATH``.
-.. [3] Listed in the help message.
+   (``brutalmaze --help``). See `wiki <https://github.com/McSinyx/brutalmaze/wiki/Configuration>`_
+   for more info.
+.. [2] If specified by ``brutalmaze --config PATH``.
