@@ -58,19 +58,18 @@ class Maze:
     """Object representing the maze, including the characters.
 
     Attributes:
-        w, h: width and height of the display
-        fps: current frame rate
+        w, h (int): width and height of the display (in px)
+        fps (float): current frame rate
         surface (pygame.Surface): the display to draw on
         distance (float): distance between centers of grids (in px)
         x, y (int): coordinates of the center of the hero (in px)
         centerx, centery (float): center grid's center's coordinates (in px)
-        rangex, rangey: range of the index of the grids on display
-        paused (bool): flag indicates if the game is paused
+        rangex, rangey (range): range of the index of the grids on display
         score (float): current score
         map (deque of deque): map of grids representing objects on the maze
         vx, vy (float): velocity of the maze movement (in pixels per frame)
-        rotatex, rotatey: grids rotated
-        bullets (list of Bullet): bullets flying
+        rotatex, rotatey (int): grids rotated
+        bullets (list of Bullet): flying bullets
         enemy_weights (dict): probabilities of enemies to be created
         enemies (list of Enemy): alive enemies
         hero (Hero): the hero
@@ -81,17 +80,22 @@ class Maze:
         sfx_shot (Sound): sound effect indicating an enemy get shot
         sfx_lose (Sound): sound effect to be played when you lose
     """
-    def __init__(self, size, scrtype, fps):
-        self.w, self.h = size
+    def __init__(self, fps, size=None, scrtype=None):
         self.fps = fps
-        self.surface = pygame.display.set_mode(size, scrtype)
+        if size is not None:
+            self.w, self.h = size
+        else:
+            size = self.w, self.h
+        if scrtype is not None: self.scrtype = scrtype
+
+        self.surface = pygame.display.set_mode(size, self.scrtype)
         self.distance = (self.w * self.h / 416) ** 0.5
         self.x, self.y = self.w // 2, self.h // 2
         self.centerx, self.centery = self.w / 2.0, self.h / 2.0
         w, h = (int(i/self.distance/2 + 2) for i in size)
         self.rangex = range(MIDDLE - w, MIDDLE + w + 1)
         self.rangey = range(MIDDLE - h, MIDDLE + h + 1)
-        self.paused, self.score = False, INIT_SCORE
+        self.score = INIT_SCORE
 
         self.map = deque()
         for _ in range(MAZE_SIZE): self.map.extend(new_column())
@@ -295,7 +299,6 @@ class Maze:
 
     def update(self, fps):
         """Update the maze."""
-        if self.paused: return
         self.fps = fps
         dx = self.is_valid_move(vx=self.vx)
         self.centerx += dx
@@ -317,32 +320,10 @@ class Maze:
         pygame.display.set_caption('Brutal Maze - Score: {}'.format(
             int(self.score - INIT_SCORE)))
 
-    def move(self, x, y, fps):
-        """Command the hero to move faster in the given direction."""
-        stunned = get_ticks() < self.next_move
-        velocity = self.distance * HERO_SPEED / fps
-        accel = velocity * HERO_SPEED / fps
-        if stunned or not x:
-            self.vx -= sign(self.vx) * accel
-            if abs(self.vx) < accel * 2: self.vx = 0.0
-        elif x * self.vx < 0:
-            self.vx += x * 2 * accel
-        else:
-            self.vx += x * accel
-            if abs(self.vx) > velocity: self.vx = x * velocity
-        if stunned or not y:
-            self.vy -= sign(self.vy) * accel
-            if abs(self.vy) < accel * 2: self.vy = 0.0
-        elif y * self.vy < 0:
-            self.vy += y * 2 * accel
-        else:
-            self.vy += y * accel
-            if abs(self.vy) > velocity: self.vy = y * velocity
-
-    def resize(self, size, scrtype):
+    def resize(self, size):
         """Resize the maze."""
         self.w, self.h = size
-        self.surface = pygame.display.set_mode(size, scrtype)
+        self.surface = pygame.display.set_mode(size, self.scrtype)
         self.hero.resize()
 
         offsetx = (self.centerx-self.x) / self.distance

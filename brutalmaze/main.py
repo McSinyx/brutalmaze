@@ -23,30 +23,32 @@ import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter
 from collections import deque
 try:                    # Python 3
-    from configparser import ConfigParser, NoOptionError, NoSectionError
+    from configparser import ConfigParser
 except ImportError:     # Python 2
-    from ConfigParser import ConfigParser, NoOptionError, NoSectionError
+    from ConfigParser import ConfigParser
 from os.path import join, pathsep
 from sys import stdout
 
 
 import pygame
 from pygame import DOUBLEBUF, KEYDOWN, OPENGL, QUIT, RESIZABLE, VIDEORESIZE
+from pygame.time import Clock, get_ticks
 from appdirs import AppDirs
 
 from .constants import *
 from .maze import Maze
+from .misc import sign
 
 
 class ConfigReader:
     """Object reading and processing INI configuration file for
     Brutal Maze.
     """
-    DEFAULT_BINDINGS = (('New game', 'new'), ('Pause', 'pause'),
-                        ('Move left', 'left'), ('Move right', 'right'),
-                        ('Move up', 'up'), ('Move down', 'down'),
-                        ('Long-range attack', 'shot'),
-                        ('Close-range attack', 'slash'))
+    CONTROL_ALIASES = (('New game', 'new'), ('Pause', 'pause'),
+                       ('Move left', 'left'), ('Move right', 'right'),
+                       ('Move up', 'up'), ('Move down', 'down'),
+                       ('Long-range attack', 'shot'),
+                       ('Close-range attack', 'slash'))
     WEIRD_MOUSE_ERR = '{}: Mouse is not a suitable control'
     INVALID_CONTROL_ERR = '{}: {} is not recognized as a valid control key'
 
@@ -85,6 +87,91 @@ class ConfigReader:
         if arguments.size is not None: self.size = arguments.size
         if arguments.opengl is not None: self.opengl = arguments.opengl
         if arguments.max_fps is not None: self.max_fps = arguments.max_fps
+
+
+class Game:
+    """Object handling main loop and IO."""
+    def __init__(self, size, scrtype, max_fps, key, mouse):
+        pygame.mixer.pre_init(frequency=44100)
+        pygame.init()
+        pygame.mixer.music.load(MUSIC)
+        pygame.mixer.music.play(-1)
+        pygame.display.set_icon(ICON)
+        pygame.fastevent.init()
+        self.clock, self.flashes, self.fps = Clock(), deque(), max_fps
+        self.max_fps, self.key, self.mouse = max_fps, key, mouse
+        self.maze = Maze(max_fps, size, scrtype)
+        self.hero = self.maze.hero
+        self.paused = False
+
+    def __enter__(self): return self
+
+    def move(self, x, y):
+        """Command the hero to move faster in the given direction."""
+        stunned = pygame.time.get_ticks() < self.maze.next_move
+        velocity = self.maze.distance * HERO_SPEED / self.fps
+        accel = velocity * HERO_SPEED / self.fps
+
+        if stunned or not x:
+            self.maze.vx -= sign(self.maze.vx) * accel
+            if abs(self.maze.vx) < accel * 2: self.maze.vx = 0.0
+        elif x * self.maze.vx < 0:
+            self.maze.vx += x * 2 * accel
+        else:
+            self.maze.vx += x * accel
+            if abs(self.maze.vx) > velocity: self.maze.vx = x * velocity
+
+        if stunned or not y:
+            self.maze.vy -= sign(self.maze.vy) * accel
+            if abs(self.maze.vy) < accel * 2: self.maze.vy = 0.0
+        elif y * self.maze.vy < 0:
+            self.maze.vy += y * 2 * accel
+        else:
+            self.maze.vy += y * accel
+            if abs(self.maze.vy) > velocity: self.maze.vy = y * velocity
+
+    def loop(self):
+        """Start and handle main loop."""
+        events = pygame.fastevent.get()
+        for event in events:
+            if event.type == QUIT:
+                return False
+            elif event.type == VIDEORESIZE:
+                self.maze.resize((event.w, event.h))
+            elif event.type == KEYDOWN:
+                if event.key == self.key['new']:
+                    self.maze.__init__(self.fps)
+                elif event.key == self.key['pause'] and not self.hero.dead:
+                    self.paused ^= True
+
+        if not self.hero.dead:
+            keys = pygame.key.get_pressed()
+            self.move(keys[self.key['left']] - keys[self.key['right']],
+                      keys[self.key['up']] - keys[self.key['down']])
+            buttons = pygame.mouse.get_pressed()
+            try:
+                self.hero.firing = keys[self.key['shot']]
+            except KeyError:
+                self.hero.firing = buttons[self.mouse['shot']]
+            try:
+                self.hero.slashing = keys[self.key['slash']]
+            except KeyError:
+                self.hero.slashing = buttons[self.mouse['slash']]
+
+        # Compare current FPS with the average of the last 5 seconds
+        if len(self.flashes) > 5:
+            new_fps = 5000.0 / (self.flashes[-1] - self.flashes[0])
+            self.flashes.popleft()
+            if new_fps < self.fps:
+                self.fps -= 1
+            elif self.fps < self.max_fps and not self.paused:
+                self.fps += 5
+        if not self.paused: self.maze.update(self.fps)
+        self.flashes.append(pygame.time.get_ticks())
+        self.clock.tick(self.fps)
+        return True
+
+    def __exit__(self, exc_type, exc_value, traceback): pygame.quit()
 
 
 def main():
@@ -132,55 +219,7 @@ def main():
     config.parse_graphics()
     config.parse_control()
 
-    # Initialization
-    pygame.mixer.pre_init(frequency=44100)
-    pygame.init()
-    pygame.mixer.music.load(MUSIC)
-    pygame.mixer.music.play(-1)
-    pygame.display.set_icon(ICON)
-    pygame.fastevent.init()
-    clock, flash_time, fps = pygame.time.Clock(), deque(), config.max_fps
-    scrtype = (config.opengl and DOUBLEBUF|OPENGL) | RESIZABLE
-    maze = Maze(config.size, scrtype, fps)
-
     # Main loop
-    going = True
-    while going:
-        events = pygame.fastevent.get()
-        for event in events:
-            if event.type == QUIT:
-                going = False
-            elif event.type == VIDEORESIZE:
-                maze.resize((event.w, event.h), scrtype)
-            elif event.type == KEYDOWN:
-                if event.key == config.key['new']:
-                    maze.__init__((maze.w, maze.h), scrtype, fps)
-                elif event.key == config.key['pause'] and not maze.hero.dead:
-                    maze.paused ^= True
-
-        if not maze.hero.dead:
-            keys = pygame.key.get_pressed()
-            maze.move(keys[config.key['left']] - keys[config.key['right']],
-                      keys[config.key['up']] - keys[config.key['down']], fps)
-            buttons = pygame.mouse.get_pressed()
-            try:
-                maze.hero.firing = keys[config.key['shot']]
-            except KeyError:
-                maze.hero.firing = buttons[config.mouse['shot']]
-            try:
-                maze.hero.slashing = keys[config.key['slash']]
-            except KeyError:
-                maze.hero.slashing = buttons[config.mouse['slash']]
-
-        # Compare current FPS with the average of the last 5 seconds
-        if len(flash_time) > 5:
-            new_fps = 5000.0 / (flash_time[-1] - flash_time[0])
-            flash_time.popleft()
-            if new_fps < fps:
-                fps -= 1
-            elif fps < config.max_fps and not maze.paused:
-                fps += 5
-        maze.update(fps)
-        flash_time.append(pygame.time.get_ticks())
-        clock.tick(fps)
-    pygame.quit()
+    scrtype = (config.opengl and DOUBLEBUF|OPENGL) | RESIZABLE
+    with Game(config.size, scrtype, config.max_fps, config.key, config.mouse) as game:
+        while game.loop(): pass
