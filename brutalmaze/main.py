@@ -17,7 +17,7 @@
 #
 # Copyright (C) 2017 Nguyễn Gia Phong
 
-__version__ = '0.5.2'
+__version__ = '0.5.3'
 
 import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter
@@ -62,7 +62,7 @@ class ConfigReader:
         self.size = (self.config.getint('Graphics', 'Screen width'),
                      self.config.getint('Graphics', 'Screen height'))
         self.opengl = self.config.getboolean('Graphics', 'OpenGL')
-        self.max_fps = self.config.getfloat('Graphics', 'Maximum FPS')
+        self.max_fps = self.config.getint('Graphics', 'Maximum FPS')
 
     def parse_control(self):
         """Parse control configurations."""
@@ -98,8 +98,10 @@ class Game:
         pygame.mixer.music.play(-1)
         pygame.display.set_icon(ICON)
         pygame.fastevent.init()
-        self.clock, self.flashes, self.fps = Clock(), deque(), max_fps
-        self.max_fps, self.key, self.mouse = max_fps, key, mouse
+        self.clock = Clock()
+        # self.fps is a float to make sure floordiv won't be used in Python 2
+        self.max_fps, self.fps = max_fps, float(max_fps)
+        self.key, self.mouse = key, mouse
         self.maze = Maze(max_fps, size, scrtype)
         self.hero = self.maze.hero
         self.paused = False
@@ -158,16 +160,13 @@ class Game:
             except KeyError:
                 self.hero.slashing = buttons[self.mouse['slash']]
 
-        # Compare current FPS with the average of the last 5 seconds
-        if len(self.flashes) > 5:
-            new_fps = 5000.0 / (self.flashes[-1] - self.flashes[0])
-            self.flashes.popleft()
-            if new_fps < self.fps:
-                self.fps -= 1
-            elif self.fps < self.max_fps and not self.paused:
-                self.fps += 5
+        # Compare current FPS with the average of the last 10 frames
+        new_fps = self.clock.get_fps()
+        if new_fps < self.fps:
+            self.fps -= 1
+        elif self.fps < self.max_fps and not self.paused:
+            self.fps += 5
         if not self.paused: self.maze.update(self.fps)
-        self.flashes.append(pygame.time.get_ticks())
         self.clock.tick(self.fps)
         return True
 
@@ -205,7 +204,7 @@ def main():
     parser.add_argument('--no-opengl', action='store_false', dest='opengl',
                         help='disable OpenGL')
     parser.add_argument(
-        '-f', '--max-fps', type=float, metavar='FPS',
+        '-f', '--max-fps', type=int, metavar='FPS',
         help='the desired maximum FPS (fallback: {})'.format(config.max_fps))
     args = parser.parse_args()
     if args.defaultcfg is not None:
