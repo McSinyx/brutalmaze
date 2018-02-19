@@ -19,21 +19,25 @@
 
 __doc__ = 'brutalmaze module for shared constants'
 
-from pkg_resources import resource_filename
-from pygame import image
+from pkg_resources import resource_filename as pkg_file
+import pygame
 from pygame.mixer import Sound
 
-SETTINGS = resource_filename('brutalmaze', 'settings.ini')
-ICON = image.load(resource_filename('brutalmaze', 'icon.png'))
-MUSIC = resource_filename('brutalmaze', 'soundfx/music.ogg')
-SFX_SPAWN = resource_filename('brutalmaze', 'soundfx/spawn.ogg')
-SFX_SLASH_ENEMY = resource_filename('brutalmaze', 'soundfx/slash-enemy.ogg')
-SFX_SLASH_HERO = resource_filename('brutalmaze', 'soundfx/slash-hero.ogg')
-SFX_SHOT_ENEMY = resource_filename('brutalmaze', 'soundfx/shot-enemy.ogg')
-SFX_SHOT_HERO = resource_filename('brutalmaze', 'soundfx/shot-hero.ogg')
-SFX_MISSED = resource_filename('brutalmaze', 'soundfx/missed.ogg')
-SFX_HEART = resource_filename('brutalmaze', 'soundfx/heart.ogg')
-SFX_LOSE = resource_filename('brutalmaze', 'soundfx/lose.ogg')
+SETTINGS = pkg_file('brutalmaze', 'settings.ini')
+ICON = pygame.image.load(pkg_file('brutalmaze', 'icon.png'))
+MUSIC = pkg_file('brutalmaze', 'soundfx/music.ogg')
+
+mixer = pygame.mixer.get_init()
+if mixer is None: pygame.mixer.init(frequency=44100)
+SFX_SPAWN = Sound(pkg_file('brutalmaze', 'soundfx/spawn.ogg'))
+SFX_SLASH_ENEMY = Sound(pkg_file('brutalmaze', 'soundfx/slash-enemy.ogg'))
+SFX_SLASH_HERO = Sound(pkg_file('brutalmaze', 'soundfx/slash-hero.ogg'))
+SFX_SHOT_ENEMY = Sound(pkg_file('brutalmaze', 'soundfx/shot-enemy.ogg'))
+SFX_SHOT_HERO = Sound(pkg_file('brutalmaze', 'soundfx/shot-hero.ogg'))
+SFX_MISSED = Sound(pkg_file('brutalmaze', 'soundfx/missed.ogg'))
+SFX_HEART = Sound(pkg_file('brutalmaze', 'soundfx/heart.ogg'))
+SFX_LOSE = Sound(pkg_file('brutalmaze', 'soundfx/lose.ogg'))
+if mixer is None: pygame.mixer.quit()
 
 SQRT2 = 2 ** 0.5
 INIT_SCORE = 5**0.5/2 + 0.5     # golden mean

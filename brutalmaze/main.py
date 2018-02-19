@@ -35,7 +35,7 @@ from pygame import DOUBLEBUF, KEYDOWN, OPENGL, QUIT, RESIZABLE, VIDEORESIZE
 from pygame.time import Clock, get_ticks
 from appdirs import AppDirs
 
-from .constants import *
+from .constants import SETTINGS, ICON, MUSIC, HERO_SPEED
 from .maze import Maze
 from .misc import sign
 
@@ -44,7 +44,8 @@ class ConfigReader:
     """Object reading and processing INI configuration file for
     Brutal Maze.
     """
-    CONTROL_ALIASES = (('New game', 'new'), ('Pause', 'pause'),
+    CONTROL_ALIASES = (('New game', 'new'), ('Toggle pause', 'pause'),
+                       ('Toggle mute', 'mute'),
                        ('Move left', 'left'), ('Move right', 'right'),
                        ('Move up', 'up'), ('Move down', 'down'),
                        ('Long-range attack', 'shot'),
@@ -57,12 +58,14 @@ class ConfigReader:
         self.config.read(SETTINGS)  # default configuration
         self.config.read(filenames)
 
-    def parse_graphics(self):
-        """Parse graphics configurations."""
+    def parse_output(self):
+        """Parse graphics and sound configurations."""
         self.size = (self.config.getint('Graphics', 'Screen width'),
                      self.config.getint('Graphics', 'Screen height'))
         self.opengl = self.config.getboolean('Graphics', 'OpenGL')
         self.max_fps = self.config.getint('Graphics', 'Maximum FPS')
+        self.muted = self.config.getboolean('Sound', 'Muted')
+        self.musicvol = self.config.getfloat('Sound', 'Music volume')
 
     def parse_control(self):
         """Parse control configurations."""
@@ -84,27 +87,31 @@ class ConfigReader:
 
     def read_args(self, arguments):
         """Read and parse a ArgumentParser.Namespace."""
-        if arguments.size is not None: self.size = arguments.size
-        if arguments.opengl is not None: self.opengl = arguments.opengl
-        if arguments.max_fps is not None: self.max_fps = arguments.max_fps
+        for option in 'size', 'opengl', 'max_fps', 'muted', 'musicvol':
+            value = getattr(arguments, option)
+            if value is not None: setattr(self, option, value)
 
 
 class Game:
     """Object handling main loop and IO."""
-    def __init__(self, size, scrtype, max_fps, key, mouse):
+    def __init__(self, size, scrtype, max_fps, muted, musicvol, key, mouse):
         pygame.mixer.pre_init(frequency=44100)
         pygame.init()
-        pygame.mixer.music.load(MUSIC)
-        pygame.mixer.music.play(-1)
+        if muted:
+            pygame.mixer.quit()
+        else:
+            pygame.mixer.music.load(MUSIC)
+            pygame.mixer.music.set_volume(musicvol)
+            pygame.mixer.music.play(-1)
         pygame.display.set_icon(ICON)
         pygame.fastevent.init()
-        self.clock = Clock()
         # self.fps is a float to make sure floordiv won't be used in Python 2
         self.max_fps, self.fps = max_fps, float(max_fps)
+        self.musicvol = musicvol
         self.key, self.mouse = key, mouse
         self.maze = Maze(max_fps, size, scrtype)
         self.hero = self.maze.hero
-        self.paused = False
+        self.clock, self.paused = Clock(), False
 
     def __enter__(self): return self
 
@@ -145,6 +152,14 @@ class Game:
                     self.maze.__init__(self.fps)
                 elif event.key == self.key['pause'] and not self.hero.dead:
                     self.paused ^= True
+                elif event.key == self.key['mute']:
+                    if pygame.mixer.get_init() is None:
+                        pygame.mixer.init(frequency=44100)
+                        pygame.mixer.music.load(MUSIC)
+                        pygame.mixer.music.set_volume(self.musicvol)
+                        pygame.mixer.music.play(-1)
+                    else:
+                        pygame.mixer.quit()
 
         if not self.hero.dead:
             keys = pygame.key.get_pressed()
@@ -181,7 +196,7 @@ def main():
     parents.append(dirs.user_config_dir)
     filenames = [join(parent, 'settings.ini') for parent in parents]
     config = ConfigReader(filenames)
-    config.parse_graphics()
+    config.parse_output()
 
     # Parse command-line arguments
     parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
@@ -206,6 +221,14 @@ def main():
     parser.add_argument(
         '-f', '--max-fps', type=int, metavar='FPS',
         help='the desired maximum FPS (fallback: {})'.format(config.max_fps))
+    parser.add_argument(
+        '--mute', '-m', action='store_true', default=None,
+        help='mute all sounds (fallback: {})'.format(config.muted))
+    parser.add_argument('--unmute', action='store_false', dest='muted',
+                        help='unmute sound')
+    parser.add_argument(
+        '--music-volume', type=float, metavar='VOL', dest='musicvol',
+        help='between 0.0 and 1.0 (fallback: {})'.format(config.musicvol))
     args = parser.parse_args()
     if args.defaultcfg is not None:
         with open(SETTINGS) as settings: args.defaultcfg.write(settings.read())
@@ -215,10 +238,11 @@ def main():
     # Manipulate config
     if args.config: config.config.read(args.config)
     config.read_args(args)
-    config.parse_graphics()
+    config.parse_output()
     config.parse_control()
 
     # Main loop
     scrtype = (config.opengl and DOUBLEBUF|OPENGL) | RESIZABLE
-    with Game(config.size, scrtype, config.max_fps, config.key, config.mouse) as game:
+    with Game(config.size, scrtype, config.max_fps, config.muted,
+              config.musicvol, config.key, config.mouse) as game:
         while game.loop(): pass

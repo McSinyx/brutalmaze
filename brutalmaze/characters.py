@@ -24,7 +24,6 @@ from random import choice, randrange, shuffle
 from sys import modules
 
 import pygame
-from pygame.mixer import Sound
 from pygame.time import get_ticks
 
 from .constants import *
@@ -50,7 +49,7 @@ class Hero:
         spin_speed (float): speed of spinning (in frames per slash)
         spin_queue (float): frames left to finish spinning
         wound (float): amount of wound
-        sfx_heart (Sound): heart beat sound effect
+        sfx_heart (pygame.mixer.Sound): heart beat sound effect
     """
     def __init__(self, surface, fps):
         self.surface = surface
@@ -64,7 +63,7 @@ class Hero:
         self.spin_speed = fps / HERO_HP
         self.spin_queue = self.wound = 0.0
 
-        self.sfx_heart = Sound(SFX_HEART)
+        self.sfx_heart = SFX_HEART
 
     def update(self, fps):
         """Update the hero."""
@@ -92,6 +91,9 @@ class Hero:
             x, y = pygame.mouse.get_pos()
             self.angle = atan2(y - self.y, x - self.x)
             self.spin_queue = 0.0
+
+    def draw(self):
+        """Draw the hero."""
         trigon = regpoly(3, self.R, self.angle, self.x, self.y)
         fill_aapolygon(self.surface, trigon, self.color[int(self.wound)])
 
@@ -117,7 +119,7 @@ class Enemy:
         spin_speed (float): speed of spinning (in frames per slash)
         spin_queue (float): frames left to finish spinning
         wound (float): amount of wound
-        sfx_slash (Sound): sound effect indicating close-range attack damage
+        sfx_slash (pygame.mixer.Sound): sound effect of slashed hero
     """
     def __init__(self, maze, x, y, color):
         self.maze = maze
@@ -132,7 +134,7 @@ class Enemy:
         self.spin_speed = self.maze.fps / ENEMY_HP
         self.spin_queue = self.wound = 0.0
 
-        self.sfx_slash = Sound(SFX_SLASH_HERO)
+        self.sfx_slash = SFX_SLASH_HERO
 
     def get_pos(self):
         """Return coordinate of the center of the enemy."""
@@ -238,6 +240,7 @@ class Enemy:
 
     def draw(self):
         """Draw the enemy."""
+        if get_ticks() < self.maze.next_move and not self.awake: return
         radious = self.maze.distance/SQRT2 - self.awake*2
         square = regpoly(4, radious, self.angle, *self.get_pos())
         color = TANGO[self.color][int(self.wound)] if self.awake else FG_COLOR
@@ -257,7 +260,6 @@ class Enemy:
                 self.spin_queue -= sign(self.spin_queue)
             else:
                 self.angle, self.spin_queue = pi / 4, 0.0
-        if self.awake or get_ticks() >= self.maze.next_move: self.draw()
 
     def hit(self, wound):
         """Handle the enemy when it's attacked."""
@@ -290,8 +292,7 @@ class Chameleon(Enemy):
 
     def draw(self):
         """Draw the Chameleon."""
-        if (not self.awake or self.spin_queue
-            or get_ticks() < max(self.visible, self.maze.next_move)):
+        if not self.awake or get_ticks() < self.visible or self.spin_queue:
             Enemy.draw(self)
 
     def hit(self, wound):

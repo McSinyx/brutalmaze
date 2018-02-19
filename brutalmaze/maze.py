@@ -25,7 +25,6 @@ from random import choice, getrandbits, uniform
 
 import pygame
 from pygame import RESIZABLE
-from pygame.mixer import Sound
 from pygame.time import get_ticks
 
 from .characters import Hero, new_enemy
@@ -76,9 +75,8 @@ class Maze:
         next_move (int): the tick that the hero gets mobilized
         next_slashfx (int): the tick to play next slash effect of the hero
         slashd (float): minimum distance for slashes to be effective
-        sfx_slash (Sound): sound effect indicating an enemy get slashed
-        sfx_shot (Sound): sound effect indicating an enemy get shot
-        sfx_lose (Sound): sound effect to be played when you lose
+        sfx_slash (pygame.mixer.Sound): sound effect of slashed enemy
+        sfx_lose (pygame.mixer.Sound): sound effect to be played when you lose
     """
     def __init__(self, fps, size=None, scrtype=None):
         self.fps = fps
@@ -109,10 +107,9 @@ class Maze:
         self.next_move = self.next_slashfx = 0
         self.slashd = self.hero.R + self.distance/SQRT2
 
-        self.sfx_spawn = Sound(SFX_SPAWN)
-        self.sfx_slash = Sound(SFX_SLASH_ENEMY)
-        self.sfx_shot = Sound(SFX_SHOT_ENEMY)
-        self.sfx_lose = Sound(SFX_LOSE)
+        self.sfx_spawn = SFX_SPAWN
+        self.sfx_slash = SFX_SLASH_ENEMY
+        self.sfx_lose = SFX_LOSE
 
     def add_enemy(self):
         """Add enough enemies."""
@@ -140,13 +137,21 @@ class Maze:
     def draw(self):
         """Draw the maze."""
         self.surface.fill(BG_COLOR)
-        if get_ticks() < self.next_move: return
-        for i in self.rangex:
-            for j in self.rangey:
-                if self.map[i][j] != WALL: continue
-                x, y = self.get_pos(i, j)
-                square = regpoly(4, self.distance / SQRT2, pi / 4, x, y)
-                fill_aapolygon(self.surface, square, FG_COLOR)
+        if get_ticks() >= self.next_move:
+            for i in self.rangex:
+                for j in self.rangey:
+                    if self.map[i][j] != WALL: continue
+                    x, y = self.get_pos(i, j)
+                    square = regpoly(4, self.distance / SQRT2, pi / 4, x, y)
+                    fill_aapolygon(self.surface, square, FG_COLOR)
+
+        for enemy in self.enemies: enemy.draw()
+        self.hero.draw()
+        bullet_radius = self.distance / 4
+        for bullet in self.bullets: bullet.draw(bullet_radius)
+        pygame.display.flip()
+        pygame.display.set_caption('Brutal Maze - Score: {}'.format(
+            int(self.score - INIT_SCORE)))
 
     def rotate(self):
         """Rotate the maze if needed."""
@@ -266,7 +271,7 @@ class Maze:
                             self.score += enemy.wound
                             enemy.die()
                             self.enemies.pop(j)
-                        play(self.sfx_shot, wound, bullet.angle)
+                        play(bullet.sfx_hit, wound, bullet.angle)
                         fallen.append(i)
                         break
             elif bullet.get_distance(self.x, self.y) < self.distance:
@@ -310,15 +315,12 @@ class Maze:
             for enemy in self.enemies: enemy.wake()
             for bullet in self.bullets: bullet.place(dx, dy)
 
-        self.draw()
         for enemy in self.enemies: enemy.update()
         if not self.hero.dead:
             self.hero.update(fps)
             self.slash()
             self.track_bullets()
-        pygame.display.flip()
-        pygame.display.set_caption('Brutal Maze - Score: {}'.format(
-            int(self.score - INIT_SCORE)))
+        self.draw()
 
     def resize(self, size):
         """Resize the maze."""
