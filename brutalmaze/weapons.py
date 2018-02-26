@@ -55,14 +55,18 @@ class Bullet:
         self.x += s * cos(self.angle)
         self.y += s * sin(self.angle)
 
+    def get_color(self):
+        """Return current color of the enemy."""
+        value = int((1-(self.fall_time-get_ticks())/BULLET_LIFETIME)*ENEMY_HP)
+        try:
+            return TANGO[self.color][value]
+        except IndexError:
+            return BG_COLOR
+
     def draw(self, radius):
         """Draw the bullet."""
         pentagon = regpoly(5, radius, self.angle, self.x, self.y)
-        value = int((1-(self.fall_time-get_ticks())/BULLET_LIFETIME)*ENEMY_HP)
-        try:
-            fill_aapolygon(self.surface, pentagon, TANGO[self.color][value])
-        except IndexError:
-            pass
+        fill_aapolygon(self.surface, pentagon, self.get_color())
 
     def place(self, x, y):
         """Move the bullet by (x, y) (in pixels)."""

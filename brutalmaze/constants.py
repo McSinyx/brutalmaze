@@ -19,6 +19,8 @@
 
 __doc__ = 'brutalmaze module for shared constants'
 
+from string import ascii_lowercase
+
 from pkg_resources import resource_filename as pkg_file
 import pygame
 from pygame.mixer import Sound
@@ -69,6 +71,9 @@ TANGO = {'Butter': ((252, 233, 79), (237, 212, 0), (196, 160, 0)),
                        (136, 138, 133), (85, 87, 83), (46, 52, 54))}
 ENEMIES = ['Butter', 'Orange', 'Chocolate', 'Chameleon',
            'SkyBlue', 'Plum', 'ScarletRed']
+COLOR_CODE = ascii_lowercase + '0'
+COLORS = {c: COLOR_CODE[i] for i, c in enumerate(
+    color for code in ENEMIES + ['Aluminium'] for color in TANGO[code])}
 MINW, MAXW = 24, 36
 ENEMY_HP = 3
 HERO_HP = 5

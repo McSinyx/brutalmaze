@@ -63,7 +63,7 @@ class Maze:
         distance (float): distance between centers of grids (in px)
         x, y (int): coordinates of the center of the hero (in px)
         centerx, centery (float): center grid's center's coordinates (in px)
-        rangex, rangey (range): range of the index of the grids on display
+        rangex, rangey (list): range of the index of the grids on display
         score (float): current score
         map (deque of deque): map of grids representing objects on the maze
         vx, vy (float): velocity of the maze movement (in pixels per frame)
@@ -78,21 +78,22 @@ class Maze:
         sfx_slash (pygame.mixer.Sound): sound effect of slashed enemy
         sfx_lose (pygame.mixer.Sound): sound effect to be played when you lose
     """
-    def __init__(self, fps, size=None, scrtype=None):
+    def __init__(self, fps, size=None, scrtype=None, headless=False):
         self.fps = fps
-        if size is not None:
-            self.w, self.h = size
-        else:
-            size = self.w, self.h
-        if scrtype is not None: self.scrtype = scrtype
+        if not headless:
+            if size is not None:
+                self.w, self.h = size
+            else:
+                size = self.w, self.h
+            if scrtype is not None: self.scrtype = scrtype
+            self.surface = pygame.display.set_mode(size, self.scrtype)
 
-        self.surface = pygame.display.set_mode(size, self.scrtype)
         self.distance = (self.w * self.h / 416) ** 0.5
         self.x, self.y = self.w // 2, self.h // 2
         self.centerx, self.centery = self.w / 2.0, self.h / 2.0
         w, h = (int(i/self.distance/2 + 2) for i in size)
-        self.rangex = range(MIDDLE - w, MIDDLE + w + 1)
-        self.rangey = range(MIDDLE - h, MIDDLE + h + 1)
+        self.rangex = list(range(MIDDLE - w, MIDDLE + w + 1))
+        self.rangey = list(range(MIDDLE - h, MIDDLE + h + 1))
         self.score = INIT_SCORE
 
         self.map = deque()
@@ -146,7 +147,7 @@ class Maze:
                     fill_aapolygon(self.surface, square, FG_COLOR)
 
         for enemy in self.enemies: enemy.draw()
-        self.hero.draw()
+        if not self.hero.dead: self.hero.draw()
         bullet_radius = self.distance / 4
         for bullet in self.bullets: bullet.draw(bullet_radius)
         pygame.display.flip()
@@ -320,7 +321,6 @@ class Maze:
             self.hero.update(fps)
             self.slash()
             self.track_bullets()
-        self.draw()
 
     def resize(self, size):
         """Resize the maze."""
@@ -349,3 +349,4 @@ class Maze:
         self.hero.slashing = self.hero.firing = False
         self.vx = self.vy = 0.0
         play(self.sfx_lose)
+        print('Game over. Your score: {}'.format(int(self.score - INIT_SCORE)))

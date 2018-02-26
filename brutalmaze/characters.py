@@ -86,11 +86,12 @@ class Hero:
         if abs(self.spin_queue) > 0.5:
             self.angle += sign(self.spin_queue) * pi / 2 / self.spin_speed
             self.spin_queue -= sign(self.spin_queue)
-        else:
-            # Follow the mouse cursor
-            x, y = pygame.mouse.get_pos()
-            self.angle = atan2(y - self.y, x - self.x)
+
+    def update_angle(self, angle):
+        """Turn to the given angle if the hero is not busy slashing."""
+        if abs(self.spin_queue) <= 0.5:
             self.spin_queue = 0.0
+            self.angle = angle
 
     def draw(self):
         """Draw the hero."""
@@ -238,13 +239,18 @@ class Enemy:
         x, y = self.get_pos()
         return atan2(y - self.maze.y, x - self.maze.x)
 
+
+    def get_color(self):
+        """Return current color of the enemy."""
+        return TANGO[self.color][int(self.wound)] if self.awake else FG_COLOR
+
+
     def draw(self):
         """Draw the enemy."""
         if get_ticks() < self.maze.next_move and not self.awake: return
         radious = self.maze.distance/SQRT2 - self.awake*2
         square = regpoly(4, radious, self.angle, *self.get_pos())
-        color = TANGO[self.color][int(self.wound)] if self.awake else FG_COLOR
-        fill_aapolygon(self.maze.surface, square, color)
+        fill_aapolygon(self.maze.surface, square, self.get_color())
 
     def update(self):
         """Update the enemy."""
