@@ -73,10 +73,10 @@ class Hero:
         old_speed, time = self.spin_speed, get_ticks()
         self.spin_speed = fps / (HERO_HP-self.wound**0.5)
         self.spin_queue *= self.spin_speed / old_speed
-        if time > self.next_heal:
+        if time >= self.next_heal:
             self.wound -= HEAL_SPEED / self.spin_speed / HERO_HP
             if self.wound < 0: self.wound = 0.0
-        if time > self.next_beat:
+        if time >= self.next_beat:
             play(self.sfx_heart)
             self.next_beat = time + MIN_BEAT*(2 - self.wound/HERO_HP)
 
@@ -95,7 +95,8 @@ class Hero:
 
     def draw(self):
         """Draw the hero."""
-        trigon = regpoly(3, self.R, self.angle, self.x, self.y)
+        sides = 3 if get_ticks() >= self.next_heal else 4
+        trigon = regpoly(sides, self.R, self.angle, self.x, self.y)
         fill_aapolygon(self.surface, trigon, self.color[int(self.wound)])
 
     def resize(self):

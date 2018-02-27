@@ -277,7 +277,7 @@ class Maze:
                         fallen.append(i)
                         break
             elif bullet.get_distance(self.x, self.y) < self.distance:
-                if self.hero.spin_queue:
+                if self.hero.spin_queue and time >= self.hero.next_heal:
                     play(bullet.sfx_missed, wound, bullet.angle + pi)
                 else:
                     self.hit_hero(wound, bullet.color)
