@@ -78,14 +78,11 @@ class Maze:
         sfx_slash (pygame.mixer.Sound): sound effect of slashed enemy
         sfx_lose (pygame.mixer.Sound): sound effect to be played when you lose
     """
-    def __init__(self, fps, size=None, scrtype=None, headless=False):
+    def __init__(self, fps, size, scrtype, headless=False):
         self.fps = fps
         if not headless:
-            if size is not None:
-                self.w, self.h = size
-            else:
-                size = self.w, self.h
-            if scrtype is not None: self.scrtype = scrtype
+            self.w, self.h = size
+            self.scrtype = scrtype
             self.surface = pygame.display.set_mode(size, self.scrtype)
 
         self.distance = (self.w * self.h / 416) ** 0.5
@@ -135,6 +132,10 @@ class Maze:
         return (self.centerx + (x - MIDDLE)*self.distance,
                 self.centery + (y - MIDDLE)*self.distance)
 
+    def get_score(self):
+        """Return the current score."""
+        return int(self.score - INIT_SCORE)
+
     def draw(self):
         """Draw the maze."""
         self.surface.fill(BG_COLOR)
@@ -151,8 +152,8 @@ class Maze:
         bullet_radius = self.distance / 4
         for bullet in self.bullets: bullet.draw(bullet_radius)
         pygame.display.flip()
-        pygame.display.set_caption('Brutal Maze - Score: {}'.format(
-            int(self.score - INIT_SCORE)))
+        pygame.display.set_caption(
+            'Brutal Maze - Score: {}'.format(self.get_score()))
 
     def rotate(self):
         """Rotate the maze if needed."""
@@ -335,8 +336,8 @@ class Maze:
         self.centerx = self.x + offsetx*self.distance
         self.centery = self.y + offsety*self.distance
         w, h = int(self.w/self.distance/2 + 2), int(self.h/self.distance/2 + 2)
-        self.rangex = range(MIDDLE - w, MIDDLE + w + 1)
-        self.rangey = range(MIDDLE - h, MIDDLE + h + 1)
+        self.rangex = list(range(MIDDLE - w, MIDDLE + w + 1))
+        self.rangey = list(range(MIDDLE - h, MIDDLE + h + 1))
         self.slashd = self.hero.R + self.distance/SQRT2
 
     def isfast(self):
@@ -349,4 +350,20 @@ class Maze:
         self.hero.slashing = self.hero.firing = False
         self.vx = self.vy = 0.0
         play(self.sfx_lose)
-        print('Game over. Your score: {}'.format(int(self.score - INIT_SCORE)))
+
+    def reinit(self):
+        """Open new game."""
+        self.centerx, self.centery = self.w / 2.0, self.h / 2.0
+        self.score = INIT_SCORE
+        self.map = deque()
+        for _ in range(MAZE_SIZE): self.map.extend(new_column())
+        self.vx = self.vy = 0.0
+        self.rotatex = self.rotatey = 0
+        self.bullets, self.enemies = [], []
+        self.enemy_weights = {color: MINW for color in ENEMIES}
+        self.add_enemy()
+
+        self.next_move = self.next_slashfx = 0
+        self.hero.next_heal = self.hero.next_beat = self.hero.next_strike = 0
+        self.hero.slashing = self.hero.firing = self.hero.dead = False
+        self.hero.spin_queue = self.hero.wound = 0.0

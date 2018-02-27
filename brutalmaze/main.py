@@ -27,10 +27,11 @@ try:                    # Python 3
 except ImportError:     # Python 2
     from ConfigParser import ConfigParser
 from itertools import repeat
-from math import atan2, degrees
+from math import atan2, degrees, radians
 from os.path import join, pathsep
-from socket import socket
+from socket import socket, SOL_SOCKET, SO_REUSEADDR
 from sys import stdout
+from threading import Thread
 
 
 import pygame
@@ -115,14 +116,18 @@ class Game:
             pygame.mixer.music.play(-1)
         pygame.display.set_icon(ICON)
 
+        pygame.fastevent.init()
         if config.server:
-            self.socket = socket()
-            self.socket.bind((config.host, config.port))
-            self.socket.listen()
+            self.server = socket()
+            self.server.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+            self.server.bind((config.host, config.port))
+            self.server.listen(1)
+            print('Socket server is listening on {}:{}'.format(config.host,
+                                                               config.port))
         else:
-            pygame.fastevent.init()
+            self.server = None
 
-        self.server, self.headless = config.server, config.headless
+        self.headless = config.headless
         # self.fps is a float to make sure floordiv won't be used in Python 2
         self.max_fps, self.fps = config.max_fps, float(config.max_fps)
         self.musicvol = config.musicvol
@@ -142,17 +147,13 @@ class Game:
 
     def export(self):
         """Export maze data to a bytes object."""
-        maze, hero, tick, ne = self.maze, self.hero, get_ticks(), 0
+        maze, hero, tick = self.maze, self.hero, get_ticks()
         walls = [[1 if maze.map[x][y] == WALL else 0 for x in maze.rangex]
-                 for y in maze.rangey]
-
-        x, y = self.expos(maze.x, maze.y)
-        lines = deque(['{} {} {:.0f} {:d} {:d} {:d}'.format(
-            x, y, hero.wound * 100, hero.next_strike <= tick,
-            hero.next_heal <= tick, maze.next_move <= tick)])
+                 for y in maze.rangey] if maze.next_move <= tick else []
+        lines, ne, nb = deque(), 0, 0
 
         for enemy in maze.enemies:
-            if not enemy.awake:
+            if not enemy.awake and walls:
                 walls[enemy.y-maze.rangey[0]][enemy.x-maze.rangex[0]] = WALL
                 continue
             elif enemy.color == 'Chameleon' and maze.next_move <= tick:
@@ -162,25 +163,35 @@ class Game:
                                                   x, y, degrees(enemy.angle)))
             ne += 1
 
-        if maze.next_move <= tick:
-            rows = (''.join(str(cell) for cell in row) for row in walls)
-        else:
-            rows = repeat('0' * len(maze.rangex), len(maze.rangey))
-        lines.appendleft('\n'.join(rows))
-
         for bullet in maze.bullets:
             x, y = self.expos(bullet.x, bullet.y)
-            lines.append('{} {} {} {:.0f}'.format(COLORS[bullet.get_color()],
-                                                  x, y, degrees(bullet.angle)))
+            color, angle = COLORS[bullet.get_color()], degrees(bullet.angle)
+            if color != '0':
+                lines.append('{} {} {} {:.0f}'.format(color, x, y, angle))
+                nb += 1
 
-        lines.appendleft('{} {} {}'.format(len(walls), ne, len(maze.bullets)))
+        if walls: lines.appendleft('\n'.join(''.join(str(cell) for cell in row)
+                                             for row in walls))
+        x, y = self.expos(maze.x, maze.y)
+        lines.appendleft('{} {} {} {} {} {} {:.0f} {:d} {:d}'.format(
+            len(walls), ne, nb, maze.get_score(), x, y, hero.wound * 100,
+            hero.next_strike <= tick, hero.next_heal <= tick))
         return '\n'.join(lines).encode()
 
-    def meta(self):
-        """Handle meta events on Pygame window.
+    def update(self):
+        """Draw and handle meta events on Pygame window.
 
         Return False if QUIT event is captured, True otherwise.
         """
+        # Compare current FPS with the average of the last 10 frames
+        new_fps = self.clock.get_fps()
+        if new_fps < self.fps:
+            self.fps -= 1
+        elif self.fps < self.max_fps and not self.paused:
+            self.fps += 5
+        if not self.paused: self.maze.update(self.fps)
+
+        self.clock.tick(self.fps)
         events = pygame.fastevent.get()
         for event in events:
             if event.type == QUIT:
@@ -189,7 +200,7 @@ class Game:
                 self.maze.resize((event.w, event.h))
             elif event.type == KEYDOWN and not self.server:
                 if event.key == self.key['new']:
-                    self.maze.__init__(self.fps)
+                    self.maze.reinit()
                 elif event.key == self.key['pause'] and not self.hero.dead:
                     self.paused ^= True
                 elif event.key == self.key['mute']:
@@ -235,18 +246,28 @@ class Game:
         self.hero.firing = firing
         self.hero.slashing = slashing
 
-    def remote_control(self, connection):
+    def remote_control(self):
         """Handle remote control though socket server.
 
-        Return False if client disconnect, True otherwise.
+        This function is supposed to be run in a Thread.
         """
-        data = self.export()
-        connection.send('{:06}'.format(len(data)))
-        connection.send(data)
-        buf = connection.recv(8)
-        if not buf: return False
-        x, y, angle, attack = (int(i) for i in buf.decode().split())
-        self.control(x, y, angle, attack & 1, attack >> 1)
+        while True:
+            connection, address = self.server.accept()
+            print('Connected to {}:{}'.format(*address))
+            self.maze.reinit()
+            while not self.hero.dead:
+                data = self.export()
+                connection.send('{:06}'.format(len(data)).encode())
+                connection.send(data)
+                buf = connection.recv(8)
+                if not buf: break
+                move, angle, attack = (int(i) for i in buf.decode().split())
+                y, x = (i - 1 for i in divmod(move, 3))
+                self.control(x, y, radians(angle), attack & 1, attack >> 1)
+            self.maze.lose()
+            print('{1}:{2} scored {0} points'.format(
+                self.maze.get_score(), *address))
+            connection.close()
 
     def user_control(self):
         """Handle direct control from user's mouse and keyboard."""
@@ -271,18 +292,9 @@ class Game:
 
             self.control(right, down, angle, firing, slashing)
 
-    def update(self):
-        """Update fps and the maze."""
-        # Compare current FPS with the average of the last 10 frames
-        new_fps = self.clock.get_fps()
-        if new_fps < self.fps:
-            self.fps -= 1
-        elif self.fps < self.max_fps and not self.paused:
-            self.fps += 5
-        if not self.paused: self.maze.update(self.fps)
-        self.clock.tick(self.fps)
-
-    def __exit__(self, exc_type, exc_value, traceback): pygame.quit()
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.server is not None: self.server.close()
+        pygame.quit()
 
 
 def main():
@@ -340,10 +352,9 @@ def main():
     # Main loop
     with Game(config) as game:
         if config.server:
-            while game.meta():
-                game.remote_control()
-                game.update()
+            socket_thread = Thread(target=game.remote_control)
+            socket_thread.daemon = True     # make it disposable
+            socket_thread.start()
+            while game.update(): pass
         else:
-            while game.meta():
-                game.user_control()
-                game.update()
+            while game.update(): game.user_control()
