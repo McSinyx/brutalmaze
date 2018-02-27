@@ -124,8 +124,9 @@ class Game:
             self.server.listen(1)
             print('Socket server is listening on {}:{}'.format(config.host,
                                                                config.port))
+            self.sockinp = 0, 0, 225, 0, 0  # freeze and point to NW
         else:
-            self.server = None
+            self.server = self.sockinp = None
 
         self.headless = config.headless
         # self.fps is a float to make sure floordiv won't be used in Python 2
@@ -174,7 +175,7 @@ class Game:
                                              for row in walls))
         x, y = self.expos(maze.x, maze.y)
         lines.appendleft('{} {} {} {} {} {} {:.0f} {:d} {:d}'.format(
-            len(walls), ne, nb, maze.get_score(), x, y, hero.wound * 100,
+            len(walls), ne, nb, maze.get_score(), x, y, hero.wound,
             hero.next_strike <= tick, hero.next_heal <= tick))
         return '\n'.join(lines).encode()
 
@@ -183,15 +184,6 @@ class Game:
 
         Return False if QUIT event is captured, True otherwise.
         """
-        # Compare current FPS with the average of the last 10 frames
-        new_fps = self.clock.get_fps()
-        if new_fps < self.fps:
-            self.fps -= 1
-        elif self.fps < self.max_fps and not self.paused:
-            self.fps += 5
-        if not self.paused: self.maze.update(self.fps)
-
-        self.clock.tick(self.fps)
         events = pygame.fastevent.get()
         for event in events:
             if event.type == QUIT:
@@ -211,7 +203,16 @@ class Game:
                         pygame.mixer.music.play(-1)
                     else:
                         pygame.mixer.quit()
+
+        # Compare current FPS with the average of the last 10 frames
+        new_fps = self.clock.get_fps()
+        if new_fps < self.fps:
+            self.fps -= 1
+        elif self.fps < self.max_fps and not self.paused:
+            self.fps += 5
+        if not self.paused: self.maze.update(self.fps)
         if not self.headless: self.maze.draw()
+        self.clock.tick(self.fps)
         return True
 
     def move(self, x, y):
@@ -251,20 +252,26 @@ class Game:
 
         This function is supposed to be run in a Thread.
         """
+        clock = Clock()
         while True:
             connection, address = self.server.accept()
             print('Connected to {}:{}'.format(*address))
             self.maze.reinit()
             while not self.hero.dead:
                 data = self.export()
-                connection.send('{:06}'.format(len(data)).encode())
+                connection.send('{:08}'.format(len(data)).encode())
                 connection.send(data)
-                buf = connection.recv(8)
+                try:
+                    buf = connection.recv(8)
+                except:     # client is likely to be closed
+                    break
                 if not buf: break
                 move, angle, attack = (int(i) for i in buf.decode().split())
                 y, x = (i - 1 for i in divmod(move, 3))
-                self.control(x, y, radians(angle), attack & 1, attack >> 1)
+                self.sockinp = x, y, radians(angle), attack & 1, attack >> 1
+                clock.tick(self.fps)
             self.maze.lose()
+            self.sockinp = 0, 0, 225, 0, 0
             print('{1}:{2} scored {0} points'.format(
                 self.maze.get_score(), *address))
             connection.close()
@@ -355,6 +362,6 @@ def main():
             socket_thread = Thread(target=game.remote_control)
             socket_thread.daemon = True     # make it disposable
             socket_thread.start()
-            while game.update(): pass
+            while game.update(): game.control(*game.sockinp)
         else:
             while game.update(): game.user_control()

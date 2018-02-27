@@ -51,9 +51,9 @@ class Hero:
         wound (float): amount of wound
         sfx_heart (pygame.mixer.Sound): heart beat sound effect
     """
-    def __init__(self, surface, fps):
+    def __init__(self, surface, fps, maze_size):
         self.surface = surface
-        w, h = self.surface.get_width(), self.surface.get_height()
+        w, h = maze_size
         self.x, self.y = w >> 1, h >> 1
         self.angle, self.color = pi / 4, TANGO['Aluminium']
         self.R = (w * h / sin(pi*2/3) / 624) ** 0.5
@@ -99,9 +99,9 @@ class Hero:
         trigon = regpoly(sides, self.R, self.angle, self.x, self.y)
         fill_aapolygon(self.surface, trigon, self.color[int(self.wound)])
 
-    def resize(self):
+    def resize(self, maze_size):
         """Resize the hero."""
-        w, h = self.surface.get_width(), self.surface.get_height()
+        w, h = maze_size
         self.x, self.y = w >> 1, h >> 1
         self.R = (w * h / sin(pi*2/3) / 624) ** 0.5
 
