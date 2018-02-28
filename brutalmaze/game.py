@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Brutal Maze.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.5.4'
+__version__ = '0.5.5'
 
 import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter
@@ -26,7 +26,6 @@ try:                    # Python 3
     from configparser import ConfigParser
 except ImportError:     # Python 2
     from ConfigParser import ConfigParser
-from itertools import repeat
 from math import atan2, degrees, radians
 from os.path import join, pathsep
 from socket import socket, SOL_SOCKET, SO_REUSEADDR
@@ -174,9 +173,9 @@ class Game:
         if walls: lines.appendleft('\n'.join(''.join(str(cell) for cell in row)
                                              for row in walls))
         x, y = self.expos(maze.x, maze.y)
-        lines.appendleft('{} {} {} {} {} {} {:.0f} {:d} {:d}'.format(
-            len(walls), ne, nb, maze.get_score(), x, y, hero.wound,
-            hero.next_strike <= tick, hero.next_heal <= tick))
+        lines.appendleft('{} {} {} {} {} {} {} {:d} {:d}'.format(
+            len(walls), ne, nb, maze.get_score(), COLORS[hero.get_color()],
+            x, y, hero.next_strike <= tick, hero.next_heal <= tick))
         return '\n'.join(lines).encode()
 
     def update(self):

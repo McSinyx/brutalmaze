@@ -23,10 +23,12 @@ from math import atan, atan2, sin, pi
 from random import choice, randrange, shuffle
 from sys import modules
 
-import pygame
 from pygame.time import get_ticks
 
-from .constants import *
+from .constants import (
+    TANGO, HERO_HP, SFX_HEART, HEAL_SPEED, MIN_BEAT, ATTACK_SPEED, ENEMY,
+    ENEMY_SPEED, ENEMY_HP, SFX_SLASH_HERO, MIDDLE, WALL, FIRANGE, AROUND_HERO,
+    ADJACENT_GRIDS, EMPTY, FG_COLOR, SQRT2, MINW)
 from .misc import sign, cosin, randsign, regpoly, fill_aapolygon, choices, play
 from .weapons import Bullet
 
@@ -93,11 +95,15 @@ class Hero:
             self.spin_queue = 0.0
             self.angle = angle
 
+    def get_color(self):
+        """Return current color of the hero."""
+        return self.color[int(self.wound)]
+
     def draw(self):
         """Draw the hero."""
         sides = 3 if get_ticks() >= self.next_heal else 4
         trigon = regpoly(sides, self.R, self.angle, self.x, self.y)
-        fill_aapolygon(self.surface, trigon, self.color[int(self.wound)])
+        fill_aapolygon(self.surface, trigon, self.get_color())
 
     def resize(self, maze_size):
         """Resize the hero."""

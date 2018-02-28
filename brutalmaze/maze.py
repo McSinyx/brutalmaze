@@ -24,11 +24,14 @@ from math import pi, log
 from random import choice, getrandbits, uniform
 
 import pygame
-from pygame import RESIZABLE
 from pygame.time import get_ticks
 
 from .characters import Hero, new_enemy
-from .constants import *
+from .constants import (
+    EMPTY, WALL, HERO, ROAD_WIDTH, MAZE_SIZE, MIDDLE, INIT_SCORE, ENEMIES,
+    MINW, MAXW, SQRT2, SFX_SPAWN, SFX_SLASH_ENEMY, SFX_LOSE, ADJACENT_GRIDS,
+    BG_COLOR, FG_COLOR, CELL_WIDTH, LAST_ROW, HERO_HP, ENEMY_HP, ATTACK_SPEED,
+    HERO_SPEED, BULLET_LIFETIME)
 from .misc import round2, sign, regpoly, fill_aapolygon, play
 from .weapons import Bullet
 
@@ -323,7 +326,7 @@ class Maze:
         if not self.hero.dead:
             self.hero.update(fps)
             self.slash()
-            self.track_bullets()
+        self.track_bullets()
 
     def resize(self, size):
         """Resize the maze."""

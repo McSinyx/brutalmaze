@@ -23,7 +23,8 @@ from math import cos, sin
 
 from pygame.time import get_ticks
 
-from .constants import *
+from .constants import (BULLET_LIFETIME, SFX_SHOT_ENEMY, SFX_SHOT_HERO,
+                        SFX_MISSED, BULLET_SPEED, ENEMY_HP, TANGO, BG_COLOR)
 from .misc import regpoly, fill_aapolygon
 
 
