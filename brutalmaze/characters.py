@@ -57,7 +57,7 @@ class Hero:
         self.surface = surface
         w, h = maze_size
         self.x, self.y = w >> 1, h >> 1
-        self.angle, self.color = pi / 4, TANGO['Aluminium']
+        self.angle, self.color = -pi * 3 / 4, TANGO['Aluminium']
         self.R = (w * h / sin(pi*2/3) / 624) ** 0.5
 
         self.next_heal = self.next_beat = self.next_strike = 0
@@ -82,18 +82,32 @@ class Hero:
             play(self.sfx_heart)
             self.next_beat = time + MIN_BEAT*(2 - self.wound/HERO_HP)
 
+        full_spin = pi * 2 / self.get_sides()
         if self.slashing and time >= self.next_strike:
             self.next_strike = time + ATTACK_SPEED
             self.spin_queue = randsign() * self.spin_speed
+            self.angle -= sign(self.spin_queue) * full_spin
         if abs(self.spin_queue) > 0.5:
-            self.angle += sign(self.spin_queue) * pi / 2 / self.spin_speed
+            self.angle += sign(self.spin_queue) * full_spin / self.spin_speed
             self.spin_queue -= sign(self.spin_queue)
+        else:
+            self.spin_queue = 0.0
+
+    def get_sides(self):
+        """Return the number of sides the hero has. While the hero is
+        generally a trigon, Agent Orange may turn him into a square.
+        """
+        return 3 if get_ticks() >= self.next_heal else 4
 
     def update_angle(self, angle):
         """Turn to the given angle if the hero is not busy slashing."""
-        if abs(self.spin_queue) <= 0.5:
-            self.spin_queue = 0.0
-            self.angle = angle
+        if abs(self.spin_queue) > 0.5: return
+        delta = (angle - self.angle + pi) % (pi * 2) - pi
+        unit = pi * 2 / self.get_sides() / self.spin_speed
+        if abs(delta) < unit:
+            self.angle, self.spin_queue = angle, 0.0
+        else:
+            self.spin_queue = delta / unit
 
     def get_color(self):
         """Return current color of the hero."""
@@ -101,8 +115,7 @@ class Hero:
 
     def draw(self):
         """Draw the hero."""
-        sides = 3 if get_ticks() >= self.next_heal else 4
-        trigon = regpoly(sides, self.R, self.angle, self.x, self.y)
+        trigon = regpoly(self.get_sides(), self.R, self.angle, self.x, self.y)
         fill_aapolygon(self.surface, trigon, self.get_color())
 
     def resize(self, maze_size):

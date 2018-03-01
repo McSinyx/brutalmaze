@@ -369,6 +369,6 @@ class Maze:
         self.add_enemy()
 
         self.next_move = self.next_slashfx = 0
-        self.hero.next_heal = self.hero.next_beat = self.hero.next_strike = 0
+        self.hero.next_heal = self.hero.next_strike = 0
         self.hero.slashing = self.hero.firing = self.hero.dead = False
         self.hero.spin_queue = self.hero.wound = 0.0
