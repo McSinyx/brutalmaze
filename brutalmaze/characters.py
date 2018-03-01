@@ -268,8 +268,8 @@ class Enemy:
     def draw(self):
         """Draw the enemy."""
         if get_ticks() < self.maze.next_move and not self.awake: return
-        radious = self.maze.distance/SQRT2 - self.awake*2
-        square = regpoly(4, radious, self.angle, *self.get_pos())
+        radius = self.maze.distance/SQRT2 - self.awake*2
+        square = regpoly(4, radius, self.angle, *self.get_pos())
         fill_aapolygon(self.maze.surface, square, self.get_color())
 
     def update(self):

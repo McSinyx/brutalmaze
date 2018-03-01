@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Brutal Maze.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.5.5'
+__version__ = '0.5.6'
 
 import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter
@@ -66,38 +66,38 @@ class ConfigReader:
 
     def parse(self):
         """Parse configurations."""
-        self.server = self.config.getboolean('Server', 'Enable')
-        if self.server:
-            self.host = self.config.get('Server', 'Host')
-            self.port = self.config.getint('Server', 'Port')
-            self.headless = self.config.getboolean('Server', 'Headless')
-        else:
-            self.key, self.mouse = {}, {}
-            for cmd, alias in self.CONTROL_ALIASES:
-                i = self.config.get('Control', cmd)
-                if re.match('mouse[1-3]$', i.lower()):
-                    if alias not in ('shot', 'slash'):
-                        raise ValueError(self.WEIRD_MOUSE_ERR.format(cmd))
-                    self.mouse[alias] = int(i[-1]) - 1
-                    continue
-                if len(i) == 1:
-                    self.key[alias] = ord(i.lower())
-                    continue
-                try:
-                    self.key[alias] = getattr(pygame, 'K_{}'.format(i.upper()))
-                except AttributeError:
-                    raise ValueError(self.INVALID_CONTROL_ERR.format(cmd, i))
-
         self.size = (self.config.getint('Graphics', 'Screen width'),
                      self.config.getint('Graphics', 'Screen height'))
         self.opengl = self.config.getboolean('Graphics', 'OpenGL')
         self.max_fps = self.config.getint('Graphics', 'Maximum FPS')
         self.muted = self.config.getboolean('Sound', 'Muted')
         self.musicvol = self.config.getfloat('Sound', 'Music volume')
+        self.server = self.config.getboolean('Server', 'Enable')
+        self.host = self.config.get('Server', 'Host')
+        self.port = self.config.getint('Server', 'Port')
+        self.headless = self.config.getboolean('Server', 'Headless')
+
+        if self.server: return
+        self.key, self.mouse = {}, {}
+        for cmd, alias in self.CONTROL_ALIASES:
+            i = self.config.get('Control', cmd)
+            if re.match('mouse[1-3]$', i.lower()):
+                if alias not in ('shot', 'slash'):
+                    raise ValueError(self.WEIRD_MOUSE_ERR.format(cmd))
+                self.mouse[alias] = int(i[-1]) - 1
+                continue
+            if len(i) == 1:
+                self.key[alias] = ord(i.lower())
+                continue
+            try:
+                self.key[alias] = getattr(pygame, 'K_{}'.format(i.upper()))
+            except AttributeError:
+                raise ValueError(self.INVALID_CONTROL_ERR.format(cmd, i))
 
     def read_args(self, arguments):
         """Read and parse a ArgumentParser.Namespace."""
-        for option in 'size', 'opengl', 'max_fps', 'muted', 'musicvol':
+        for option in ('size', 'opengl', 'max_fps', 'muted', 'musicvol',
+                       'server', 'host', 'port', 'headless'):
             value = getattr(arguments, option)
             if value is not None: setattr(self, option, value)
 
@@ -107,7 +107,8 @@ class Game:
     def __init__(self, config):
         pygame.mixer.pre_init(frequency=44100)
         pygame.init()
-        if config.muted or config.headless:
+        self.headless = config.headless and config.server
+        if config.muted or self.headless:
             pygame.mixer.quit()
         else:
             pygame.mixer.music.load(MUSIC)
@@ -127,7 +128,6 @@ class Game:
         else:
             self.server = self.sockinp = None
 
-        self.headless = config.headless
         # self.fps is a float to make sure floordiv won't be used in Python 2
         self.max_fps, self.fps = config.max_fps, float(config.max_fps)
         self.musicvol = config.musicvol
@@ -314,7 +314,8 @@ def main():
     config.parse()
 
     # Parse command-line arguments
-    parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
+    parser = ArgumentParser(usage='%(prog)s [options]',
+                            formatter_class=RawTextHelpFormatter)
     parser.add_argument('-v', '--version', action='version',
                         version='Brutal Maze {}'.format(__version__))
     parser.add_argument(
@@ -337,13 +338,29 @@ def main():
         '-f', '--max-fps', type=int, metavar='FPS',
         help='the desired maximum FPS (fallback: {})'.format(config.max_fps))
     parser.add_argument(
-        '--mute', '-m', action='store_true', default=None,
+        '--mute', '-m', action='store_true', default=None, dest='muted',
         help='mute all sounds (fallback: {})'.format(config.muted))
     parser.add_argument('--unmute', action='store_false', dest='muted',
                         help='unmute sound')
     parser.add_argument(
         '--music-volume', type=float, metavar='VOL', dest='musicvol',
         help='between 0.0 and 1.0 (fallback: {})'.format(config.musicvol))
+    parser.add_argument(
+        '--server', action='store_true', default=None,
+        help='enable server (fallback: {})'.format(config.server))
+    parser.add_argument('--no-server', action='store_false', dest='server',
+                        help='disable server')
+    parser.add_argument(
+        '--host', help='host to bind server to (fallback: {})'.format(config.host))
+    parser.add_argument(
+        '--port', type=int,
+        help='port for server to listen on (fallback: {})'.format(config.port))
+    parser.add_argument(
+        '--head', action='store_false', default=None, dest='headless',
+        help='run server with graphics and sound (fallback: {})'.format(
+            not config.headless))
+    parser.add_argument('--headless', action='store_true',
+                        help='run server without graphics or sound')
     args = parser.parse_args()
     if args.defaultcfg is not None:
         with open(SETTINGS) as settings: args.defaultcfg.write(settings.read())
@@ -351,9 +368,10 @@ def main():
         exit()
 
     # Manipulate config
-    if args.config: config.config.read(args.config)
+    if args.config:
+        config.config.read(args.config)
+        config.parse()
     config.read_args(args)
-    config.parse()
 
     # Main loop
     with Game(config) as game:
