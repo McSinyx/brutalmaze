@@ -283,6 +283,8 @@ class Maze:
                         break
             elif bullet.get_distance(self.x, self.y) < self.distance:
                 if self.hero.spin_queue and time >= self.hero.next_heal:
+                    self.hero.next_strike = (abs(self.hero.spin_queue*self.fps)
+                                             + time + ATTACK_SPEED)
                     play(bullet.sfx_missed, wound, bullet.angle + pi)
                 else:
                     self.hit_hero(wound, bullet.color)

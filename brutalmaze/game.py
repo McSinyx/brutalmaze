@@ -26,7 +26,7 @@ try:                    # Python 3
     from configparser import ConfigParser
 except ImportError:     # Python 2
     from ConfigParser import ConfigParser
-from math import atan2, degrees, radians
+from math import atan2, degrees, radians, pi
 from os.path import join, pathsep
 from socket import socket, SOL_SOCKET, SO_REUSEADDR
 from sys import stdout
@@ -124,7 +124,7 @@ class Game:
             self.server.listen(1)
             print('Socket server is listening on {}:{}'.format(config.host,
                                                                config.port))
-            self.sockinp = 0, 0, 225, 0, 0  # freeze and point to NW
+            self.sockinp = 0, 0, -pi * 3 / 4, 0, 0  # freeze and point to NW
         else:
             self.server = self.sockinp = None
 
@@ -147,16 +147,16 @@ class Game:
 
     def export(self):
         """Export maze data to a bytes object."""
-        maze, hero, tick = self.maze, self.hero, get_ticks()
+        maze, hero, time = self.maze, self.hero, get_ticks()
         walls = [[1 if maze.map[x][y] == WALL else 0 for x in maze.rangex]
-                 for y in maze.rangey] if maze.next_move <= tick else []
+                 for y in maze.rangey] if maze.next_move <= time else []
         lines, ne, nb = deque(), 0, 0
 
         for enemy in maze.enemies:
             if not enemy.awake and walls:
                 walls[enemy.y-maze.rangey[0]][enemy.x-maze.rangex[0]] = WALL
                 continue
-            elif enemy.color == 'Chameleon' and maze.next_move <= tick:
+            elif enemy.color == 'Chameleon' and maze.next_move <= time:
                 continue
             x, y = self.expos(*enemy.get_pos())
             lines.append('{} {} {} {:.0f}'.format(COLORS[enemy.get_color()],
@@ -175,7 +175,7 @@ class Game:
         x, y = self.expos(maze.x, maze.y)
         lines.appendleft('{} {} {} {} {} {} {} {:d} {:d}'.format(
             len(walls), ne, nb, maze.get_score(), COLORS[hero.get_color()],
-            x, y, hero.next_strike <= tick, hero.next_heal <= tick))
+            x, y, hero.next_strike <= time, hero.next_heal <= time))
         return '\n'.join(lines).encode()
 
     def update(self):
@@ -254,7 +254,8 @@ class Game:
         clock = Clock()
         while True:
             connection, address = self.server.accept()
-            print('Connected to {}:{}'.format(*address))
+            time = get_ticks()
+            print('[{}] Connected to {}:{}'.format(time, *address))
             self.maze.reinit()
             while not self.hero.dead:
                 data = self.export()
@@ -270,9 +271,10 @@ class Game:
                 self.sockinp = x, y, radians(angle), attack & 1, attack >> 1
                 clock.tick(self.fps)
             self.maze.lose()
-            self.sockinp = 0, 0, 225, 0, 0
-            print('{1}:{2} scored {0} points'.format(
-                self.maze.get_score(), *address))
+            self.sockinp = 0, 0, -pi * 3 / 4, 0, 0
+            new_time = get_ticks()
+            print('[{0}] {3}:{4} scored {1} points in {2}ms'.format(
+                new_time, self.maze.get_score(), new_time - time, *address))
             connection.close()
 
     def user_control(self):

@@ -106,7 +106,7 @@ class Hero:
         unit = pi * 2 / self.get_sides() / self.spin_speed
         if abs(delta) < unit:
             self.angle, self.spin_queue = angle, 0.0
-        else:
+        elif get_ticks() >= self.next_strike:
             self.spin_queue = delta / unit
 
     def get_color(self):
