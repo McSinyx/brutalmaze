@@ -40,7 +40,7 @@ from appdirs import AppDirs
 
 from .constants import SETTINGS, ICON, MUSIC, HERO_SPEED, COLORS, WALL
 from .maze import Maze
-from .misc import round2, sign
+from .misc import deg, round2, sign
 
 
 class ConfigReader:
@@ -148,9 +148,14 @@ class Game:
     def export(self):
         """Export maze data to a bytes object."""
         maze, hero, time = self.maze, self.hero, get_ticks()
+        lines = deque(['{0} {4} {5} {1} {2:d} {3:d}'.format(
+            COLORS[hero.get_color()], deg(self.hero.angle),
+            hero.next_strike <= time, hero.next_heal <= time,
+            *self.expos(maze.x, maze.y))])
+
         walls = [[1 if maze.map[x][y] == WALL else 0 for x in maze.rangex]
                  for y in maze.rangey] if maze.next_move <= time else []
-        lines, ne, nb = deque(), 0, 0
+        ne = nb = 0
 
         for enemy in maze.enemies:
             if not enemy.awake and walls:
@@ -158,24 +163,22 @@ class Game:
                 continue
             elif enemy.color == 'Chameleon' and maze.next_move <= time:
                 continue
-            x, y = self.expos(*enemy.get_pos())
-            lines.append('{} {} {} {:.0f}'.format(COLORS[enemy.get_color()],
-                                                  x, y, degrees(enemy.angle)))
+            lines.append('{0} {2} {3} {1:.0f}'.format(
+                COLORS[enemy.get_color()], deg(enemy.angle),
+                *self.expos(*enemy.get_pos())))
             ne += 1
 
         for bullet in maze.bullets:
             x, y = self.expos(bullet.x, bullet.y)
-            color, angle = COLORS[bullet.get_color()], degrees(bullet.angle)
+            color, angle = COLORS[bullet.get_color()], deg(bullet.angle)
             if color != '0':
                 lines.append('{} {} {} {:.0f}'.format(color, x, y, angle))
                 nb += 1
 
         if walls: lines.appendleft('\n'.join(''.join(str(cell) for cell in row)
                                              for row in walls))
-        x, y = self.expos(maze.x, maze.y)
-        lines.appendleft('{} {} {} {} {} {} {} {:d} {:d}'.format(
-            len(walls), ne, nb, maze.get_score(), COLORS[hero.get_color()],
-            x, y, hero.next_strike <= time, hero.next_heal <= time))
+        lines.appendleft('{} {} {} {}'.format(len(walls), ne, nb,
+                                              maze.get_score()))
         return '\n'.join(lines).encode()
 
     def update(self):
@@ -257,7 +260,10 @@ class Game:
             time = get_ticks()
             print('[{}] Connected to {}:{}'.format(time, *address))
             self.maze.reinit()
-            while not self.hero.dead:
+            while True:
+                if self.hero.dead:
+                    connection.send('00000000'.encode())
+                    break
                 data = self.export()
                 connection.send('{:08}'.format(len(data)).encode())
                 connection.send(data)

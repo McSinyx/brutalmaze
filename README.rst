@@ -33,16 +33,19 @@ The installation procedure should be as simply as follow:
 * Open Terminal or Command Prompt and run ``pip install --user brutalmaze``.
   Now you can launch the game by running the command ``brutalmaze``.
 
-For more information, see the `Installation <https://github.com/McSinyx/brutalmaze/wiki/Installation>`_
-from Brutal Maze wiki.
+For more information, see
+`Installation <https://github.com/McSinyx/brutalmaze/wiki/Installation>`_
+page from Brutal Maze wiki.
 
 Configuration
 -------------
 
 Brutal Maze supports both configuration file and command-line options.
-Apparently one can change settings for graphics and control in the config file
-and set graphics options using in CLI. These settings are read in the following
-order:
+Apparently, while settings for graphics, sound and socket server can be set
+either in the config file or using CLI, keyboard and mouse bindings are limited
+to configuration file only.
+
+Settings are read in the following order:
 
 0. Default configuration [0]_
 1. System-wide configuration file [1]_
@@ -50,7 +53,7 @@ order:
 3. Manually set configuration file [2]_
 4. Command-line arguments
 
-The later-read preferences will overide the previous ones.
+Later-read preferences will overide previous ones.
 
 .. [0] This can be copied to desired location by ``brutalmaze --write-config
    PATH``. ``brutalmaze --write-config`` alone will print the file to stdout.
@@ -58,3 +61,29 @@ The later-read preferences will overide the previous ones.
    (``brutalmaze --help``). See `wiki <https://github.com/McSinyx/brutalmaze/wiki/Configuration>`_
    for more info.
 .. [2] If specified by ``brutalmaze --config PATH``.
+
+Remote control
+--------------
+
+If you enable the socket server [3]_, Brutal Maze will no longer accept direct
+input from your mouse or keyboard, but wait for a client to connect. Details
+about I/O format are explained carefully in
+`Remote control <https://github.com/McSinyx/brutalmaze/wiki/Remote-control>`_
+wiki page.
+
+.. [3] This can be done by either editing option *Enable* in section *Server*
+   in the configuration file, or launching Brutal Maze using ``brutalmaze
+   --server``.
+
+License
+-------
+
+Brutal Maze's source code and its icon are released under GNU Affero General
+Public License version 3 or later. This means if you run a modified program on
+a server and let other users communicate with it there, your server must also
+allow them to download the source code corresponding to the modified version
+running there.
+
+Tango color palette and several sound effects, whose author and licenses are
+listed in `Credits <https://github.com/McSinyx/brutalmaze/wiki/Credits>`_ wiki
+page.

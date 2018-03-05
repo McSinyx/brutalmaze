@@ -19,7 +19,7 @@
 
 __doc__ = 'Brutal Maze module for miscellaneous functions'
 
-from math import cos, sin, pi
+from math import degrees, cos, sin, pi
 from random import uniform
 
 import pygame
@@ -55,6 +55,13 @@ def fill_aapolygon(surface, points, color):
 def sign(n):
     """Return the sign of number n."""
     return -1 if n < 0 else 1 if n else 0
+
+
+def deg(x):
+    """Convert angle x from radians to degrees casted to a nonnegative
+    integer.
+    """
+    return round2((lambda a: a if a > 0 else a + 360)(degrees(x)))
 
 
 def cosin(x):
