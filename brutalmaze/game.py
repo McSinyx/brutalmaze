@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Brutal Maze.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.5.6'
+__version__ = '0.6.0'
 
 import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter
@@ -26,12 +26,11 @@ try:                    # Python 3
     from configparser import ConfigParser
 except ImportError:     # Python 2
     from ConfigParser import ConfigParser
-from math import atan2, degrees, radians, pi
+from math import atan2, radians, pi
 from os.path import join, pathsep
 from socket import socket, SOL_SOCKET, SO_REUSEADDR
 from sys import stdout
 from threading import Thread
-
 
 import pygame
 from pygame import DOUBLEBUF, KEYDOWN, OPENGL, QUIT, RESIZABLE, VIDEORESIZE
@@ -147,21 +146,21 @@ class Game:
 
     def export(self):
         """Export maze data to a bytes object."""
-        maze, hero, time = self.maze, self.hero, get_ticks()
+        maze, hero, = self.maze, self.hero
         lines = deque(['{0} {4} {5} {1} {2:d} {3:d}'.format(
             COLORS[hero.get_color()], deg(self.hero.angle),
-            hero.next_strike <= time, hero.next_heal <= time,
+            hero.next_strike <= 0, hero.next_heal <= 0,
             *self.expos(maze.x, maze.y))])
 
         walls = [[1 if maze.map[x][y] == WALL else 0 for x in maze.rangex]
-                 for y in maze.rangey] if maze.next_move <= time else []
+                 for y in maze.rangey] if maze.next_move <= 0 else []
         ne = nb = 0
 
         for enemy in maze.enemies:
             if not enemy.awake and walls:
                 walls[enemy.y-maze.rangey[0]][enemy.x-maze.rangex[0]] = WALL
                 continue
-            elif enemy.color == 'Chameleon' and maze.next_move <= time:
+            elif enemy.color == 'Chameleon' and maze.next_move <= 0:
                 continue
             lines.append('{0} {2} {3} {1:.0f}'.format(
                 COLORS[enemy.get_color()], deg(enemy.angle),
@@ -212,20 +211,18 @@ class Game:
             self.fps -= 1
         elif self.fps < self.max_fps and not self.paused:
             self.fps += 5
-        if not self.paused:
-            self.maze.update(self.fps)
-            if not self.headless: self.maze.draw()
+        if not self.paused: self.maze.update(self.fps)
+        if not self.headless: self.maze.draw()
         self.clock.tick(self.fps)
         return True
 
     def move(self, x, y):
         """Command the hero to move faster in the given direction."""
         x, y = -x, -y # or move the maze in the reverse direction
-        stunned = pygame.time.get_ticks() < self.maze.next_move
         velocity = self.maze.distance * HERO_SPEED / self.fps
         accel = velocity * HERO_SPEED / self.fps
 
-        if stunned or not x:
+        if self.maze.next_move > 0 or not x:
             self.maze.vx -= sign(self.maze.vx) * accel
             if abs(self.maze.vx) < accel * 2: self.maze.vx = 0.0
         elif x * self.maze.vx < 0:
@@ -234,7 +231,7 @@ class Game:
             self.maze.vx += x * accel
             if abs(self.maze.vx) > velocity: self.maze.vx = x * velocity
 
-        if stunned or not y:
+        if self.maze.next_move > 0 or not y:
             self.maze.vy -= sign(self.maze.vy) * accel
             if abs(self.maze.vy) < accel * 2: self.maze.vy = 0.0
         elif y * self.maze.vy < 0:

@@ -23,8 +23,6 @@ from math import atan, atan2, sin, pi
 from random import choice, randrange, shuffle
 from sys import modules
 
-from pygame.time import get_ticks
-
 from .constants import (
     TANGO, HERO_HP, SFX_HEART, HEAL_SPEED, MIN_BEAT, ATTACK_SPEED, ENEMY,
     ENEMY_SPEED, ENEMY_HP, SFX_SLASH_HERO, MIDDLE, WALL, FIRANGE, AROUND_HERO,
@@ -42,9 +40,9 @@ class Hero:
         angle (float): angle of the direction the hero pointing (in radians)
         color (tuple of pygame.Color): colors of the hero on different HPs
         R (int): circumradius of the regular triangle representing the hero
-        next_heal (int): the tick that the hero gains back healing ability
-        next_beat (int): the tick to play next heart beat
-        next_strike (int): the tick that the hero can do the next attack
+        next_heal (float): ms until the hero gains back healing ability
+        next_beat (float): time until next heart beat (in ms)
+        next_strike (float): time until the hero can do the next attack (in ms)
         slashing (bool): flag indicates if the hero is doing close-range attack
         firing (bool): flag indicates if the hero is doing long-range attack
         dead (bool): flag indicates if the hero is dead
@@ -60,7 +58,7 @@ class Hero:
         self.angle, self.color = -pi * 3 / 4, TANGO['Aluminium']
         self.R = (w * h / sin(pi*2/3) / 624) ** 0.5
 
-        self.next_heal = self.next_beat = self.next_strike = 0
+        self.next_heal = self.next_beat = self.next_strike = 0.0
         self.slashing = self.firing = self.dead = False
         self.spin_speed = fps / HERO_HP
         self.spin_queue = self.wound = 0.0
@@ -72,19 +70,24 @@ class Hero:
         if self.dead:
             self.spin_queue = 0.0
             return
-        old_speed, time = self.spin_speed, get_ticks()
+        old_speed = self.spin_speed
         self.spin_speed = fps / (HERO_HP-self.wound**0.5)
         self.spin_queue *= self.spin_speed / old_speed
-        if time >= self.next_heal:
+        if self.next_heal <= 0:
             self.wound -= HEAL_SPEED / self.spin_speed / HERO_HP
             if self.wound < 0: self.wound = 0.0
-        if time >= self.next_beat:
+        else:
+            self.next_heal -= 1000.0 / fps
+        if self.next_beat <= 0:
             play(self.sfx_heart)
-            self.next_beat = time + MIN_BEAT*(2 - self.wound/HERO_HP)
+            self.next_beat = MIN_BEAT*(2 - self.wound/HERO_HP)
+        else:
+            self.next_beat -= 1000.0 / fps
+        self.next_strike -= 1000.0 / fps
 
         full_spin = pi * 2 / self.get_sides()
-        if self.slashing and time >= self.next_strike:
-            self.next_strike = time + ATTACK_SPEED
+        if self.slashing and self.next_strike <= 0:
+            self.next_strike = ATTACK_SPEED
             self.spin_queue = randsign() * self.spin_speed
             self.angle -= sign(self.spin_queue) * full_spin
         if abs(self.spin_queue) > 0.5:
@@ -97,7 +100,7 @@ class Hero:
         """Return the number of sides the hero has. While the hero is
         generally a trigon, Agent Orange may turn him into a square.
         """
-        return 3 if get_ticks() >= self.next_heal else 4
+        return 3 if self.next_heal <= 0 else 4
 
     def update_angle(self, angle):
         """Turn to the given angle if the hero is not busy slashing."""
@@ -106,7 +109,7 @@ class Hero:
         unit = pi * 2 / self.get_sides() / self.spin_speed
         if abs(delta) < unit:
             self.angle, self.spin_queue = angle, 0.0
-        elif get_ticks() >= self.next_strike:
+        elif self.next_strike <= 0:
             self.spin_queue = delta / unit
 
     def get_color(self):
@@ -134,7 +137,7 @@ class Enemy:
         angle (float): angle of the direction the enemy pointing (in radians)
         color (str): enemy's color name
         awake (bool): flag indicates if the enemy is active
-        next_strike (int): the tick that the enemy can do the next attack
+        next_strike (float): time until the enemy's next action (in ms)
         move_speed (float): speed of movement (in frames per grid)
         offsetx, offsety (integer): steps moved from the center of the grid
         spin_speed (float): speed of spinning (in frames per slash)
@@ -149,7 +152,7 @@ class Enemy:
         self.angle, self.color = pi / 4, color
 
         self.awake = False
-        self.next_strike = 0
+        self.next_strike = 0.0
         self.move_speed = self.maze.fps / ENEMY_SPEED
         self.offsetx = self.offsety = 0
         self.spin_speed = self.maze.fps / ENEMY_HP
@@ -207,11 +210,11 @@ class Enemy:
         if self.maze.hero.dead: return False
         x, y = self.get_pos()
         if (self.maze.get_distance(x, y) > FIRANGE*self.maze.distance
-            or get_ticks() < self.next_strike
+            or self.next_strike > 0
             or (self.x, self.y) in AROUND_HERO or self.offsetx or self.offsety
             or randrange((self.maze.hero.slashing+self.maze.isfast()+1) * 3)):
             return False
-        self.next_strike = get_ticks() + ATTACK_SPEED
+        self.next_strike = ATTACK_SPEED
         self.maze.bullets.append(
             Bullet(self.maze.surface, x, y, self.get_angle() + pi, self.color))
         return True
@@ -224,7 +227,7 @@ class Enemy:
         if self.offsety:
             self.offsety -= sign(self.offsety)
             return True
-        if get_ticks() < self.next_strike: return False
+        if self.next_strike > 0: return False
 
         self.move_speed = self.maze.fps / speed
         directions = [(sign(MIDDLE - self.x), 0), (0, sign(MIDDLE - self.y))]
@@ -267,7 +270,7 @@ class Enemy:
 
     def draw(self):
         """Draw the enemy."""
-        if get_ticks() < self.maze.next_move and not self.awake: return
+        if self.maze.next_move > 0 and not self.awake: return
         radius = self.maze.distance/SQRT2 - self.awake*2
         square = regpoly(4, radius, self.angle, *self.get_pos())
         fill_aapolygon(self.maze.surface, square, self.get_color())
@@ -277,6 +280,7 @@ class Enemy:
         if self.awake:
             self.spin_speed, tmp = self.maze.fps / ENEMY_HP, self.spin_speed
             self.spin_queue *= self.spin_speed / tmp
+            self.next_strike -= 1000.0 / self.maze.fps
             if not self.spin_queue and not self.fire() and not self.move():
                 self.spin_queue = randsign() * self.spin_speed
                 if not self.maze.hero.dead:
@@ -305,25 +309,30 @@ class Chameleon(Enemy):
     """Object representing an enemy of Chameleon.
 
     Additional attributes:
-        visible (int): the tick until which the Chameleon is visible
+        visible (float): time until the Chameleon is visible (in ms)
     """
     def __init__(self, maze, x, y):
         Enemy.__init__(self, maze, x, y, 'Chameleon')
-        self.visible = 0
+        self.visible = 0.0
 
     def wake(self):
         """Wake the Chameleon up if it can see the hero."""
         if Enemy.wake(self) is True:
-            self.visible = get_ticks() + 1000//ENEMY_SPEED
+            self.visible = 1000.0 / ENEMY_SPEED
 
     def draw(self):
         """Draw the Chameleon."""
-        if not self.awake or get_ticks() < self.visible or self.spin_queue:
+        if not self.awake or self.visible > 0 or self.spin_queue:
             Enemy.draw(self)
+
+    def update(self):
+        """Update the Chameleon."""
+        Enemy.update(self)
+        if self.awake: self.visible -= 1000.0 / self.maze.fps
 
     def hit(self, wound):
         """Handle the Chameleon when it's attacked."""
-        self.visible = get_ticks() + 1000//ENEMY_SPEED
+        self.visible = 1000.0 / ENEMY_SPEED
         Enemy.hit(self, wound)
 
 

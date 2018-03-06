@@ -24,7 +24,6 @@ from math import pi, log
 from random import choice, getrandbits, uniform
 
 import pygame
-from pygame.time import get_ticks
 
 from .characters import Hero, new_enemy
 from .constants import (
@@ -75,8 +74,8 @@ class Maze:
         enemy_weights (dict): probabilities of enemies to be created
         enemies (list of Enemy): alive enemies
         hero (Hero): the hero
-        next_move (int): the tick that the hero gets mobilized
-        next_slashfx (int): the tick to play next slash effect of the hero
+        next_move (float): time until the hero gets mobilized (in ms)
+        next_slashfx (float): time until next slash effect of the hero (in ms)
         slashd (float): minimum distance for slashes to be effective
         sfx_slash (pygame.mixer.Sound): sound effect of slashed enemy
         sfx_lose (pygame.mixer.Sound): sound effect to be played when you lose
@@ -107,7 +106,7 @@ class Maze:
         self.add_enemy()
         self.hero = Hero(self.surface, fps, size)
         self.map[MIDDLE][MIDDLE] = HERO
-        self.next_move = self.next_slashfx = 0
+        self.next_move = self.next_slashfx = 0.0
         self.slashd = self.hero.R + self.distance/SQRT2
 
         self.sfx_spawn = SFX_SPAWN
@@ -144,7 +143,7 @@ class Maze:
     def draw(self):
         """Draw the maze."""
         self.surface.fill(BG_COLOR)
-        if get_ticks() >= self.next_move:
+        if self.next_move <= 0:
             for i in self.rangex:
                 for j in self.rangey:
                     if self.map[i][j] != WALL: continue
@@ -217,13 +216,12 @@ class Maze:
         """Handle the hero when he loses HP."""
         fx = (uniform(0, sum(self.enemy_weights.values()))
               < self.enemy_weights[color])
-        time = get_ticks()
         if (color == 'Butter' or color == 'ScarletRed') and fx:
             self.hero.wound += wound * 2.5
         elif color == 'Orange' and fx:
-            self.hero.next_heal = max(self.hero.next_heal, time) + wound*1000
+            self.hero.next_heal = max(self.hero.next_heal, 0) + wound*1000
         elif color == 'SkyBlue' and fx:
-            self.next_move = max(self.next_move, time) + wound*1000
+            self.next_move = max(self.next_move, 0) + wound*1000
         else:
             self.hero.wound += wound
         if self.enemy_weights[color] + wound < MAXW:
@@ -238,10 +236,10 @@ class Maze:
         for i, enemy in enumerate(self.enemies):
             d = self.slashd - enemy.get_distance()
             if d > 0:
-                wound, time = d * SQRT2 / self.distance, get_ticks()
-                if time >= self.next_slashfx:
+                wound = d * SQRT2 / self.distance
+                if self.next_slashfx <= 0:
                     play(self.sfx_slash, wound, enemy.get_angle())
-                    self.next_slashfx = time + ATTACK_SPEED
+                    self.next_slashfx = ATTACK_SPEED
                 enemy.hit(wound / self.hero.spin_speed)
                 if enemy.wound >= ENEMY_HP:
                     self.score += enemy.wound
@@ -252,21 +250,21 @@ class Maze:
 
     def track_bullets(self):
         """Handle the bullets."""
-        fallen, time = [], get_ticks()
+        fallen = []
         if (self.hero.firing and not self.hero.slashing
-            and time >= self.hero.next_strike):
-            self.hero.next_strike = time + ATTACK_SPEED
+            and self.hero.next_strike <= 0):
+            self.hero.next_strike = ATTACK_SPEED
             self.bullets.append(Bullet(self.surface, self.x, self.y,
                                        self.hero.angle, 'Aluminium'))
         for i, bullet in enumerate(self.bullets):
-            wound = float(bullet.fall_time-time) / BULLET_LIFETIME
+            wound = bullet.fall_time / BULLET_LIFETIME
             bullet.update(self.fps, self.distance)
             if wound < 0:
                 fallen.append(i)
             elif bullet.color == 'Aluminium':
                 x = MIDDLE + round2((bullet.x-self.x) / self.distance)
                 y = MIDDLE + round2((bullet.y-self.y) / self.distance)
-                if self.map[x][y] == WALL and time >= self.next_move:
+                if self.map[x][y] == WALL and self.next_move <= 0:
                     fallen.append(i)
                     continue
                 for j, enemy in enumerate(self.enemies):
@@ -282,9 +280,9 @@ class Maze:
                         fallen.append(i)
                         break
             elif bullet.get_distance(self.x, self.y) < self.distance:
-                if self.hero.spin_queue and time >= self.hero.next_heal:
+                if self.hero.spin_queue and self.hero.next_heal <= 0:
                     self.hero.next_strike = (abs(self.hero.spin_queue*self.fps)
-                                             + time + ATTACK_SPEED)
+                                             + ATTACK_SPEED)
                     play(bullet.sfx_missed, wound, bullet.angle + pi)
                 else:
                     self.hit_hero(wound, bullet.color)
@@ -318,6 +316,9 @@ class Maze:
         self.centerx += dx
         dy = self.is_valid_move(vy=self.vy)
         self.centery += dy
+
+        self.next_move -= 1000.0 / self.fps
+        self.next_slashfx -= 1000.0 / self.fps
 
         if dx or dy:
             self.rotate()
@@ -370,7 +371,7 @@ class Maze:
         self.enemy_weights = {color: MINW for color in ENEMIES}
         self.add_enemy()
 
-        self.next_move = self.next_slashfx = 0
+        self.next_move = self.next_slashfx = 0.0
         self.hero.next_heal = self.hero.next_strike = 0
         self.hero.slashing = self.hero.firing = self.hero.dead = False
         self.hero.spin_queue = self.hero.wound = 0.0

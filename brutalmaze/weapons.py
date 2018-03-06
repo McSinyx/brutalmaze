@@ -21,8 +21,6 @@ __doc__ = 'Brutal Maze module for weapon classes'
 
 from math import cos, sin
 
-from pygame.time import get_ticks
-
 from .constants import (BULLET_LIFETIME, SFX_SHOT_ENEMY, SFX_SHOT_HERO,
                         SFX_MISSED, BULLET_SPEED, ENEMY_HP, TANGO, BG_COLOR)
 from .misc import regpoly, fill_aapolygon
@@ -36,14 +34,14 @@ class Bullet:
         x, y (int): coordinates of the center of the bullet (in pixels)
         angle (float): angle of the direction the bullet pointing (in radians)
         color (str): bullet's color name
-        fall_time (int): the tick that the bullet will fall down
+        fall_time (int): time until the bullet fall down
         sfx_hit (pygame.mixer.Sound): sound effect indicating target was hit
         sfx_missed (pygame.mixer.Sound): sound effect indicating a miss shot
     """
     def __init__(self, surface, x, y, angle, color):
         self.surface = surface
         self.x, self.y, self.angle, self.color = x, y, angle, color
-        self.fall_time = get_ticks() + BULLET_LIFETIME
+        self.fall_time = BULLET_LIFETIME
         if color == 'Aluminium':
             self.sfx_hit = SFX_SHOT_ENEMY
         else:
@@ -55,10 +53,11 @@ class Bullet:
         s = distance * BULLET_SPEED / fps
         self.x += s * cos(self.angle)
         self.y += s * sin(self.angle)
+        self.fall_time -= 1000.0 / fps
 
     def get_color(self):
         """Return current color of the enemy."""
-        value = int((1-(self.fall_time-get_ticks())/BULLET_LIFETIME)*ENEMY_HP)
+        value = int((1 - self.fall_time/BULLET_LIFETIME) * ENEMY_HP)
         try:
             return TANGO[self.color][value]
         except IndexError:
