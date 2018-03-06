@@ -93,7 +93,7 @@ class Maze:
         self.distance = (self.w * self.h / 416) ** 0.5
         self.x, self.y = self.w // 2, self.h // 2
         self.centerx, self.centery = self.w / 2.0, self.h / 2.0
-        w, h = (int(i/self.distance/2 + 2) for i in size)
+        w, h = (int(i/self.distance/2 + 1) for i in size)
         self.rangex = list(range(MIDDLE - w, MIDDLE + w + 1))
         self.rangey = list(range(MIDDLE - h, MIDDLE + h + 1))
         self.score = INIT_SCORE
@@ -342,7 +342,7 @@ class Maze:
         self.x, self.y = self.w // 2, self.h // 2
         self.centerx = self.x + offsetx*self.distance
         self.centery = self.y + offsety*self.distance
-        w, h = int(self.w/self.distance/2 + 2), int(self.h/self.distance/2 + 2)
+        w, h = int(self.w/self.distance/2 + 1), int(self.h/self.distance/2 + 1)
         self.rangex = list(range(MIDDLE - w, MIDDLE + w + 1))
         self.rangey = list(range(MIDDLE - h, MIDDLE + h + 1))
         self.slashd = self.hero.R + self.distance/SQRT2

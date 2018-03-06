@@ -212,8 +212,9 @@ class Game:
             self.fps -= 1
         elif self.fps < self.max_fps and not self.paused:
             self.fps += 5
-        if not self.paused: self.maze.update(self.fps)
-        if not self.headless: self.maze.draw()
+        if not self.paused:
+            self.maze.update(self.fps)
+            if not self.headless: self.maze.draw()
         self.clock.tick(self.fps)
         return True
 
