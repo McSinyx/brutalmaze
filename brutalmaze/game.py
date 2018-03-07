@@ -258,13 +258,13 @@ class Game:
             self.maze.reinit()
             while True:
                 if self.hero.dead:
-                    connection.send('00000000'.encode())
+                    connection.send('0000000'.encode())
                     break
                 data = self.export()
-                connection.send('{:08}'.format(len(data)).encode())
+                connection.send('{:07}'.format(len(data)).encode())
                 connection.send(data)
                 try:
-                    buf = connection.recv(8)
+                    buf = connection.recv(7)
                 except:     # client is likely to be closed
                     break
                 if not buf: break
