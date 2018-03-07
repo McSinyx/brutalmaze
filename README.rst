@@ -20,6 +20,8 @@ Brutal Maze has a few notable feautures:
 * Enemies with special abilities: stun, poison, camo, etc.
 * Somewhat a realistic physic and logic system.
 * Resizable game window in-game.
+* Eazily customizable via INI file format
+* Remote control through socket for AI researching
 
 Installation
 ------------
@@ -31,11 +33,32 @@ The installation procedure should be as simply as follow:
   directory for `Python scripts <https://docs.python.org/2/install/index.html#alternate-installation-the-user-scheme>`_
   is in your ``$PATH``.
 * Open Terminal or Command Prompt and run ``pip install --user brutalmaze``.
-  Now you can launch the game by running the command ``brutalmaze``.
 
 For more information, see
 `Installation <https://github.com/McSinyx/brutalmaze/wiki/Installation>`_
 page from Brutal Maze wiki.
+
+After installation, you can launch the game by running the command
+``brutalmaze``. Below are default bindings:
+
+F2
+   New game.
+``p``
+   Toggle pause.
+``m``
+   Toggle mute.
+Left
+   Move left.
+Right
+   Move right.
+Up
+   Move up.
+Down
+   Move down.
+Left Mouse
+   Long-range attack.
+Right Mouse
+   Close-range attack, also dodge from bullets.
 
 Configuration
 -------------
@@ -55,13 +78,6 @@ Settings are read in the following order:
 
 Later-read preferences will overide previous ones.
 
-.. [0] This can be copied to desired location by ``brutalmaze --write-config
-   PATH``. ``brutalmaze --write-config`` alone will print the file to stdout.
-.. [1] These will be listed as fallback config in the help message
-   (``brutalmaze --help``). See `wiki <https://github.com/McSinyx/brutalmaze/wiki/Configuration>`_
-   for more info.
-.. [2] If specified by ``brutalmaze --config PATH``.
-
 Remote control
 --------------
 
@@ -70,10 +86,6 @@ input from your mouse or keyboard, but wait for a client to connect. Details
 about I/O format are explained carefully in
 `Remote control <https://github.com/McSinyx/brutalmaze/wiki/Remote-control>`_
 wiki page.
-
-.. [3] This can be done by either editing option *Enable* in section *Server*
-   in the configuration file, or launching Brutal Maze using ``brutalmaze
-   --server``.
 
 License
 -------
@@ -87,3 +99,13 @@ running there.
 Tango color palette and several sound effects, whose author and licenses are
 listed in `Credits <https://github.com/McSinyx/brutalmaze/wiki/Credits>`_ wiki
 page.
+
+.. [0] This can be copied to desired location by ``brutalmaze --write-config
+   PATH``. ``brutalmaze --write-config`` alone will print the file to stdout.
+.. [1] These will be listed as fallback config in the help message
+   (``brutalmaze --help``). See `wiki <https://github.com/McSinyx/brutalmaze/wiki/Configuration>`_
+   for more info.
+.. [2] If specified by ``brutalmaze --config PATH``.
+.. [3] This can be done by either editing option *Enable* in section *Server*
+   in the configuration file, or launching Brutal Maze using ``brutalmaze
+   --server``.
