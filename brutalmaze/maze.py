@@ -80,14 +80,13 @@ class Maze:
         sfx_slash (pygame.mixer.Sound): sound effect of slashed enemy
         sfx_lose (pygame.mixer.Sound): sound effect to be played when you lose
     """
-    def __init__(self, fps, size, scrtype, headless):
+    def __init__(self, fps, size, headless):
         self.fps = fps
         self.w, self.h = size
-        self.scrtype = scrtype
         if headless:
             self.surface = None
         else:
-            self.surface = pygame.display.set_mode(size, self.scrtype)
+            self.surface = pygame.display.set_mode(size, pygame.RESIZABLE)
 
         self.distance = (self.w * self.h / 416) ** 0.5
         self.x, self.y = self.w // 2, self.h // 2
@@ -334,7 +333,7 @@ class Maze:
     def resize(self, size):
         """Resize the maze."""
         self.w, self.h = size
-        self.surface = pygame.display.set_mode(size, self.scrtype)
+        self.surface = pygame.display.set_mode(size, pygame.RESIZABLE)
         self.hero.resize(size)
 
         offsetx = (self.centerx-self.x) / self.distance

@@ -7,7 +7,7 @@ with open('README.rst') as f:
 
 setup(
     name='brutalmaze',
-    version='0.6.0',
+    version='0.6.1',
     description='A minimalist hack and slash game with fast-paced action',
     long_description=long_description,
     url='https://github.com/McSinyx/brutalmaze',

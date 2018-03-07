@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Brutal Maze.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.6.0'
+__version__ = '0.6.1'
 
 import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter
@@ -33,7 +33,7 @@ from sys import stdout
 from threading import Thread
 
 import pygame
-from pygame import DOUBLEBUF, KEYDOWN, OPENGL, QUIT, RESIZABLE, VIDEORESIZE
+from pygame import KEYDOWN, QUIT, VIDEORESIZE
 from pygame.time import Clock, get_ticks
 from appdirs import AppDirs
 
@@ -67,7 +67,6 @@ class ConfigReader:
         """Parse configurations."""
         self.size = (self.config.getint('Graphics', 'Screen width'),
                      self.config.getint('Graphics', 'Screen height'))
-        self.opengl = self.config.getboolean('Graphics', 'OpenGL')
         self.max_fps = self.config.getint('Graphics', 'Maximum FPS')
         self.muted = self.config.getboolean('Sound', 'Muted')
         self.musicvol = self.config.getfloat('Sound', 'Music volume')
@@ -95,7 +94,7 @@ class ConfigReader:
 
     def read_args(self, arguments):
         """Read and parse a ArgumentParser.Namespace."""
-        for option in ('size', 'opengl', 'max_fps', 'muted', 'musicvol',
+        for option in ('size', 'max_fps', 'muted', 'musicvol',
                        'server', 'host', 'port', 'headless'):
             value = getattr(arguments, option)
             if value is not None: setattr(self, option, value)
@@ -131,8 +130,7 @@ class Game:
         self.max_fps, self.fps = config.max_fps, float(config.max_fps)
         self.musicvol = config.musicvol
         self.key, self.mouse = config.key, config.mouse
-        scrtype = (config.opengl and DOUBLEBUF|OPENGL) | RESIZABLE
-        self.maze = Maze(config.max_fps, config.size, scrtype, config.headless)
+        self.maze = Maze(config.max_fps, config.size, config.headless)
         self.hero = self.maze.hero
         self.clock, self.paused = Clock(), False
 
@@ -335,11 +333,6 @@ def main():
     parser.add_argument(
         '-s', '--size', type=int, nargs=2, metavar=('X', 'Y'),
         help='the desired screen size (fallback: {}x{})'.format(*config.size))
-    parser.add_argument(
-        '--opengl', action='store_true', default=None,
-        help='enable OpenGL (fallback: {})'.format(config.opengl))
-    parser.add_argument('--no-opengl', action='store_false', dest='opengl',
-                        help='disable OpenGL')
     parser.add_argument(
         '-f', '--max-fps', type=int, metavar='FPS',
         help='the desired maximum FPS (fallback: {})'.format(config.max_fps))
