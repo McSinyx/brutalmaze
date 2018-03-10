@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Brutal Maze.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.6.1'
+__version__ = '0.6.2'
 
 import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter
@@ -73,6 +73,7 @@ class ConfigReader:
         self.server = self.config.getboolean('Server', 'Enable')
         self.host = self.config.get('Server', 'Host')
         self.port = self.config.getint('Server', 'Port')
+        self.timeout = self.config.getfloat('Server', 'Timeout')
         self.headless = self.config.getboolean('Server', 'Headless')
 
         if self.server: return
@@ -95,7 +96,7 @@ class ConfigReader:
     def read_args(self, arguments):
         """Read and parse a ArgumentParser.Namespace."""
         for option in ('size', 'max_fps', 'muted', 'musicvol',
-                       'server', 'host', 'port', 'headless'):
+                       'server', 'host', 'port', 'timeout', 'headless'):
             value = getattr(arguments, option)
             if value is not None: setattr(self, option, value)
 
@@ -122,6 +123,7 @@ class Game:
             self.server.listen(1)
             print('Socket server is listening on {}:{}'.format(config.host,
                                                                config.port))
+            self.timeout = config.timeout
             self.sockinp = 0, 0, -pi * 3 / 4, 0, 0  # freeze and point to NW
         else:
             self.server = self.sockinp = None
@@ -158,7 +160,8 @@ class Game:
             if not enemy.awake and walls:
                 walls[enemy.y-maze.rangey[0]][enemy.x-maze.rangex[0]] = WALL
                 continue
-            elif enemy.color == 'Chameleon' and maze.next_move <= 0:
+            # Check Chameleons
+            elif getattr(enemy, 'visible', 1) <= 0 and maze.next_move <= 0:
                 continue
             lines.append('{0} {2} {3} {1:.0f}'.format(
                 COLORS[enemy.get_color()], deg(enemy.angle),
@@ -253,9 +256,11 @@ class Game:
         clock = Clock()
         while True:
             connection, address = self.server.accept()
+            connection.settimeout(self.timeout)
             time = get_ticks()
             print('[{}] Connected to {}:{}'.format(time, *address))
             self.maze.reinit()
+            self.maze.score = 100000
             while True:
                 if self.hero.dead:
                     connection.send('0000000'.encode())
@@ -265,19 +270,22 @@ class Game:
                 connection.send(data)
                 try:
                     buf = connection.recv(7)
-                except:     # client is likely to be closed
+                except:     # client is closed or timed out
                     break
                 if not buf: break
-                move, angle, attack = (int(i) for i in buf.decode().split())
+                try:
+                    move, angle, attack = map(int, buf.decode().split())
+                except ValueError:  # invalid input
+                    break
                 y, x = (i - 1 for i in divmod(move, 3))
                 self.sockinp = x, y, radians(angle), attack & 1, attack >> 1
                 clock.tick(self.fps)
-            self.maze.lose()
             self.sockinp = 0, 0, -pi * 3 / 4, 0, 0
             new_time = get_ticks()
             print('[{0}] {3}:{4} scored {1} points in {2}ms'.format(
                 new_time, self.maze.get_score(), new_time - time, *address))
             connection.close()
+            if not self.hero.dead: self.maze.lose()
 
     def user_control(self):
         """Handle direct control from user's mouse and keyboard."""
@@ -350,10 +358,15 @@ def main():
     parser.add_argument('--no-server', action='store_false', dest='server',
                         help='disable server')
     parser.add_argument(
-        '--host', help='host to bind server to (fallback: {})'.format(config.host))
+        '--host', help='host to bind server to (fallback: {})'.format(
+            config.host))
     parser.add_argument(
         '--port', type=int,
         help='port for server to listen on (fallback: {})'.format(config.port))
+    parser.add_argument(
+        '-t', '--timeout', type=float,
+        help='socket operations timeout in seconds (fallback: {})'.format(
+            config.timeout))
     parser.add_argument(
         '--head', action='store_false', default=None, dest='headless',
         help='run server with graphics and sound (fallback: {})'.format(

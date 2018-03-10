@@ -90,7 +90,7 @@ class Hero:
             self.next_strike = ATTACK_SPEED
             self.spin_queue = randsign() * self.spin_speed
             self.angle -= sign(self.spin_queue) * full_spin
-        if abs(self.spin_queue) > 0.5:
+        if round(self.spin_queue) != 0:
             self.angle += sign(self.spin_queue) * full_spin / self.spin_speed
             self.spin_queue -= sign(self.spin_queue)
         else:
@@ -104,12 +104,12 @@ class Hero:
 
     def update_angle(self, angle):
         """Turn to the given angle if the hero is not busy slashing."""
-        if abs(self.spin_queue) > 0.5: return
+        if round(self.spin_queue) != 0: return
         delta = (angle - self.angle + pi) % (pi * 2) - pi
         unit = pi * 2 / self.get_sides() / self.spin_speed
         if abs(delta) < unit:
             self.angle, self.spin_queue = angle, 0.0
-        elif self.next_strike <= 0:
+        else:
             self.spin_queue = delta / unit
 
     def get_color(self):
@@ -285,7 +285,7 @@ class Enemy:
                 self.spin_queue = randsign() * self.spin_speed
                 if not self.maze.hero.dead:
                     play(self.sfx_slash, self.get_slash(), self.get_angle())
-            if abs(self.spin_queue) > 0.5:
+            if round(self.spin_queue) != 0:
                 self.angle += sign(self.spin_queue) * pi / 2 / self.spin_speed
                 self.spin_queue -= sign(self.spin_queue)
             else:

@@ -249,12 +249,16 @@ class Maze:
 
     def track_bullets(self):
         """Handle the bullets."""
-        fallen = []
         if (self.hero.firing and not self.hero.slashing
             and self.hero.next_strike <= 0):
             self.hero.next_strike = ATTACK_SPEED
             self.bullets.append(Bullet(self.surface, self.x, self.y,
                                        self.hero.angle, 'Aluminium'))
+
+        fallen = []
+        block = (self.hero.spin_queue and self.hero.next_heal <= 0
+                 and self.hero.next_strike > self.hero.spin_queue / self.fps)
+
         for i, bullet in enumerate(self.bullets):
             wound = bullet.fall_time / BULLET_LIFETIME
             bullet.update(self.fps, self.distance)
@@ -279,8 +283,8 @@ class Maze:
                         fallen.append(i)
                         break
             elif bullet.get_distance(self.x, self.y) < self.distance:
-                if self.hero.spin_queue and self.hero.next_heal <= 0:
-                    self.hero.next_strike = (abs(self.hero.spin_queue*self.fps)
+                if block:
+                    self.hero.next_strike = (abs(self.hero.spin_queue/self.fps)
                                              + ATTACK_SPEED)
                     play(bullet.sfx_missed, wound, bullet.angle + pi)
                 else:
