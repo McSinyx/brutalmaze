@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Brutal Maze.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.6.2'
+__version__ = '0.6.3'
 
 import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter
@@ -260,7 +260,6 @@ class Game:
             time = get_ticks()
             print('[{}] Connected to {}:{}'.format(time, *address))
             self.maze.reinit()
-            self.maze.score = 100000
             while True:
                 if self.hero.dead:
                     connection.send('0000000'.encode())
