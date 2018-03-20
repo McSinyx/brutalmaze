@@ -323,8 +323,8 @@ class Maze:
         self.next_move -= 1000.0 / self.fps
         self.next_slashfx -= 1000.0 / self.fps
 
+        self.rotate()
         if dx or dy:
-            self.rotate()
             for enemy in self.enemies: enemy.wake()
             for bullet in self.bullets: bullet.place(dx, dy)
 
