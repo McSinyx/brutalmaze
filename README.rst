@@ -12,7 +12,7 @@ Your job is to help the trigon fight against those evil squares and find a way
 out (if there is any). Be aware that the more get killed, the more will show up
 and our hero will get weaker when wounded.
 
-Brutal Maze has a few notable feautures:
+Brutal Maze has a few notable features:
 
 * Being highly portable.
 * Auto-generated and infinite maze.
@@ -20,14 +20,14 @@ Brutal Maze has a few notable feautures:
 * Enemies with special abilities: stun, poison, camo, etc.
 * Somewhat a realistic physic and logic system.
 * Resizable game window in-game.
-* Eazily customizable via INI file format
-* Remote control through socket for AI researching
+* Easily customizable via INI file format.
+* Remote control through TCP/IP socket (can be used in AI researching).
 
 Installation
 ------------
 
 Brutal Maze is written in Python and is compatible with both version 2 and 3.
-The installation procedure should be as simply as follow:
+The installation procedure should be as simple as follows:
 
 * Install Python and `pip <https://pip.pypa.io/en/latest/>`_. Make sure the
   directory for `Python scripts <https://docs.python.org/2/install/index.html#alternate-installation-the-user-scheme>`_
@@ -76,7 +76,7 @@ Settings are read in the following order:
 3. Manually set configuration file [2]_
 4. Command-line arguments
 
-Later-read preferences will overide previous ones.
+Later-read preferences will override previous ones.
 
 Remote control
 --------------
@@ -96,9 +96,9 @@ a server and let other users communicate with it there, your server must also
 allow them to download the source code corresponding to the modified version
 running there.
 
-Tango color palette and several sound effects, whose author and licenses are
-listed in `Credits <https://github.com/McSinyx/brutalmaze/wiki/Credits>`_ wiki
-page.
+This project also uses Tango color palette and several sound effects, whose
+authors and licenses are listed in
+`Credits <https://github.com/McSinyx/brutalmaze/wiki/Credits>`_ wiki page.
 
 .. [0] This can be copied to desired location by ``brutalmaze --write-config
    PATH``. ``brutalmaze --write-config`` alone will print the file to stdout.
