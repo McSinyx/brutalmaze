@@ -350,25 +350,25 @@ def main():
     parser.add_argument(
         '--write-config', nargs='?', const=stdout, type=FileType('w'),
         metavar='PATH', dest='defaultcfg',
-        help='write default config and exit, if PATH not specified use stdout')
+        help='in tuỳ chỉnh mặc định vào tệp PATH và thoát, nếu PATH không được chỉ định, in ra stdout')
     parser.add_argument(
         '-c', '--config', metavar='PATH',
-        help='location of the configuration file (fallback: {})'.format(
+        help='nạp tuỳ chỉnh từ tệp PATH (dự phòng: {})'.format(
             pathsep.join(filenames)))
     parser.add_argument(
         '-s', '--size', type=int, nargs=2, metavar=('X', 'Y'),
-        help='the desired screen size (fallback: {}x{})'.format(*config.size))
+        help='chỉ định kích thước XxY cho trò chơi (dự phòng: {}x{})'.format(*config.size))
     parser.add_argument(
         '-f', '--max-fps', type=int, metavar='FPS',
-        help='the desired maximum FPS (fallback: {})'.format(config.max_fps))
+        help='chỉ định số khung hình tối đa trong một giây (dự phòng: {})'.format(config.max_fps))
     parser.add_argument(
         '--mute', '-m', action='store_true', default=None, dest='muted',
-        help='mute all sounds (fallback: {})'.format(config.muted))
+        help='tắt âm thanh (dự phòng: {})'.format(config.muted))
     parser.add_argument('--unmute', action='store_false', dest='muted',
-                        help='unmute sound')
+                        help='bật âm thanh')
     parser.add_argument(
         '--music-volume', type=float, metavar='VOL', dest='musicvol',
-        help='between 0.0 and 1.0 (fallback: {})'.format(config.musicvol))
+        help='đặt âm lượng nhạc nền (trong khoảng 0.0 đến 1.0) (dự phòng: {})'.format(config.musicvol))
     parser.add_argument(
         '--space-music', action='store_true', default=None, dest='space',
         help='use space music background'.format(config.muted))
@@ -376,25 +376,25 @@ def main():
                         help='use default music background')
     parser.add_argument(
         '--server', action='store_true', default=None,
-        help='enable server (fallback: {})'.format(config.server))
+        help='bật server socket (dự phòng: {})'.format(config.server))
     parser.add_argument('--no-server', action='store_false', dest='server',
-                        help='disable server')
+                        help='tắt server socket')
     parser.add_argument(
-        '--host', help='host to bind server to (fallback: {})'.format(
+        '--host', help='đặt địa chỉ server (dự phòng: {})'.format(
             config.host))
     parser.add_argument(
         '--port', type=int,
-        help='port for server to listen on (fallback: {})'.format(config.port))
+        help='đặt cổng server (dự phòng: {})'.format(config.port))
     parser.add_argument(
         '-t', '--timeout', type=float,
-        help='socket operations timeout in seconds (fallback: {})'.format(
+        help='đặt thời gian chờ trước khi server ngắt kết nối khỏi client khi không nhận được hồi đáp (tính theo giây) (dự phòng: {})'.format(
             config.timeout))
     parser.add_argument(
         '--head', action='store_false', default=None, dest='headless',
-        help='run server with graphics and sound (fallback: {})'.format(
+        help='tắt cửa sổ trờ chơi khi chạy trong chế độ server (dự phòng: {})'.format(
             not config.headless))
     parser.add_argument('--headless', action='store_true',
-                        help='run server without graphics or sound')
+                        help='tắt cửa sổ trờ chơi khi chạy trong chế độ server')
     args = parser.parse_args()
     if args.defaultcfg is not None:
         with open(SETTINGS) as settings: args.defaultcfg.write(settings.read())

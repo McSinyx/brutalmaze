@@ -1,0 +1,322 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english,vietnamese]{babel}
+\usepackage{textcomp}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\def\UrlBreaks{\do\/\do-}
+\title{BẢN THUYẾT MINH PHẦN MỀM SÁNG TẠO}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+\section*{A. THÔNG TIN CHUNG}
+\subsection*{1. Giới thiệu sản phẩm}
+Tên sản phẩm: Mê cung Khốc liệt (Brutal Maze)\\
+Công cụ sử dụng (ngôn ngữ lập trình): Python\\
+Cấu hình cài đặt: Máy tính điện tử với Windows, macOS, GNU/Linux, *BSD hoặc một
+số hệ điều hành giống-Unix khác\\
+Đăng kí bảng thi: D3
+%Thuộc đoàn (tên tỉnh thành): Hà Nội
+
+\subsection*{2. Tên tác giả, nhóm tác giả}
+Họ và tên thí sinh: Nguyễn Gia Phong\\
+Ngày tháng năm sinh: 26/05/2000\\
+Học sinh lớp 12A1\hfill trường THPT Phạm Hồng Thái\\
+Số điện thoại liên lạc: (024) 38350837
+%Email: vn.mcsinyx@gmail.com
+
+\section*{B. MÔ TẢ SẢN PHẨM}
+\subsection*{1. Yêu cầu cơ sở hạ tầng để triển khai ứng dụng}
+\begin{itemize}
+  \item Phần cứng: Máy tính điện tử với kết nối Internet
+  \item Phần mềm:
+    \begin{itemize}
+      \item Hệ điều hành: Microsoft Windows, Apple macOS, GNU/Linux, các *BSD
+        hoặc một số Unix-like khác
+      \item Thư viện: Python, pip\footnote{\url{https://pip.pypa.io/}},
+        pygame\footnote{\url{https://www.pygame.org/wiki/about}} và
+        appdirs\footnote{\url{https://github.com/ActiveState/appdirs}}
+    \end{itemize}
+\end{itemize}
+
+\subsection*{2. Sản phẩm được phát triển ước tính trong khoảng thời gian}
+Số tháng: 6 tháng (từ 10/2017 đến 03/2018)
+
+\subsection*{3. Phạm vi ứng dụng}
+Mê cung Khốc liệt hướng đến hai đối tượng sử dụng chính:
+
+\begin{description}
+  \item[Người chơi] Là trò chơi hành động đơn giản với giao diện trực quan, Mê
+    cung Khốc liệt phù hợp cho mọi lứa tuổi.
+  \item[Người yêu thích lập trình] Hỗ trợ TCP/IP socket cho điều từ chương
+    trình bên ngoài, trò chơi có thể được sử dụng trong học lập trình bot.
+\end{description}
+
+\subsection*{4. Hướng dẫn cài đặt và sử dụng}
+Mê cung Khốc liệt có thể chạy trên các phiên bản hiện hành của cả Python 2 và
+3. Trước khi cài đặt trò chơi, người dùng cần cài Python, pip và các thư viện
+pygame theo các bước sau:
+\begin{enumerate}
+  \item Cài đặt Python, setuptools và pip:
+    \begin{itemize}
+      \item Cho Windows: Chạy file \verb|dist/python-*.exe| được đóng gói kèm
+        sản phẩm.
+      \item Cho macOS: Chạy file \verb|dist/python-*-macosx*.pkg| được đóng gói
+        kèm sản phẩm.
+      \item Cho các Unix-like khác: Sử dụng phần mềm quản lí gói của bản phân
+        phối để cài các gói \verb|python|, \verb|python-pip|,
+        \verb|python-setuptools| (tên chính xác các gói phụ thuộc vào bản phân
+        phối)~\cite{nixpip}.
+    \end{itemize}
+  \item Cài đặt các thư viện (nếu có đường truyền Internet có thể bỏ qua bước
+    này và chuyển sang bước 3):
+    \begin{itemize}
+      \item appdirs: Trong Command Prompt/PowerShell (với Windows) hoặc
+        Terminal/Console (trong các hệ điều hành họ Unix), chạy lệnh
+        \verb|pip install dist/appdirs-*.whl| (với các tệp \verb|dist/*.whl|
+        được đóng gói trong thư mục sản phẩm).
+      \item pygame: Chạy lệnh \verb|pip install dist/pygame-*-<nền tảng>.whl|,
+        với \emph{nền tảng} là hệ điều hành và CPU.
+    \end{itemize}
+  \item Cài đặt trò chơi: Sử dụng lệnh \verb|pip install dist/brutalmaze-*.whl|.
+    Với máy tính có kết nối Internet, \verb|pip install brutalmaze| sẽ tự động
+    cài đặt cả các thư viện phụ thuộc ở bước 2.
+\end{enumerate}
+
+Sau khi cài đặt, trò chơi có thể được mở trong launcher của hệ điều hành với
+tên \verb|brutalmaze|. Mặc định, các phím mũi tên (\textuparrow \textleftarrow
+\textdownarrow \textrightarrow) được sử dụng để di chuyển, chuột trái để bắn và
+chuột phải để chém và đỡ đạn.
+
+\subsection*{5. Mô tả các tính năng cơ bản của sản phẩm}
+Mê cung Khốc liệt là trò chơi hành động tiết tấu nhanh. Người chơi phải điều
+khiển hình tam giác bất lực chiến đấu với những hình vuông hòng thoát khỏi mê
+cung. Các tính năng nổi bật của trò chơi:
+
+\begin{itemize}
+  \item[-] Mê cung vô tận được tạo một cách ngẫu nhiên.
+  \item[-] Cửa sổ trò chơi có thể thu/phóng ở hầu hết mọi tỷ lệ\footnote{Thực tế
+    tỉ lệ nằm ngoài khoảng 1:16 đến 16:1 sẽ gây khó khăn cho việc tạo mê cung.}.
+  \item[-] Bot (các hình vuông) phong phú với nhiều khả năng như vô hình, làm
+    bất động, nhân bản, \ldots
+  \item[-] Engine vật lí tương đối thực với quán tính của chuyển động và mức sát
+    thương dựa trên khoảng cách.
+  \item[-] Dễ dàng tuỳ chỉnh qua lựa chọn dòng lệnh hoặc tệp INI.
+  \item[-] Hỗ trợ điều khiển qua TCP/IP socket.
+\end{itemize}
+Các tuỳ chọn đơn giản có thể được xác định qua giao diện dòng lệnh:
+\begin{description}
+  \item[-h, -{}-help] in trợ giúp và thoát
+  \item[-v, -{}-version] in phiên bản và thoát
+  \item[-{}-write-config \lbrack PATH\rbrack ] in tuỳ chỉnh mặc định vào tệp PATH
+    và thoát, nếu PATH không được chỉ định, in ra stdout
+  \item[-c, -{}-config PATH] nạp tuỳ chỉnh từ tệp PATH
+  \item[-s, -{}-size] chỉ định kích thước XxY cho trò chơi
+  \item[-f, -{}-max-fps FPS] chỉ định số khung hình tối đa trong một giây
+  \item[-{}-\lbrack un\rbrack mute] tắt âm thanh
+  \item[-{}-music-volume VOL] đặt âm lượng nhạc nền (trong khoảng 0.0 đến 1.0)
+  \item[-{}-\lbrack no-\rbrack server] bật/tắt server socket
+  \item[-{}-host] đặt địa chỉ server
+  \item[-{}-port] đặt cổng server
+  \item[-t, -{}-timeout TIMEOUT] đặt thời gian chờ trước khi server ngắt kết nối
+    khỏi client khi không nhận được hồi đáp (tính theo giây)
+  \item[-{}-head\lbrack less\rbrack] bật/tắt cửa sổ trờ chơi khi chạy trong chế
+    độ server
+\end{description}
+
+Tệp tuỳ chỉnh hỗ trợ thêm các lựa chọn về điều khiển. Tệp mặc định có dạng như
+sau:
+\begin{verbatim}
+[Graphics]
+# Độ rộng và độ dài khung hình (tính theo pixel)
+Screen width: 640
+Screen height: 480
+# FPS tối đa không nên vượt quá tốc độ nháy của màn hình
+# để tránh lãng phí tài nguyên
+Maximum FPS: 60
+
+[Sound]
+# Tắt âm thanh (yes cho có, no cho không)
+Muted: no
+# Âm lượng nhạc nền, trong khoảng 0.0 đến 1.1
+Music volume: 1.0
+
+# Các phím điều khiển hợp lệ được liệt kê trong
+# http://www.pygame.org/docs/ref/key.html
+# (không tính phần K_). Tổ hợp phím không được hỗ trợ.
+# Chuột trái, giữa, phải lần lượt là Mouse1 đến Mouse3.
+[Control]
+# Trò chơi mới
+New game: F2
+# Tạm dừng trò chơi
+Toggle pause: p
+# Tắt/bật tiếng
+Toggle mute: m
+# Di chuyển sang trái, phải, trên. dưới
+Move left: Left
+Move right: Right
+Move up: Up
+Move down: Down
+# Bắn và chém (đồng thời đỡ đạn)
+Long-range attack: Mouse1
+Close-range attack: Mouse3
+\end{verbatim}
+
+\newpage
+\begin{verbatim}
+[Server]
+# Bật server sẽ vô hiệu hoá điều khiển trực tiếp
+Enable: no
+# Địa chỉ server socket
+Host: localhost
+Port: 8089
+# Thời gian chờ trước khi server ngắt kết nối khỏi client
+# khi không nhận được hồi đáp (tính theo giây)
+Timeout: 1.0
+# Bật/tắt cửa sổ trờ chơi khi chạy trong chế độ server
+Headless: no
+\end{verbatim}
+Các tuỳ chỉnh được nạp theo thứ tự sau:
+\begin{enumerate}
+  \item[0.] Tuỳ chọn mặc định
+  \item Tệp tuỳ chỉnh hệ thống và của người dùng\footnote{Lần lượt được liệt kê
+    trong \texttt{brutalmaze -h} ở thẻ \texttt{-{}-config}.}
+  \item Tệp INI được chỉ định bởi thẻ \verb|--config|
+  \item Các tuỳ chọn trong dòng lệnh
+\end{enumerate}
+Các giá trị nạp sau sẽ đè lên giá trị trước.
+
+Khi được khởi động với thẻ \verb|--server| hoặc chỉ định trong tệp tuỳ chỉnh
+(\verb|Enable: yes| trong mục \verb|[Server]|), Mê cung Khốc liệt sẽ mở một
+TCP/IPv4 socket tại địa chỉ đã chọn. Trước khi gửi dữ liệu trò chơi, server sẽ
+gửi độ dài $l$ của dữ liệu dài 7 byte (ví dụ \texttt{0000531}). Dữ liệu có dạng
+chung như sau:
+\begin{verbatim}
+<Số dòng mê cung (nh)> <Số kẻ thù (ne)> <Số đạn (nb)> <Điểm>
+<nh dòng mô tả phần mê cung được hiển thị>
+<Một dòng mô tả tam giác>
+<ne dòng mô tả các kẻ thù (hình vuông)>
+<nb dùng mô tả các viên đạn đang bay>
+\end{verbatim}
+\begin{description}
+  \item[Mê cung] Biểu diễn mê cung là bản đồ bit (0 và 1) dài nh dòng và rộng nw
+    cột. Mỗi ô tương ứng với 100 đơn vị độ dài.
+  \item[Tam giác] Biểu diễn bởi 6 giá trị:
+    \begin{description}
+      \item[Màu sắc] Một kí tự biểu thị thể lực nhân vật
+      \item[Hoành độ] Số nguyên trong đoạn $[0, nw\times 100]$
+      \item[Tung độ] Số nguyên trong đoạn $[0, nh\times 100]$
+      \item[Góc] Hướng ngắm bắn của nhân vật (theo độ)
+      \item[Có thể tấn công] \texttt{1} nếu có và \texttt{0} nếu không
+      \item[Có thể hồi sức] \texttt{1} nếu có và \texttt{0} nếu không
+    \end{description}
+  \newpage
+  \item[Hình vuông] biểu diễn bởi 4 giá trị:
+    \begin{description}
+      \item[Màu sắc] Một kí tự biểu thị thể lực nhân vật
+      \item[Hoành độ] Số nguyên trong đoạn $[0, nw\times 100]$
+      \item[Tung độ] Số nguyên trong đoạn $[0, nh\times 100]$
+      \item[Góc] Hướng ngắm bắn của nhân vật (theo độ)
+    \end{description}
+  \item[Đạn] biểu diễn bởi 4 giá trị:
+    \begin{description}
+      \item[Màu sắc] Một kí tự biểu thị sức sát thương (trong [0, 1])
+      \item[Hoành độ] Số nguyên trong đoạn $[0, nw\times 100]$
+      \item[Tung độ] Số nguyên trong đoạn $[0, nh\times 100]$
+      \item[Góc] Hướng bay (theo độ)
+    \end{description}
+\end{description}
+
+Cần chú ý rằng trong trò chơi, trục hoành hướng xuống dưới kéo theo sự đảo ngược
+chiều dương của góc lượng giác:
+\begin{center}
+\includegraphics[width=.5\linewidth]{wiki/pics/unitCircleDegrees.png}
+\end{center}
+
+Thể lực các nhân vật theo màu được biểu diễn bằng các kí tự như sau:
+\begin{center}
+\begin{tabular*}{0.6\linewidth}{@{\extracolsep{\fill}} l|l|l|l|l|l|l}
+  Thể lực & 5 & 4 & 3 & 2 & 1 & 0 \\\hline
+  Vàng & & & a & b & c & 0 \\
+  Cam & & & d & e & f & 0 \\
+  Nâu & & & g & h & i & 0 \\
+  Lục & & & j & k & l & 0 \\
+  Lam & & & m & n & o & 0 \\
+  Tím & & & p & q & r & 0 \\
+  Đỏ & & & s & t & u & 0 \\
+  Xám & v & w & x & y & z & 0
+\end{tabular*}
+\end{center}
+
+Sức sát thương của đạn cũng được kí hiệu tương tự (ứng với 1, $\frac{2}{3}$,
+$\frac{1}{3}$ và 0), riêng đạn xám của tam giác dùng 4 kí tự \texttt{vwx0}.
+
+\newpage
+Tương ứng, server nhận tối đa 7 byte theo dạng \texttt{<Hướng di chuyển> <Góc
+ngắm> <Cách tấn công>}:
+\begin{description}
+  \item[Hướng di chuyển] được mã hoá theo bảng sau:
+
+    \begin{tabular}{l|c c c}
+      Hướng & Trái & || & Phải\\\hline
+      Trên & 0 & 1 & 2\\
+      || & 3 & 4 & 5\\
+      Dưới & 6 & 7 & 8
+    \end{tabular}
+
+  \item[Góc] tính theo độ, làm tròn về số nguyên trong [0, 360).
+  \item[Cách tấn công] \texttt{0} chờ, \texttt{1} bắn, \texttt{2} chém.
+\end{description}
+Như vậy, client sẽ phải thực hiện các bước sau:
+\begin{enumerate}
+  \item Tạo TCP/IP socket và kết nối với server
+  \item Nhận độ dài $l$ của dữ liệu trò chơi, nếu $l < 0$ thì đóng socket và
+    thoát
+  \item Nhận dữ liệu dài $l$ byte
+  \item Xử lí dữ liệu
+  \item Gửi hướng dẫn điều khiển tam giác đến server và quay lại bước 2
+\end{enumerate}
+
+Client sẽ được đánh giá dựa trên số điểm đạt được và thời gian đạt số điểm đó
+(càng ngắn càng tốt). Để thuận tiện, server sẽ in các thông số này ra stdout.
+
+\subsection*{6. Tự đánh giá tiềm năng ứng dụng của sản phẩm}
+Trò chơi có thể ứng dụng trong giải trí đơn thuần cũng như học hỏi, luyện tập
+lập trình bot trong thời gian thực. Có thể dễ nhận thấy rằng, chiến thuật tốt
+đòi hỏi phải xử lí các vật thể trong dòng thời gian để phán đoán cũng như lập ra
+bước đi tiếp theo. \emph{Học máy} (machine learning) có thể ứng dụng trong bài
+toán này bởi thực tế không hề có cách giải hoàn hảo.
+
+Mặt khác, là phần mềm tự do\footnote{Trò chơi được phát hành theo giấy phép GNU
+AGPL bản 3 tại \url{https://github.com/McSinyx/brutalmaze}.} với dung
+lượng mã nguồn tương đổi nhỏ (khoảng 1500 dòng kể cả chú thích và dòng trống) và
+tài liệu tương đối đầy đủ, Mê cung Khốc liệt còn có thể dùng như ví dụ điển hình
+cho lập trình trò chơi đơn giản, xử lí tuỳ chỉnh và socket trong Python.
+
+\subsection*{7. Tự đánh giá những mặt tồn tại chưa được giải quyết}
+Trò chơi còn tồn tại một số vấn đề như sau:
+\begin{itemize}
+  \item Thuật toán tạo mê cung còn bất cập: di chuyển theo hướng Tây Bắc sẽ
+    không bao giờ gặp đường cùng.~\cite{algo}
+  \item Đồ hoạ còn chưa hấp dẫn.
+\end{itemize}
+
+\section*{C. KẾT LUẬN}
+\subsection*{1. Hướng phát triển của sản phẩm trong tương lai}
+Giải quyết các mặt tồn tại (về về đồ hoạ và thuật toán tạo mê cung); mặt khác có
+thể viết thêm phiên bản cho điện thoại thông minh và cho web server.
+\subsection*{2. Nguyện vọng trong tương lai}
+Trò chơi được sử dụng rộng rãi và có ích cho cộng đồng trong cả phương diện giải
+trí cũng như học tập.
+
+\renewcommand{\refname}{D. TÀI LIỆU THAM KHẢO}
+\begin{thebibliography}{99}
+  \bibitem{nixpip} \url{https://packaging.python.org/guides/installing-using-linux-tools/\#installing-pip-setuptools-wheel-with-linux-package-managers}
+  \bibitem{algo} Tạo mê cung bằng cây nhị phân:
+  \url{http://weblog.jamisbuck.org/2011/2/1/maze-generation-binary-tree-algorithm}
+\end{thebibliography}
+Xác nhận của BGH nhà trường\hfill Ba Đình, ngày 22 tháng 3 năm 2018\\
+\raggedleft{Học sinh đăng kí dự thi\hspace{1cm}}
+\end{document}
