@@ -1,7 +1,9 @@
-\documentclass[a4paper,11pt]{article}
+\documentclass[a4paper,12pt]{article}
+\usepackage[margin=1in]{geometry}
 \usepackage[utf8]{inputenc}
 \usepackage[english,vietnamese]{babel}
 \usepackage{textcomp}
+\usepackage{amssymb}
 \usepackage{graphicx}
 \usepackage{hyperref}
 \def\UrlBreaks{\do\/\do-}
@@ -10,22 +12,26 @@
 \date{}
 
 \begin{document}
-\maketitle
+\begin{center}
+HỘI THI TIN HỌC TRẺ THÀNH PHỐ HÀ NỘI LẦN THỨ XXXIII, NĂM 2018
+\rule{0.8\textwidth}{0.4pt}
+\end{center}
+{\let\newpage\relax\maketitle}
 \section*{A. THÔNG TIN CHUNG}
 \subsection*{1. Giới thiệu sản phẩm}
 Tên sản phẩm: Mê cung Khốc liệt (Brutal Maze)\\
 Công cụ sử dụng (ngôn ngữ lập trình): Python\\
 Cấu hình cài đặt: Máy tính điện tử với Windows, macOS, GNU/Linux, *BSD hoặc một
 số hệ điều hành giống-Unix khác\\
-Đăng kí bảng thi: D3
-%Thuộc đoàn (tên tỉnh thành): Hà Nội
+Đăng kí bảng thi:\hspace{1cm}D1 $\square$\hspace{1in}D2 $\square$
+\hspace{1in}D3 $\boxtimes$\\
+Thuộc đoàn (tên quận/huyện/thị xã): Ba Đình
 
 \subsection*{2. Tên tác giả, nhóm tác giả}
 Họ và tên thí sinh: Nguyễn Gia Phong\\
 Ngày tháng năm sinh: 26/05/2000\\
-Học sinh lớp 12A1\hfill trường THPT Phạm Hồng Thái\\
-Số điện thoại liên lạc: (024) 38350837
-%Email: vn.mcsinyx@gmail.com
+Học sinh lớp 12A1\hspace{1in}trường THPT Phạm Hồng Thái\\
+Số điện thoại liên lạc: (024) 38350837\hspace{1in}Email: vn.mcsinyx@gmail.com
 
 \section*{B. MÔ TẢ SẢN PHẨM}
 \subsection*{1. Yêu cầu cơ sở hạ tầng để triển khai ứng dụng}
@@ -74,7 +80,7 @@ pygame theo các bước sau:
     này và chuyển sang bước 3):
     \begin{itemize}
       \item appdirs: Trong Command Prompt/PowerShell (với Windows) hoặc
-        Terminal/Console (trong các hệ điều hành họ Unix), chạy lệnh
+        \mbox{Terminal/Console} (trong các hệ điều hành họ Unix), chạy lệnh
         \verb|pip install dist/appdirs-*.whl| (với các tệp \verb|dist/*.whl|
         được đóng gói trong thư mục sản phẩm).
       \item pygame: Chạy lệnh \verb|pip install dist/pygame-*-<nền tảng>.whl|,
@@ -95,6 +101,7 @@ Mê cung Khốc liệt là trò chơi hành động tiết tấu nhanh. Người
 khiển hình tam giác bất lực chiến đấu với những hình vuông hòng thoát khỏi mê
 cung. Các tính năng nổi bật của trò chơi:
 
+\newpage
 \begin{itemize}
   \item[-] Mê cung vô tận được tạo một cách ngẫu nhiên.
   \item[-] Cửa sổ trò chơi có thể thu/phóng ở hầu hết mọi tỷ lệ\footnote{Thực tế
@@ -136,7 +143,10 @@ Screen height: 480
 # FPS tối đa không nên vượt quá tốc độ nháy của màn hình
 # để tránh lãng phí tài nguyên
 Maximum FPS: 60
+\end{verbatim}
 
+\newpage
+\begin{verbatim}
 [Sound]
 # Tắt âm thanh (yes cho có, no cho không)
 Muted: no
@@ -162,10 +172,7 @@ Move down: Down
 # Bắn và chém (đồng thời đỡ đạn)
 Long-range attack: Mouse1
 Close-range attack: Mouse3
-\end{verbatim}
 
-\newpage
-\begin{verbatim}
 [Server]
 # Bật server sẽ vô hiệu hoá điều khiển trực tiếp
 Enable: no
@@ -188,6 +195,7 @@ Các tuỳ chỉnh được nạp theo thứ tự sau:
 \end{enumerate}
 Các giá trị nạp sau sẽ đè lên giá trị trước.
 
+\newpage
 Khi được khởi động với thẻ \verb|--server| hoặc chỉ định trong tệp tuỳ chỉnh
 (\verb|Enable: yes| trong mục \verb|[Server]|), Mê cung Khốc liệt sẽ mở một
 TCP/IPv4 socket tại địa chỉ đã chọn. Trước khi gửi dữ liệu trò chơi, server sẽ
@@ -212,7 +220,6 @@ chung như sau:
       \item[Có thể tấn công] \texttt{1} nếu có và \texttt{0} nếu không
       \item[Có thể hồi sức] \texttt{1} nếu có và \texttt{0} nếu không
     \end{description}
-  \newpage
   \item[Hình vuông] biểu diễn bởi 4 giá trị:
     \begin{description}
       \item[Màu sắc] Một kí tự biểu thị thể lực nhân vật
@@ -229,6 +236,7 @@ chung như sau:
     \end{description}
 \end{description}
 
+\newpage
 Cần chú ý rằng trong trò chơi, trục hoành hướng xuống dưới kéo theo sự đảo ngược
 chiều dương của góc lượng giác:
 \begin{center}
@@ -253,7 +261,6 @@ Thể lực các nhân vật theo màu được biểu diễn bằng các kí t�
 Sức sát thương của đạn cũng được kí hiệu tương tự (ứng với 1, $\frac{2}{3}$,
 $\frac{1}{3}$ và 0), riêng đạn xám của tam giác dùng 4 kí tự \texttt{vwx0}.
 
-\newpage
 Tương ứng, server nhận tối đa 7 byte theo dạng \texttt{<Hướng di chuyển> <Góc
 ngắm> <Cách tấn công>}:
 \begin{description}
@@ -269,6 +276,8 @@ ngắm> <Cách tấn công>}:
   \item[Góc] tính theo độ, làm tròn về số nguyên trong [0, 360).
   \item[Cách tấn công] \texttt{0} chờ, \texttt{1} bắn, \texttt{2} chém.
 \end{description}
+
+\newpage
 Như vậy, client sẽ phải thực hiện các bước sau:
 \begin{enumerate}
   \item Tạo TCP/IP socket và kết nối với server
@@ -317,6 +326,8 @@ trí cũng như học tập.
   \bibitem{algo} Tạo mê cung bằng cây nhị phân:
   \url{http://weblog.jamisbuck.org/2011/2/1/maze-generation-binary-tree-algorithm}
 \end{thebibliography}
-Xác nhận của BGH nhà trường\hfill Ba Đình, ngày 22 tháng 3 năm 2018\\
-\raggedleft{Học sinh đăng kí dự thi\hspace{1cm}}
+
+\raggedleft{Ba Đình, ngày 04 tháng 04 năm 2018}
+
+\raggedleft{Chữ kí của tác giả/nhóm tác giả}
 \end{document}
