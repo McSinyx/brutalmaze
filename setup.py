@@ -7,7 +7,7 @@ with open('README.rst') as f:
 
 setup(
     name='brutalmaze',
-    version='0.6.4',
+    version='0.6.5',
     description='A minimalist hack and slash game with fast-paced action',
     long_description=long_description,
     url='https://github.com/McSinyx/brutalmaze',
@@ -29,4 +29,4 @@ setup(
     packages=['brutalmaze'],
     install_requires=['appdirs', 'pygame>=1.9'],
     package_data={'brutalmaze': ['icon.png', 'soundfx/*.ogg', 'settings.ini']},
-    entry_points={'gui_scripts': ['brutalmaze = brutalmaze.game:main']})
+    entry_points={'console_scripts': ['brutalmaze = brutalmaze.game:main']})
