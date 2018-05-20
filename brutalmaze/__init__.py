@@ -1,1 +1,1 @@
-"""Brutal Maze is a minimalist hack and slash game with fast-paced action"""
+"""Brutal Maze is a minimalist third-person shooter with fast-paced action"""

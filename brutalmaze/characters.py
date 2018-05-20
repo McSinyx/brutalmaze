@@ -26,7 +26,7 @@ from sys import modules
 from .constants import (
     TANGO, HERO_HP, SFX_HEART, HEAL_SPEED, MIN_BEAT, ATTACK_SPEED, ENEMY,
     ENEMY_SPEED, ENEMY_HP, SFX_SLASH_HERO, MIDDLE, WALL, FIRANGE, AROUND_HERO,
-    ADJACENT_GRIDS, EMPTY, FG_COLOR, SQRT2, MINW)
+    ADJACENTS, EMPTY, FG_COLOR, SQRT2, MINW)
 from .misc import sign, cosin, randsign, regpoly, fill_aapolygon, choices, play
 from .weapons import Bullet
 
@@ -232,8 +232,8 @@ class Enemy:
         self.move_speed = self.maze.fps / speed
         directions = [(sign(MIDDLE - self.x), 0), (0, sign(MIDDLE - self.y))]
         shuffle(directions)
-        directions.append(choice(ADJACENT_GRIDS))
-        if self.maze.hero.dead: directions = choice(ADJACENT_GRIDS),
+        directions.append(choice(ADJACENTS))
+        if self.maze.hero.dead: directions = choice(ADJACENTS),
         for x, y in directions:
             if (x or y) and self.maze.map[self.x + x][self.y + y] == EMPTY:
                 self.offsetx = round(x * (1 - self.move_speed))

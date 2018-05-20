@@ -56,9 +56,9 @@ ATTACK_SPEED = 333.333  # ms/strike
 FIRANGE = 6     # grids
 BULLET_LIFETIME = 1000.0 * FIRANGE / (BULLET_SPEED-HERO_SPEED)  # ms
 EMPTY, WALL, HERO, ENEMY = range(4)
-ADJACENT_GRIDS = (1, 0), (0, 1), (-1, 0), (0, -1)
-AROUND_HERO = set((MIDDLE + x, MIDDLE + y) for x, y in
-                  ADJACENT_GRIDS + ((1, 1), (-1, 1), (-1, -1), (1, -1)))
+ADJACENTS = (1, 0), (0, 1), (-1, 0), (0, -1)
+CORNERS = (1, 1), (-1, 1), (-1, -1), (1, -1)
+AROUND_HERO = set((MIDDLE + x, MIDDLE + y) for x, y in ADJACENTS + CORNERS)
 
 TANGO = {'Butter': ((252, 233, 79), (237, 212, 0), (196, 160, 0)),
          'Orange': ((252, 175, 62), (245, 121, 0), (206, 92, 0)),

@@ -19,7 +19,7 @@
 
 __doc__ = 'Brutal Maze module for the maze class'
 
-from collections import deque
+from collections import deque, defaultdict
 from math import pi, log
 from random import choice, getrandbits, uniform
 
@@ -28,10 +28,10 @@ import pygame
 from .characters import Hero, new_enemy
 from .constants import (
     EMPTY, WALL, HERO, ROAD_WIDTH, MAZE_SIZE, MIDDLE, INIT_SCORE, ENEMIES,
-    MINW, MAXW, SQRT2, SFX_SPAWN, SFX_SLASH_ENEMY, SFX_LOSE, ADJACENT_GRIDS,
+    MINW, MAXW, SQRT2, SFX_SPAWN, SFX_SLASH_ENEMY, SFX_LOSE, ADJACENTS,
     BG_COLOR, FG_COLOR, CELL_WIDTH, LAST_ROW, HERO_HP, ENEMY_HP, ATTACK_SPEED,
     HERO_SPEED, BULLET_LIFETIME)
-from .misc import round2, sign, regpoly, fill_aapolygon, play
+from .misc import round2, sign, around, regpoly, fill_aapolygon, play
 from .weapons import Bullet
 
 
@@ -74,6 +74,8 @@ class Maze:
         enemy_weights (dict): probabilities of enemies to be created
         enemies (list of Enemy): alive enemies
         hero (Hero): the hero
+        destx, desty (int): the grid the hero is moving to
+        stepx, stepy (int): direction the maze is moving
         next_move (float): time until the hero gets mobilized (in ms)
         next_slashfx (float): time until next slash effect of the hero (in ms)
         slashd (float): minimum distance for slashes to be effective
@@ -105,6 +107,8 @@ class Maze:
         self.add_enemy()
         self.hero = Hero(self.surface, fps, size)
         self.map[MIDDLE][MIDDLE] = HERO
+        self.destx = self.desty = MIDDLE
+        self.stepx = self.stepy = 0
         self.next_move = self.next_slashfx = 0.0
         self.slashd = self.hero.R + self.distance/SQRT2
 
@@ -121,7 +125,7 @@ class Maze:
         num = log(self.score, INIT_SCORE)
         while walls and len(self.enemies) < num:
             x, y = choice(walls)
-            if all(self.map[x + a][y + b] == WALL for a, b in ADJACENT_GRIDS):
+            if all(self.map[x + a][y + b] == WALL for a, b in ADJACENTS):
                 continue
             enemy = new_enemy(self, x, y)
             self.enemies.append(enemy)
@@ -164,22 +168,26 @@ class Maze:
         y = int((self.centery-self.y) * 2 / self.distance)
         if x == y == 0: return
         for enemy in self.enemies: self.map[enemy.x][enemy.y] = EMPTY
+
         self.map[MIDDLE][MIDDLE] = EMPTY
-        if x:
-            self.centerx -= x * self.distance
-            self.map.rotate(x)
-            self.rotatex += x
-        if y:
-            self.centery -= y * self.distance
-            for d in self.map: d.rotate(y)
-            self.rotatey += y
+        self.centerx -= x * self.distance
+        self.map.rotate(x)
+        self.rotatex += x
+        self.centery -= y * self.distance
+        for d in self.map: d.rotate(y)
+        self.rotatey += y
         self.map[MIDDLE][MIDDLE] = HERO
+        if self.map[self.destx][self.desty] != HERO:
+            self.destx += x
+            self.desty += y
+        self.stepx = self.stepy = 0
 
         # Respawn the enemies that fall off the display
         killist = []
         for i, enemy in enumerate(self.enemies):
             enemy.place(x, y)
-            if enemy.x not in self.rangex or enemy.y not in self.rangey:
+            if not (self.rangex[0] <= enemy.x <= self.rangex[-1]
+                    and self.rangey[0] <= enemy.y <= self.rangey[-1]):
                 self.score += enemy.wound
                 enemy.die()
                 killist.append(i)
@@ -307,26 +315,25 @@ class Maze:
                     return 0.0
         for enemy in self.enemies:
             x, y = self.get_pos(enemy.x, enemy.y)
-            if (max(abs(herox - x), abs(heroy - y)) * 2 < self.distance
-                and enemy.awake):
+            if max(abs(herox - x), abs(heroy - y)) * 2 < self.distance:
                 return 0.0
         return vx or vy
 
     def update(self, fps):
         """Update the maze."""
         self.fps = fps
-        dx = self.is_valid_move(vx=self.vx)
-        self.centerx += dx
-        dy = self.is_valid_move(vy=self.vy)
-        self.centery += dy
+        self.vx = self.is_valid_move(vx=self.vx)
+        self.centerx += self.vx
+        self.vy = self.is_valid_move(vy=self.vy)
+        self.centery += self.vy
 
         self.next_move -= 1000.0 / self.fps
         self.next_slashfx -= 1000.0 / self.fps
 
         self.rotate()
-        if dx or dy:
+        if self.vx or self.vy:
             for enemy in self.enemies: enemy.wake()
-            for bullet in self.bullets: bullet.place(dx, dy)
+            for bullet in self.bullets: bullet.place(self.vx, self.vy)
 
         for enemy in self.enemies: enemy.update()
         if not self.hero.dead:
@@ -351,6 +358,44 @@ class Maze:
         self.rangey = list(range(MIDDLE - h, MIDDLE + h + 1))
         self.slashd = self.hero.R + self.distance/SQRT2
 
+    def set_step(self, xcheck=(lambda _: True), ycheck=(lambda _: True)):
+        """Return direction on the shortest path to the destination."""
+        if self.stepx or self.stepy and self.vx == self.vy == 0.0:
+            x, y = MIDDLE - self.stepx, MIDDLE - self.stepy
+            if self.stepx and not self.stepy:
+                nextx = x - self.stepx
+                n = self.map[x][y - 1] == EMPTY == self.map[nextx][y - 1]
+                s = self.map[x][y + 1] == EMPTY == self.map[nextx][y + 1]
+                self.stepy = n - s
+            elif not self.stepx and self.stepy:
+                nexty = y - self.stepy
+                w = self.map[x - 1][y] == EMPTY == self.map[x - 1][nexty]
+                e = self.map[x + 1][y] == EMPTY == self.map[x + 1][nexty]
+                self.stepx = w - e
+            return
+
+        queue = defaultdict(list, {0: [(self.destx, self.desty)]})
+        visited, count, distance = set(), 1, 0
+        while count:
+            # Hashes of small intergers are themselves so queue is sorted
+            if not queue[distance]: distance += 1
+            x, y = queue[distance].pop()
+            count -= 1
+            if (x, y) not in visited:
+                visited.add((x, y))
+            else:
+                continue
+
+            dx, dy = MIDDLE - x, MIDDLE - y
+            if dx**2 + dy**2 <= 2:
+                self.stepx, self.stepy = dx, dy
+                return
+            for i, j in around(x, y):
+                if self.map[i][j] == EMPTY and xcheck(i) and ycheck(j):
+                    queue[distance + 1].append((i, j))
+                    count += 1
+        self.stepx, self.stepy = 0, 0
+
     def isfast(self):
         """Return if the hero is moving faster than HERO_SPEED."""
         return (self.vx**2+self.vy**2)**0.5*self.fps > HERO_SPEED*self.distance
@@ -359,6 +404,8 @@ class Maze:
         """Handle loses."""
         self.hero.dead = True
         self.hero.slashing = self.hero.firing = False
+        self.destx = self.desty = MIDDLE
+        self.stepx = self.stepy = 0
         self.vx = self.vy = 0.0
         play(self.sfx_lose)
 
@@ -368,6 +415,8 @@ class Maze:
         self.score = INIT_SCORE
         self.map = deque()
         for _ in range(MAZE_SIZE): self.map.extend(new_column())
+        self.destx = self.desty = MIDDLE
+        self.stepx = self.stepy = 0
         self.vx = self.vy = 0.0
         self.rotatex = self.rotatey = 0
         self.bullets, self.enemies = [], []

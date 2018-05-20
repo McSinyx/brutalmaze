@@ -7,8 +7,8 @@ with open('README.rst') as f:
 
 setup(
     name='brutalmaze',
-    version='0.6.5',
-    description='A minimalist hack and slash game with fast-paced action',
+    version='0.7.0',
+    description='A minimalist TPS game with fast-paced action',
     long_description=long_description,
     url='https://github.com/McSinyx/brutalmaze',
     author='Nguyễn Gia Phong',
@@ -25,7 +25,7 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Topic :: Games/Entertainment :: Arcade'],
-    keywords='pygame action-game arcade-game maze socket-server ai-challenges',
+    keywords='pygame third-person-shooter arcade-game maze ai-challenges',
     packages=['brutalmaze'],
     install_requires=['appdirs', 'pygame>=1.9'],
     package_data={'brutalmaze': ['icon.png', 'soundfx/*.ogg', 'settings.ini']},

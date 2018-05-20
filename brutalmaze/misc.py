@@ -19,11 +19,14 @@
 
 __doc__ = 'Brutal Maze module for miscellaneous functions'
 
+from itertools import chain
 from math import degrees, cos, sin, pi
-from random import uniform
+from random import shuffle, uniform
 
 import pygame
 from pygame.gfxdraw import filled_polygon, aapolygon
+
+from .constants import ADJACENTS, CORNERS
 
 
 def round2(number):
@@ -67,6 +70,15 @@ def deg(x):
 def cosin(x):
     """Return the sum of cosine and sine of x (measured in radians)."""
     return cos(x) + sin(x)
+
+
+def around(x, y):
+    """Return grids around the given one in random order."""
+    a = [(x + i, y + j) for i, j in ADJACENTS]
+    shuffle(a)
+    c = [(x + i, y + j) for i, j in CORNERS]
+    shuffle(c)
+    return chain(a, c)
 
 
 def choices(d):

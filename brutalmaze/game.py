@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# main.py - main module, starts game and main loop
+# game.py - main module, starts game and main loop
 # Copyright (C) 2017, 2018  Nguyễn Gia Phong
 #
 # This file is part of Brutal Maze.
@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Brutal Maze.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.6.5'
+__version__ = '0.7.0'
 
 import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter
@@ -37,7 +37,7 @@ from pygame import KEYDOWN, QUIT, VIDEORESIZE
 from pygame.time import Clock, get_ticks
 from appdirs import AppDirs
 
-from .constants import SETTINGS, ICON, MUSIC, HERO_SPEED, COLORS, WALL
+from .constants import SETTINGS, ICON, MUSIC, HERO_SPEED, COLORS, MIDDLE, WALL
 from .maze import Maze
 from .misc import deg, round2, sign
 
@@ -50,6 +50,7 @@ class ConfigReader:
                        ('Toggle mute', 'mute'),
                        ('Move left', 'left'), ('Move right', 'right'),
                        ('Move up', 'up'), ('Move down', 'down'),
+                       ('Auto move', 'autove'),
                        ('Long-range attack', 'shot'),
                        ('Close-range attack', 'slash'))
     WEIRD_MOUSE_ERR = '{}: Mouse is not a suitable control'
@@ -81,7 +82,7 @@ class ConfigReader:
         for cmd, alias in self.CONTROL_ALIASES:
             i = self.config.get('Control', cmd)
             if re.match('mouse[1-3]$', i.lower()):
-                if alias not in ('shot', 'slash'):
+                if alias not in ('autove', 'shot', 'slash'):
                     raise ValueError(self.WEIRD_MOUSE_ERR.format(cmd))
                 self.mouse[alias] = int(i[-1]) - 1
                 continue
@@ -219,27 +220,33 @@ class Game:
 
     def move(self, x, y):
         """Command the hero to move faster in the given direction."""
-        x, y = -x, -y # or move the maze in the reverse direction
-        velocity = self.maze.distance * HERO_SPEED / self.fps
+        maze = self.maze
+        velocity = maze.distance * HERO_SPEED / self.fps
         accel = velocity * HERO_SPEED / self.fps
 
-        if self.maze.next_move > 0 or not x:
-            self.maze.vx -= sign(self.maze.vx) * accel
-            if abs(self.maze.vx) < accel * 2: self.maze.vx = 0.0
-        elif x * self.maze.vx < 0:
-            self.maze.vx += x * 2 * accel
+        if x == y == 0:
+            maze.set_step()
+            x, y = maze.stepx, maze.stepy
         else:
-            self.maze.vx += x * accel
-            if abs(self.maze.vx) > velocity: self.maze.vx = x * velocity
+            x, y = -x, -y   # or move the maze in the reverse direction
 
-        if self.maze.next_move > 0 or not y:
-            self.maze.vy -= sign(self.maze.vy) * accel
-            if abs(self.maze.vy) < accel * 2: self.maze.vy = 0.0
-        elif y * self.maze.vy < 0:
-            self.maze.vy += y * 2 * accel
+        if maze.next_move > 0 or not x:
+            maze.vx -= sign(maze.vx) * accel
+            if abs(maze.vx) < accel * 2: maze.vx = 0.0
+        elif x * maze.vx < 0:
+            maze.vx += x * 2 * accel
         else:
-            self.maze.vy += y * accel
-            if abs(self.maze.vy) > velocity: self.maze.vy = y * velocity
+            maze.vx += x * accel
+            if abs(maze.vx) > velocity: maze.vx = x * velocity
+
+        if maze.next_move > 0 or not y:
+            maze.vy -= sign(maze.vy) * accel
+            if abs(maze.vy) < accel * 2: maze.vy = 0.0
+        elif y * maze.vy < 0:
+            maze.vy += y * 2 * accel
+        else:
+            maze.vy += y * accel
+            if abs(maze.vy) > velocity: maze.vy = y * velocity
 
     def control(self, x, y, angle, firing, slashing):
         """Control how the hero move and attack."""
@@ -293,11 +300,11 @@ class Game:
             right = keys[self.key['right']] - keys[self.key['left']]
             down = keys[self.key['down']] - keys[self.key['up']]
 
-            # Follow the mouse cursor
-            x, y = pygame.mouse.get_pos()
-            angle = atan2(y - self.hero.y, x - self.hero.x)
-
             buttons = pygame.mouse.get_pressed()
+            try:
+                autove = keys[self.key['autove']]
+            except KeyError:
+                autove = buttons[self.mouse['autove']]
             try:
                 firing = keys[self.key['shot']]
             except KeyError:
@@ -307,6 +314,21 @@ class Game:
             except KeyError:
                 slashing = buttons[self.mouse['slash']]
 
+            # Follow the mouse cursor
+            x, y = pygame.mouse.get_pos()
+            maze = self.maze
+            if right or down:
+                maze.destx = maze.desty = MIDDLE
+                maze.stepx = maze.stepy = 0
+            elif autove:
+                maze.destx = MIDDLE + round2((x-maze.centerx) / maze.distance)
+                maze.desty = MIDDLE + round2((y-maze.centery) / maze.distance)
+                maze.set_step(lambda x: maze.rangex[0] <= x <= maze.rangex[-1],
+                              lambda y: maze.rangey[0] <= y <= maze.rangey[-1])
+                if maze.stepx == maze.stepy == 0:
+                    maze.destx = maze.desty = MIDDLE
+
+            angle = atan2(y - self.hero.y, x - self.hero.x)
             self.control(right, down, angle, firing, slashing)
 
     def __exit__(self, exc_type, exc_value, traceback):

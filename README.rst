@@ -1,8 +1,8 @@
 Brutal Maze
 ===========
 
-Brutal Maze is a hack and slash game with fast-paced action and a minimalist
-art style.
+Brutal Maze is a third-person shooter game with fast-paced action and a
+minimalist art style.
 
 .. image:: https://raw.githubusercontent.com/McSinyx/brutalmaze/master/screenshot.png
 
@@ -39,7 +39,8 @@ For more information, see
 page from Brutal Maze wiki.
 
 After installation, you can launch the game by running the command
-``brutalmaze``. Below are default bindings:
+``brutalmaze``. Below are the default bindings, which can be configured as
+shown in the next section:
 
 F2
    New game.
@@ -55,9 +56,11 @@ Up
    Move up.
 Down
    Move down.
+Right Mouse
+   Move the hero using mouse
 Left Mouse
    Long-range attack.
-Right Mouse
+Space
    Close-range attack, also dodge from bullets.
 
 Configuration
