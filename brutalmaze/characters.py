@@ -148,7 +148,6 @@ class Enemy:
     def __init__(self, maze, x, y, color):
         self.maze = maze
         self.x, self.y = x, y
-        self.maze.map[x][y] = ENEMY
         self.angle, self.color = pi / 4, color
 
         self.awake = False
@@ -176,7 +175,7 @@ class Enemy:
         """Move the enemy by (x, y) (in grids)."""
         self.x += x
         self.y += y
-        self.maze.map[self.x][self.y] = ENEMY
+        if self.awake: self.maze.map[self.x][self.y] = ENEMY
 
     def wake(self):
         """Wake the enemy up if it can see the hero.
@@ -195,11 +194,13 @@ class Enemy:
         def get_distance(x, y): return abs(dy*x - dx*y) / (dy**2 + dx**2)**0.5
         for i in range(startx, stopx + 1):
             for j in range(starty, stopy + 1):
-                if self.maze.map[i][j] != WALL: continue
+                if self.maze.map[i][j] != WALL or i == stopx and j == stopy:
+                    continue
                 x, y = self.maze.get_pos(i, j)
                 if get_distance(x - self.maze.x, y - self.maze.y) <= mind:
                     return False
         self.awake = True
+        self.maze.map[self.x][self.y] = ENEMY
         play(self.maze.sfx_spawn,
              1 - self.get_distance()/self.maze.get_distance(0, 0)/2,
              self.get_angle() + pi)
@@ -265,13 +266,13 @@ class Enemy:
 
     def get_color(self):
         """Return current color of the enemy."""
-        return TANGO[self.color][int(self.wound)] if self.awake else FG_COLOR
+        return TANGO[self.color][int(self.wound)]
 
 
     def draw(self):
         """Draw the enemy."""
-        if self.maze.next_move > 0 and not self.awake: return
-        radius = self.maze.distance/SQRT2 - self.awake*2
+        if not self.awake: return
+        radius = self.maze.distance / SQRT2
         square = regpoly(4, radius, self.angle, *self.get_pos())
         fill_aapolygon(self.maze.surface, square, self.get_color())
 

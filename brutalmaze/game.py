@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Brutal Maze.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.7.0'
+__version__ = '0.7.1'
 
 import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter
@@ -158,11 +158,8 @@ class Game:
         ne = nb = 0
 
         for enemy in maze.enemies:
-            if not enemy.awake and walls:
-                walls[enemy.y-maze.rangey[0]][enemy.x-maze.rangex[0]] = WALL
-                continue
             # Check Chameleons
-            elif getattr(enemy, 'visible', 1) <= 0 and maze.next_move <= 0:
+            if getattr(enemy, 'visible', 1) <= 0 and maze.next_move <= 0:
                 continue
             lines.append('{0} {2} {3} {1:.0f}'.format(
                 COLORS[enemy.get_color()], deg(enemy.angle),
@@ -321,8 +318,7 @@ class Game:
                 maze.destx = maze.desty = MIDDLE
                 maze.stepx = maze.stepy = 0
             elif autove:
-                maze.destx = MIDDLE + round2((x-maze.centerx) / maze.distance)
-                maze.desty = MIDDLE + round2((y-maze.centery) / maze.distance)
+                maze.destx, maze.desty = maze.get_grid(x, y)
                 maze.set_step(lambda x: maze.rangex[0] <= x <= maze.rangex[-1],
                               lambda y: maze.rangey[0] <= y <= maze.rangey[-1])
                 if maze.stepx == maze.stepy == 0:

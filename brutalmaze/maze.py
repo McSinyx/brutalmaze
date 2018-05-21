@@ -27,10 +27,10 @@ import pygame
 
 from .characters import Hero, new_enemy
 from .constants import (
-    EMPTY, WALL, HERO, ROAD_WIDTH, MAZE_SIZE, MIDDLE, INIT_SCORE, ENEMIES,
-    MINW, MAXW, SQRT2, SFX_SPAWN, SFX_SLASH_ENEMY, SFX_LOSE, ADJACENTS,
-    BG_COLOR, FG_COLOR, CELL_WIDTH, LAST_ROW, HERO_HP, ENEMY_HP, ATTACK_SPEED,
-    HERO_SPEED, BULLET_LIFETIME)
+    EMPTY, WALL, HERO, ENEMY, ROAD_WIDTH, MAZE_SIZE, MIDDLE, INIT_SCORE,
+    ENEMIES, MINW, MAXW, SQRT2, SFX_SPAWN, SFX_SLASH_ENEMY, SFX_LOSE,
+    ADJACENTS, TANGO, BG_COLOR, FG_COLOR, CELL_WIDTH, LAST_ROW,
+    HERO_HP, ENEMY_HP, ATTACK_SPEED, HERO_SPEED, BULLET_LIFETIME)
 from .misc import round2, sign, around, regpoly, fill_aapolygon, play
 from .weapons import Bullet
 
@@ -77,6 +77,7 @@ class Maze:
         destx, desty (int): the grid the hero is moving to
         stepx, stepy (int): direction the maze is moving
         next_move (float): time until the hero gets mobilized (in ms)
+        glitch (float): time that the maze remain flashing colors (in ms)
         next_slashfx (float): time until next slash effect of the hero (in ms)
         slashd (float): minimum distance for slashes to be effective
         sfx_slash (pygame.mixer.Sound): sound effect of slashed enemy
@@ -109,7 +110,7 @@ class Maze:
         self.map[MIDDLE][MIDDLE] = HERO
         self.destx = self.desty = MIDDLE
         self.stepx = self.stepy = 0
-        self.next_move = self.next_slashfx = 0.0
+        self.next_move = self.glitch = self.next_slashfx = 0.0
         self.slashd = self.hero.R + self.distance/SQRT2
 
         self.sfx_spawn = SFX_SPAWN
@@ -129,19 +130,25 @@ class Maze:
                 continue
             enemy = new_enemy(self, x, y)
             self.enemies.append(enemy)
-            if plum is None or not plum.clone(enemy):
-                walls.remove((x, y))
-            else:
-                self.map[x][y] = WALL
+            if plum is None or not plum.clone(enemy): walls.remove((x, y))
 
     def get_pos(self, x, y):
         """Return coordinate of the center of the grid (x, y)."""
         return (self.centerx + (x - MIDDLE)*self.distance,
                 self.centery + (y - MIDDLE)*self.distance)
 
+    def get_grid(self, x, y):
+        """Return the grid containing the point (x, y)."""
+        return (MIDDLE + round2((x-self.centerx) / self.distance),
+                MIDDLE + round2((y-self.centery) / self.distance))
+
     def get_score(self):
         """Return the current score."""
         return int(self.score - INIT_SCORE)
+
+    def get_color(self):
+        """Return color of a grid."""
+        return choice(TANGO.values())[0] if self.glitch > 0 else FG_COLOR
 
     def draw(self):
         """Draw the maze."""
@@ -152,7 +159,7 @@ class Maze:
                     if self.map[i][j] != WALL: continue
                     x, y = self.get_pos(i, j)
                     square = regpoly(4, self.distance / SQRT2, pi / 4, x, y)
-                    fill_aapolygon(self.surface, square, FG_COLOR)
+                    fill_aapolygon(self.surface, square, self.get_color())
 
         for enemy in self.enemies: enemy.draw()
         if not self.hero.dead: self.hero.draw()
@@ -167,7 +174,9 @@ class Maze:
         x = int((self.centerx-self.x) * 2 / self.distance)
         y = int((self.centery-self.y) * 2 / self.distance)
         if x == y == 0: return
-        for enemy in self.enemies: self.map[enemy.x][enemy.y] = EMPTY
+        for enemy in self.enemies:
+            if self.map[enemy.x][enemy.y] == ENEMY:
+                self.map[enemy.x][enemy.y] = EMPTY
 
         self.map[MIDDLE][MIDDLE] = EMPTY
         self.centerx -= x * self.distance
@@ -273,9 +282,17 @@ class Maze:
             if wound < 0:
                 fallen.append(i)
             elif bullet.color == 'Aluminium':
-                x = MIDDLE + round2((bullet.x-self.x) / self.distance)
-                y = MIDDLE + round2((bullet.y-self.y) / self.distance)
+                x, y = self.get_grid(bullet.x, bullet.y)
                 if self.map[x][y] == WALL and self.next_move <= 0:
+                    self.glitch = wound * 1000
+                    enemy = new_enemy(self, x, y)
+                    enemy.awake = True
+                    self.map[x][y] = ENEMY
+                    play(self.sfx_spawn,
+                         1 - enemy.get_distance()/self.get_distance(0, 0)/2,
+                         enemy.get_angle() + pi)
+                    enemy.hit(wound)
+                    self.enemies.append(enemy)
                     fallen.append(i)
                     continue
                 for j, enemy in enumerate(self.enemies):
@@ -327,11 +344,12 @@ class Maze:
         self.vy = self.is_valid_move(vy=self.vy)
         self.centery += self.vy
 
-        self.next_move -= 1000.0 / self.fps
-        self.next_slashfx -= 1000.0 / self.fps
+        self.next_move -= 1000.0 / fps
+        self.glitch -= 1000.0 / fps
+        self.next_slashfx -= 1000.0 / fps
 
         self.rotate()
-        if self.vx or self.vy:
+        if self.vx or self.vy or self.hero.firing or self.hero.slashing:
             for enemy in self.enemies: enemy.wake()
             for bullet in self.bullets: bullet.place(self.vx, self.vy)
 
@@ -415,6 +433,7 @@ class Maze:
         self.score = INIT_SCORE
         self.map = deque()
         for _ in range(MAZE_SIZE): self.map.extend(new_column())
+        self.map[MIDDLE][MIDDLE] = HERO
         self.destx = self.desty = MIDDLE
         self.stepx = self.stepy = 0
         self.vx = self.vy = 0.0
