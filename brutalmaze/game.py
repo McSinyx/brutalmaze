@@ -37,7 +37,8 @@ from pygame import KEYDOWN, QUIT, VIDEORESIZE
 from pygame.time import Clock, get_ticks
 from appdirs import AppDirs
 
-from .constants import SETTINGS, ICON, MUSIC, HERO_SPEED, COLORS, MIDDLE, WALL
+from .constants import (
+    SETTINGS, ICON, MUSIC, NOISE, HERO_SPEED, COLORS, MIDDLE, WALL)
 from .maze import Maze
 from .misc import deg, round2, sign
 
@@ -71,6 +72,7 @@ class ConfigReader:
         self.max_fps = self.config.getint('Graphics', 'Maximum FPS')
         self.muted = self.config.getboolean('Sound', 'Muted')
         self.musicvol = self.config.getfloat('Sound', 'Music volume')
+        self.space = self.config.getboolean('Sound', 'Space theme')
         self.server = self.config.getboolean('Server', 'Enable')
         self.host = self.config.get('Server', 'Host')
         self.port = self.config.getint('Server', 'Port')
@@ -96,7 +98,7 @@ class ConfigReader:
 
     def read_args(self, arguments):
         """Read and parse a ArgumentParser.Namespace."""
-        for option in ('size', 'max_fps', 'muted', 'musicvol',
+        for option in ('size', 'max_fps', 'muted', 'musicvol', 'space',
                        'server', 'host', 'port', 'timeout', 'headless'):
             value = getattr(arguments, option)
             if value is not None: setattr(self, option, value)
@@ -111,7 +113,7 @@ class Game:
         if config.muted or self.headless:
             pygame.mixer.quit()
         else:
-            pygame.mixer.music.load(MUSIC)
+            pygame.mixer.music.load(NOISE if config.space else MUSIC)
             pygame.mixer.music.set_volume(config.musicvol)
             pygame.mixer.music.play(-1)
         pygame.display.set_icon(ICON)
@@ -369,6 +371,11 @@ def main():
     parser.add_argument(
         '--music-volume', type=float, metavar='VOL', dest='musicvol',
         help='between 0.0 and 1.0 (fallback: {})'.format(config.musicvol))
+    parser.add_argument(
+        '--space-music', action='store_true', default=None, dest='space',
+        help='use space music background'.format(config.muted))
+    parser.add_argument('--default-music', action='store_false', dest='space',
+                        help='use default music background')
     parser.add_argument(
         '--server', action='store_true', default=None,
         help='enable server (fallback: {})'.format(config.server))

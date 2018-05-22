@@ -28,6 +28,7 @@ from pygame.mixer import Sound
 SETTINGS = pkg_file('brutalmaze', 'settings.ini')
 ICON = pygame.image.load(pkg_file('brutalmaze', 'icon.png'))
 MUSIC = pkg_file('brutalmaze', 'soundfx/music.ogg')
+NOISE = pkg_file('brutalmaze', 'soundfx/noise.ogg')
 
 mixer = pygame.mixer.get_init()
 if mixer is None: pygame.mixer.init(frequency=44100)
