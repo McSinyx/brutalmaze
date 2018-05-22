@@ -29,7 +29,7 @@ from .characters import Hero, new_enemy
 from .constants import (
     EMPTY, WALL, HERO, ENEMY, ROAD_WIDTH, MAZE_SIZE, MIDDLE, INIT_SCORE,
     ENEMIES, MINW, MAXW, SQRT2, SFX_SPAWN, SFX_SLASH_ENEMY, SFX_LOSE,
-    ADJACENTS, TANGO, BG_COLOR, FG_COLOR, CELL_WIDTH, LAST_ROW,
+    ADJACENTS, TANGO_VALUES, BG_COLOR, FG_COLOR, CELL_WIDTH, LAST_ROW,
     HERO_HP, ENEMY_HP, ATTACK_SPEED, HERO_SPEED, BULLET_LIFETIME)
 from .misc import round2, sign, around, regpoly, fill_aapolygon, play
 from .weapons import Bullet
@@ -148,7 +148,7 @@ class Maze:
 
     def get_color(self):
         """Return color of a grid."""
-        return choice(TANGO.values())[0] if self.glitch > 0 else FG_COLOR
+        return choice(TANGO_VALUES)[0] if self.glitch > 0 else FG_COLOR
 
     def draw(self):
         """Draw the maze."""

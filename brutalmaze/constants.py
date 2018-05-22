@@ -69,6 +69,7 @@ TANGO = {'Butter': ((252, 233, 79), (237, 212, 0), (196, 160, 0)),
          'ScarletRed': ((239, 41, 41), (204, 0, 0), (164, 0, 0)),
          'Aluminium': ((238, 238, 236), (211, 215, 207), (186, 189, 182),
                        (136, 138, 133), (85, 87, 83), (46, 52, 54))}
+TANGO_VALUES = list(TANGO.values())
 ENEMIES = ['Butter', 'Orange', 'Chocolate', 'Chameleon',
            'SkyBlue', 'Plum', 'ScarletRed']
 COLOR_CODE = ascii_lowercase + '0'
