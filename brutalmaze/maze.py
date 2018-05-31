@@ -169,6 +169,13 @@ class Maze:
         pygame.display.set_caption(
             'Brutal Maze - Score: {}'.format(self.get_score()))
 
+    def is_displayed(self, x, y):
+        """Return True if the grid (x, y) is in the displayable part
+        of the map, False otherwise.
+        """
+        return (self.rangex[0] <= x <= self.rangex[-1]
+                and self.rangey[0] <= y <= self.rangey[-1])
+
     def rotate(self):
         """Rotate the maze if needed."""
         x = int((self.centerx-self.x) * 2 / self.distance)
@@ -195,8 +202,7 @@ class Maze:
         killist = []
         for i, enemy in enumerate(self.enemies):
             enemy.place(x, y)
-            if not (self.rangex[0] <= enemy.x <= self.rangex[-1]
-                    and self.rangey[0] <= enemy.y <= self.rangey[-1]):
+            if not self.is_displayed(enemy.x, enemy.y):
                 self.score += enemy.wound
                 enemy.die()
                 killist.append(i)
@@ -279,15 +285,15 @@ class Maze:
         for i, bullet in enumerate(self.bullets):
             wound = bullet.fall_time / BULLET_LIFETIME
             bullet.update(self.fps, self.distance)
-            if wound < 0:
+            gridx, gridy = self.get_grid(bullet.x, bullet.y)
+            if wound < 0 or not self.is_displayed(gridx, gridy):
                 fallen.append(i)
             elif bullet.color == 'Aluminium':
-                x, y = self.get_grid(bullet.x, bullet.y)
-                if self.map[x][y] == WALL and self.next_move <= 0:
+                if self.map[gridx][gridy] == WALL and self.next_move <= 0:
                     self.glitch = wound * 1000
-                    enemy = new_enemy(self, x, y)
+                    enemy = new_enemy(self, gridx, gridy)
                     enemy.awake = True
-                    self.map[x][y] = ENEMY
+                    self.map[gridx][gridy] = ENEMY
                     play(self.sfx_spawn,
                          1 - enemy.get_distance()/self.get_distance(0, 0)/2,
                          enemy.get_angle() + pi)
@@ -376,7 +382,7 @@ class Maze:
         self.rangey = list(range(MIDDLE - h, MIDDLE + h + 1))
         self.slashd = self.hero.R + self.distance/SQRT2
 
-    def set_step(self, xcheck=(lambda _: True), ycheck=(lambda _: True)):
+    def set_step(self, check=(lambda x, y: True)):
         """Return direction on the shortest path to the destination."""
         if self.stepx or self.stepy and self.vx == self.vy == 0.0:
             x, y = MIDDLE - self.stepx, MIDDLE - self.stepy
@@ -409,7 +415,7 @@ class Maze:
                 self.stepx, self.stepy = dx, dy
                 return
             for i, j in around(x, y):
-                if self.map[i][j] == EMPTY and xcheck(i) and ycheck(j):
+                if self.map[i][j] == EMPTY and check(i, j):
                     queue[distance + 1].append((i, j))
                     count += 1
         self.stepx, self.stepy = 0, 0

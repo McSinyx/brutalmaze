@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Brutal Maze.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.7.3'
+__version__ = '0.7.4'
 
 import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter
@@ -321,8 +321,7 @@ class Game:
                 maze.stepx = maze.stepy = 0
             elif autove:
                 maze.destx, maze.desty = maze.get_grid(x, y)
-                maze.set_step(lambda x: maze.rangex[0] <= x <= maze.rangex[-1],
-                              lambda y: maze.rangey[0] <= y <= maze.rangey[-1])
+                maze.set_step(maze.is_displayed)
                 if maze.stepx == maze.stepy == 0:
                     maze.destx = maze.desty = MIDDLE
 
