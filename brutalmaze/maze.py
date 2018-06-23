@@ -19,40 +19,20 @@
 
 __doc__ = 'Brutal Maze module for the maze class'
 
-from collections import deque, defaultdict
+from collections import defaultdict, deque
 from math import pi, log
-from random import choice, getrandbits, uniform
+from random import choice, sample, uniform
 
 import pygame
 
 from .characters import Hero, new_enemy
 from .constants import (
-    EMPTY, WALL, HERO, ENEMY, ROAD_WIDTH, MAZE_SIZE, MIDDLE, INIT_SCORE,
-    ENEMIES, MINW, MAXW, SQRT2, SFX_SPAWN, SFX_SLASH_ENEMY, SFX_LOSE,
-    ADJACENTS, TANGO_VALUES, BG_COLOR, FG_COLOR, CELL_WIDTH, LAST_ROW,
+    EMPTY, WALL, HERO, ENEMY, ROAD_WIDTH, WALL_WIDTH, CELL_WIDTH, CELL_NODES,
+    MAZE_SIZE, MIDDLE, INIT_SCORE, ENEMIES, MINW, MAXW, SQRT2, SFX_SPAWN,
+    SFX_SLASH_ENEMY, SFX_LOSE, ADJACENTS, TANGO_VALUES, BG_COLOR, FG_COLOR,
     HERO_HP, ENEMY_HP, ATTACK_SPEED, HERO_SPEED, BULLET_LIFETIME)
 from .misc import round2, sign, around, regpoly, fill_aapolygon, play
 from .weapons import Bullet
-
-
-def new_cell(bit, upper=True):
-    """Return a half of a cell of the maze based on the given bit."""
-    if bit: return deque([WALL]*ROAD_WIDTH + [EMPTY]*ROAD_WIDTH)
-    if upper: return deque([WALL] * (ROAD_WIDTH<<1))
-    return deque([EMPTY] * (ROAD_WIDTH<<1))
-
-
-def new_column():
-    """Return a newly generated column of the maze."""
-    column = deque()
-    upper, lower = deque(), deque()
-    for _ in range(MAZE_SIZE):
-        b = getrandbits(1)
-        upper.extend(new_cell(b))
-        lower.extend(new_cell(b, False))
-    for _ in range(ROAD_WIDTH): column.append(upper.__copy__())
-    for _ in range(ROAD_WIDTH): column.append(lower.__copy__())
-    return column
 
 
 class Maze:
@@ -99,8 +79,10 @@ class Maze:
         self.rangey = list(range(MIDDLE - h, MIDDLE + h + 1))
         self.score = INIT_SCORE
 
-        self.map = deque()
-        for _ in range(MAZE_SIZE): self.map.extend(new_column())
+        self.map = deque(deque(EMPTY for _ in range(MAZE_SIZE * CELL_WIDTH))
+                         for _ in range(MAZE_SIZE * CELL_WIDTH))
+        for x in range(MAZE_SIZE):
+            for y in range(MAZE_SIZE): self.new_cell(x, y)
         self.vx = self.vy = 0.0
         self.rotatex = self.rotatey = 0
         self.bullets, self.enemies = [], []
@@ -116,6 +98,24 @@ class Maze:
         self.sfx_spawn = SFX_SPAWN
         self.sfx_slash = SFX_SLASH_ENEMY
         self.sfx_lose = SFX_LOSE
+
+    def new_cell(self, x, y):
+        """Draw on the map a new cell whose coordinates are given.
+
+        For the sake of performance, cell corners are NOT redrawn.
+        """
+        def draw_bit(bit, dx=0, dy=0):
+            startx, starty = x + CELL_NODES[dx], y + CELL_NODES[dy]
+            height = ROAD_WIDTH if dy else WALL_WIDTH
+            for i in range(ROAD_WIDTH if dx else WALL_WIDTH):
+                for j in range(height): self.map[startx + i][starty + j] = bit
+
+        x, y = x * CELL_WIDTH, y * CELL_WIDTH
+        draw_bit(WALL)
+        walls = set(sample(ADJACENTS, 2))
+        walls.add(choice(ADJACENTS))
+        for i, j in ADJACENTS:
+            draw_bit((WALL if (i, j) in walls else EMPTY), i, j)
 
     def add_enemy(self):
         """Add enough enemies."""
@@ -212,21 +212,14 @@ class Maze:
         # Regenerate the maze
         if abs(self.rotatex) == CELL_WIDTH:
             self.rotatex = 0
-            for _ in range(CELL_WIDTH): self.map.pop()
-            self.map.extend(new_column())
-            for i in range(-CELL_WIDTH, 0):
-                self.map[i].rotate(self.rotatey)
+            for i in range(CELL_WIDTH): self.map[i].rotate(-self.rotatey)
+            for i in range(MAZE_SIZE): self.new_cell(0, i)
+            for i in range(CELL_WIDTH): self.map[i].rotate(self.rotatey)
         if abs(self.rotatey) == CELL_WIDTH:
             self.rotatey = 0
-            for i in range(MAZE_SIZE):
-                b, c = getrandbits(1), (i-1)*CELL_WIDTH + self.rotatex
-                for j, grid in enumerate(new_cell(b)):
-                    for k in range(ROAD_WIDTH):
-                        self.map[c + k][LAST_ROW + j] = grid
-                c += ROAD_WIDTH
-                for j, grid in enumerate(new_cell(b, False)):
-                    for k in range(ROAD_WIDTH):
-                        self.map[c + k][LAST_ROW + j] = grid
+            self.map.rotate(-self.rotatex)
+            for i in range(MAZE_SIZE): self.new_cell(i, 0)
+            self.map.rotate(self.rotatex)
 
     def get_distance(self, x, y):
         """Return the distance from the center of the maze to the point
@@ -437,8 +430,10 @@ class Maze:
         """Open new game."""
         self.centerx, self.centery = self.w / 2.0, self.h / 2.0
         self.score = INIT_SCORE
-        self.map = deque()
-        for _ in range(MAZE_SIZE): self.map.extend(new_column())
+        self.map = deque(deque(EMPTY for _ in range(MAZE_SIZE * CELL_WIDTH))
+                         for _ in range(MAZE_SIZE * CELL_WIDTH))
+        for x in range(MAZE_SIZE):
+            for y in range(MAZE_SIZE): self.new_cell(x, y)
         self.map[MIDDLE][MIDDLE] = HERO
         self.destx = self.desty = MIDDLE
         self.stepx = self.stepy = 0

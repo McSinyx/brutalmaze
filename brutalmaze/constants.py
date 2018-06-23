@@ -44,11 +44,12 @@ if mixer is None: pygame.mixer.quit()
 
 SQRT2 = 2 ** 0.5
 INIT_SCORE = 5**0.5/2 + 0.5     # golden mean
-MAZE_SIZE = 10
-ROAD_WIDTH = 5  # grids
-CELL_WIDTH = ROAD_WIDTH * 2     # grids
-MIDDLE = (MAZE_SIZE + MAZE_SIZE%2 - 1)*ROAD_WIDTH + ROAD_WIDTH//2
-LAST_ROW = (MAZE_SIZE-1) * ROAD_WIDTH * 2
+ROAD_WIDTH = 3  # grids
+WALL_WIDTH = 4  # grids
+CELL_WIDTH = WALL_WIDTH + ROAD_WIDTH*2  # grids
+CELL_NODES = ROAD_WIDTH, ROAD_WIDTH + WALL_WIDTH, 0
+MAZE_SIZE = 10  # cells
+MIDDLE = MAZE_SIZE // 2 * CELL_WIDTH
 HEAL_SPEED = 1  # HP/s
 HERO_SPEED = 5  # grid/s
 ENEMY_SPEED = 6 # grid/s

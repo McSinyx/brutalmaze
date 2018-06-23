@@ -26,7 +26,7 @@ from sys import modules
 from .constants import (
     TANGO, HERO_HP, SFX_HEART, HEAL_SPEED, MIN_BEAT, ATTACK_SPEED, ENEMY,
     ENEMY_SPEED, ENEMY_HP, SFX_SLASH_HERO, MIDDLE, WALL, FIRANGE, AROUND_HERO,
-    ADJACENTS, EMPTY, FG_COLOR, SQRT2, MINW)
+    ADJACENTS, EMPTY, SQRT2, MINW)
 from .misc import sign, cosin, randsign, regpoly, fill_aapolygon, choices, play
 from .weapons import Bullet
 
