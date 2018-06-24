@@ -118,7 +118,6 @@ class Game:
             pygame.mixer.music.play(-1)
         pygame.display.set_icon(ICON)
 
-        pygame.fastevent.init()
         if config.server:
             self.server = socket()
             self.server.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
@@ -186,7 +185,7 @@ class Game:
 
         Return False if QUIT event is captured, True otherwise.
         """
-        events = pygame.fastevent.get()
+        events = pygame.event.get()
         for event in events:
             if event.type == QUIT:
                 return False

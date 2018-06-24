@@ -289,7 +289,7 @@ class Maze:
                     self.map[gridx][gridy] = ENEMY
                     play(self.sfx_spawn,
                          1 - enemy.get_distance()/self.get_distance(0, 0)/2,
-                         enemy.get_angle() + pi)
+                         enemy.get_angle())
                     enemy.hit(wound)
                     self.enemies.append(enemy)
                     fallen.append(i)
