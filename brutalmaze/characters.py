@@ -19,6 +19,7 @@
 
 __doc__ = 'Brutal Maze module for hero and enemy classes'
 
+from collections import deque
 from math import atan, atan2, sin, pi
 from random import choice, randrange, shuffle
 from sys import modules
@@ -40,7 +41,7 @@ class Hero:
         angle (float): angle of the direction the hero pointing (in radians)
         color (tuple of pygame.Color): colors of the hero on different HPs
         R (int): circumradius of the regular triangle representing the hero
-        next_heal (float): ms until the hero gains back healing ability
+        next_heal (float): minimum wound in ATTACK_SPEED allowing healing again
         next_beat (float): time until next heart beat (in ms)
         next_strike (float): time until the hero can do the next attack (in ms)
         slashing (bool): flag indicates if the hero is doing close-range attack
@@ -49,6 +50,7 @@ class Hero:
         spin_speed (float): speed of spinning (in frames per slash)
         spin_queue (float): frames left to finish spinning
         wound (float): amount of wound
+        wounds (deque of float): wounds in time of an attack (ATTACK_SPEED)
         sfx_heart (pygame.mixer.Sound): heart beat sound effect
     """
     def __init__(self, surface, fps, maze_size):
@@ -58,10 +60,12 @@ class Hero:
         self.angle, self.color = -pi * 3 / 4, TANGO['Aluminium']
         self.R = (w * h / sin(pi*2/3) / 624) ** 0.5
 
-        self.next_heal = self.next_beat = self.next_strike = 0.0
+        self.next_heal = -1.0
+        self.next_beat = self.next_strike = 0.0
         self.slashing = self.firing = self.dead = False
         self.spin_speed = fps / HERO_HP
         self.spin_queue = self.wound = 0.0
+        self.wounds = deque([0.0])
 
         self.sfx_heart = SFX_HEART
 
@@ -73,11 +77,14 @@ class Hero:
         old_speed = self.spin_speed
         self.spin_speed = fps / (HERO_HP-self.wound**0.5)
         self.spin_queue *= self.spin_speed / old_speed
-        if self.next_heal <= 0:
+
+        if len(self.wounds) > fps * ATTACK_SPEED / 1000: self.wounds.popleft()
+        if sum(self.wounds) < self.next_heal: self.next_heal = -1.0
+        self.wound += self.wounds[-1]
+        if self.next_heal < 0:
             self.wound -= HEAL_SPEED / self.spin_speed / HERO_HP
             if self.wound < 0: self.wound = 0.0
-        else:
-            self.next_heal -= 1000.0 / fps
+        self.wounds.append(0.0)
         if self.next_beat <= 0:
             play(self.sfx_heart)
             self.next_beat = MIN_BEAT*(2 - self.wound/HERO_HP)
@@ -100,7 +107,7 @@ class Hero:
         """Return the number of sides the hero has. While the hero is
         generally a trigon, Agent Orange may turn him into a square.
         """
-        return 3 if self.next_heal <= 0 else 4
+        return 3 if self.next_heal < 0 else 4
 
     def update_angle(self, angle):
         """Turn to the given angle if the hero is not busy slashing."""
@@ -252,7 +259,7 @@ class Enemy:
     def slash(self):
         """Return the enemy's close-range damage per frame."""
         wound = self.get_slash() / self.spin_speed
-        if self.spin_queue: self.maze.hit_hero(wound, self.color)
+        if self.spin_queue and wound: self.maze.hit_hero(wound, self.color)
         return wound
 
     def get_angle(self, reversed=False):

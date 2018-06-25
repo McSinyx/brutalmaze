@@ -43,7 +43,7 @@ SFX_LOSE = Sound(pkg_file('brutalmaze', 'soundfx/lose.ogg'))
 if mixer is None: pygame.mixer.quit()
 
 SQRT2 = 2 ** 0.5
-INIT_SCORE = 5**0.5/2 + 0.5     # golden mean
+INIT_SCORE = 2
 ROAD_WIDTH = 3  # grids
 WALL_WIDTH = 4  # grids
 CELL_WIDTH = WALL_WIDTH + ROAD_WIDTH*2  # grids
@@ -55,6 +55,7 @@ HERO_SPEED = 5  # grid/s
 ENEMY_SPEED = 6 # grid/s
 BULLET_SPEED = 15   # grid/s
 ATTACK_SPEED = 333.333  # ms/strike
+MAX_WOUND = 1   # per attack turn
 FIRANGE = 6     # grids
 BULLET_LIFETIME = 1000.0 * FIRANGE / (BULLET_SPEED-HERO_SPEED)  # ms
 EMPTY, WALL, HERO, ENEMY = range(4)
