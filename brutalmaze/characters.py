@@ -44,6 +44,7 @@ class Hero:
         next_heal (float): minimum wound in ATTACK_SPEED allowing healing again
         next_beat (float): time until next heart beat (in ms)
         next_strike (float): time until the hero can do the next attack (in ms)
+        highness (float): likelihood that the hero shoots toward other angles
         slashing (bool): flag indicates if the hero is doing close-range attack
         firing (bool): flag indicates if the hero is doing long-range attack
         dead (bool): flag indicates if the hero is dead
@@ -62,6 +63,7 @@ class Hero:
 
         self.next_heal = -1.0
         self.next_beat = self.next_strike = 0.0
+        self.highness = 0.0
         self.slashing = self.firing = self.dead = False
         self.spin_speed = fps / HERO_HP
         self.spin_queue = self.wound = 0.0
@@ -118,6 +120,20 @@ class Hero:
             self.angle, self.spin_queue = angle, 0.0
         else:
             self.spin_queue = delta / unit
+
+    def get_shots(self):
+        """Return list of Bullet shot by the hero."""
+        if not self.firing or self.slashing or self.next_strike > 0: return []
+        self.next_strike = ATTACK_SPEED
+        if not randrange(int(self.highness + 1)):
+            return [Bullet(self.surface, self.x, self.y,
+                           self.angle, 'Aluminium')]
+        self.highness -= 1.0
+        n = self.get_sides()
+        corners = {randrange(n) for _ in range(n)}
+        angles = (self.angle + pi*2*corner/n for corner in corners)
+        return [Bullet(self.surface, self.x, self.y, angle, 'Aluminium')
+                for angle in angles]
 
     def get_color(self):
         """Return current color of the hero."""

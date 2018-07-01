@@ -232,12 +232,17 @@ class Maze:
         if self.enemy_weights[color] + wound < MAXW:
             self.enemy_weights[color] += wound
         if color == 'Orange':
+            # If called by close-range attack, this is FPS-dependant, although
+            # in playable FPS (24 to infinity), the difference within 2%.
             self.hero.next_heal = abs(self.hero.next_heal * (1 - wound))
         elif (uniform(0, sum(self.enemy_weights.values()))
             < self.enemy_weights[color]):
             self.hero.next_heal = -1.0  # what doesn't kill you heals you
             if color == 'Butter' or color == 'ScarletRed':
                 wound *= ENEMY_HP
+            elif color == 'Chocolate':
+                self.hero.highness += wound
+                wound = 0
             elif color == 'SkyBlue':
                 self.next_move = max(self.next_move, 0) + wound*1000
                 wound = 0
@@ -266,12 +271,7 @@ class Maze:
 
     def track_bullets(self):
         """Handle the bullets."""
-        if (self.hero.firing and not self.hero.slashing
-            and self.hero.next_strike <= 0):
-            self.hero.next_strike = ATTACK_SPEED
-            self.bullets.append(Bullet(self.surface, self.x, self.y,
-                                       self.hero.angle, 'Aluminium'))
-
+        self.bullets.extend(self.hero.get_shots())
         fallen = []
         block = (self.hero.spin_queue and self.hero.next_heal < 0
                  and self.hero.next_strike > self.hero.spin_queue / self.fps)
@@ -447,6 +447,7 @@ class Maze:
 
         self.next_move = self.next_slashfx = self.hero.next_strike = 0.0
         self.hero.next_heal = -1.0
+        self.hero.highness = 0.0
         self.hero.slashing = self.hero.firing = self.hero.dead = False
         self.hero.spin_queue = self.hero.wound = 0.0
         self.hero.wounds = deque([0.0])
