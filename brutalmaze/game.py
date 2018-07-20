@@ -17,10 +17,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Brutal Maze.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.7.8'
+__version__ = '0.8.0'
 
 import re
-from argparse import ArgumentParser, FileType, RawTextHelpFormatter
+from argparse import ArgumentParser, FileType, RawTextHelpFormatter, SUPPRESS
 from collections import deque
 try:                    # Python 3
     from configparser import ConfigParser
@@ -343,58 +343,62 @@ def main():
     config.parse()
 
     # Parse command-line arguments
-    parser = ArgumentParser(usage='%(prog)s [options]',
+    parser = ArgumentParser(usage='%(prog)s [tuỳ chọn]', add_help=False,
                             formatter_class=RawTextHelpFormatter)
-    parser.add_argument('-v', '--version', action='version',
-                        version='Brutal Maze {}'.format(__version__))
-    parser.add_argument(
+    translation = parser.add_argument_group('các tuỳ chọn')
+    translation.add_argument('-h', '--help', action='help', default=SUPPRESS,
+                             help='in trợ giúp và thoát')
+    translation.add_argument('-v', '--version', action='version',
+                             version='Brutal Maze {}'.format(__version__),
+                             help='in phiên bản và thoát')
+    translation.add_argument(
         '--write-config', nargs='?', const=stdout, type=FileType('w'),
         metavar='PATH', dest='defaultcfg',
         help='in tuỳ chỉnh mặc định vào tệp PATH và thoát, nếu PATH không được chỉ định, in ra stdout')
-    parser.add_argument(
+    translation.add_argument(
         '-c', '--config', metavar='PATH',
         help='nạp tuỳ chỉnh từ tệp PATH (dự phòng: {})'.format(
             pathsep.join(filenames)))
-    parser.add_argument(
+    translation.add_argument(
         '-s', '--size', type=int, nargs=2, metavar=('X', 'Y'),
         help='chỉ định kích thước XxY cho trò chơi (dự phòng: {}x{})'.format(*config.size))
-    parser.add_argument(
+    translation.add_argument(
         '-f', '--max-fps', type=int, metavar='FPS',
         help='chỉ định số khung hình tối đa trong một giây (dự phòng: {})'.format(config.max_fps))
-    parser.add_argument(
+    translation.add_argument(
         '--mute', '-m', action='store_true', default=None, dest='muted',
         help='tắt âm thanh (dự phòng: {})'.format(config.muted))
-    parser.add_argument('--unmute', action='store_false', dest='muted',
-                        help='bật âm thanh')
-    parser.add_argument(
+    translation.add_argument('--unmute', action='store_false', dest='muted',
+                             help='bật âm thanh')
+    translation.add_argument(
         '--music-volume', type=float, metavar='VOL', dest='musicvol',
         help='đặt âm lượng nhạc nền (trong khoảng 0.0 đến 1.0) (dự phòng: {})'.format(config.musicvol))
-    parser.add_argument(
+    translation.add_argument(
         '--space-music', action='store_true', default=None, dest='space',
-        help='use space music background'.format(config.muted))
-    parser.add_argument('--default-music', action='store_false', dest='space',
-                        help='use default music background')
-    parser.add_argument(
+        help='dùng nhạc nền ngoài không gian vũ trụ')
+    translation.add_argument('--default-music', action='store_false', dest='space',
+                             help='dùng nhạc nền mặc định')
+    translation.add_argument(
         '--server', action='store_true', default=None,
         help='bật server socket (dự phòng: {})'.format(config.server))
-    parser.add_argument('--no-server', action='store_false', dest='server',
-                        help='tắt server socket')
-    parser.add_argument(
+    translation.add_argument('--no-server', action='store_false', dest='server',
+                             help='tắt server socket')
+    translation.add_argument(
         '--host', help='đặt địa chỉ server (dự phòng: {})'.format(
             config.host))
-    parser.add_argument(
+    translation.add_argument(
         '--port', type=int,
         help='đặt cổng server (dự phòng: {})'.format(config.port))
-    parser.add_argument(
+    translation.add_argument(
         '-t', '--timeout', type=float,
         help='đặt thời gian chờ trước khi server ngắt kết nối khỏi client khi không nhận được hồi đáp (tính theo giây) (dự phòng: {})'.format(
             config.timeout))
-    parser.add_argument(
+    translation.add_argument(
         '--head', action='store_false', default=None, dest='headless',
         help='tắt cửa sổ trờ chơi khi chạy trong chế độ server (dự phòng: {})'.format(
             not config.headless))
-    parser.add_argument('--headless', action='store_true',
-                        help='tắt cửa sổ trờ chơi khi chạy trong chế độ server')
+    translation.add_argument('--headless', action='store_true',
+                             help='tắt cửa sổ trờ chơi khi chạy trong chế độ server')
     args = parser.parse_args()
     if args.defaultcfg is not None:
         with open(SETTINGS) as settings: args.defaultcfg.write(settings.read())

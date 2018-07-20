@@ -7,16 +7,19 @@
 \usepackage{graphicx}
 \usepackage{hyperref}
 \def\UrlBreaks{\do\/\do-}
+\usepackage{perpage}
+\MakePerPage{footnote}
 \title{BẢN THUYẾT MINH PHẦN MỀM SÁNG TẠO}
 \author{}
 \date{}
 
 \begin{document}
 \begin{center}
-HỘI THI TIN HỌC TRẺ THÀNH PHỐ HÀ NỘI LẦN THỨ XXXIII, NĂM 2018
-\rule{0.8\textwidth}{0.4pt}
+HỘI THI TIN HỌC TRẺ TOÀN QUỐC LẦN THỨ XXIV, NĂM 2018
+\rule{0.7\textwidth}{0.4pt}
 \end{center}
 {\let\newpage\relax\maketitle}
+\renewcommand*{\thefootnote}{\fnsymbol{footnote}}
 \section*{A. THÔNG TIN CHUNG}
 \subsection*{1. Giới thiệu sản phẩm}
 Tên sản phẩm: Mê cung Khốc liệt (Brutal Maze)\\
@@ -25,7 +28,7 @@ Cấu hình cài đặt: Máy tính điện tử với Windows, macOS, GNU/Linux
 số hệ điều hành giống-Unix khác\\
 Đăng kí bảng thi:\hspace{1cm}D1 $\square$\hspace{1in}D2 $\square$
 \hspace{1in}D3 $\boxtimes$\\
-Thuộc đoàn (tên quận/huyện/thị xã): Ba Đình
+Thuộc đoàn: Hà Nội
 
 \subsection*{2. Tên tác giả, nhóm tác giả}
 Họ và tên thí sinh: Nguyễn Gia Phong\\
@@ -48,7 +51,7 @@ Số điện thoại liên lạc: (024) 38350837\hspace{1in}Email: vn.mcsinyx@gm
 \end{itemize}
 
 \subsection*{2. Sản phẩm được phát triển ước tính trong khoảng thời gian}
-Số tháng: 6 tháng (từ 10/2017 đến 03/2018)
+Số tháng: 9 tháng (từ 10/2017 đến 06/2018)
 
 \subsection*{3. Phạm vi ứng dụng}
 Mê cung Khốc liệt hướng đến hai đối tượng sử dụng chính:
@@ -93,8 +96,8 @@ pygame theo các bước sau:
 
 Sau khi cài đặt, trò chơi có thể được mở trong launcher của hệ điều hành với
 tên \verb|brutalmaze|. Mặc định, các phím mũi tên (\textuparrow \textleftarrow
-\textdownarrow \textrightarrow) được sử dụng để di chuyển, chuột trái để bắn và
-chuột phải để chém và đỡ đạn.
+\textdownarrow \textrightarrow) hoặc chuột phải được sử dụng để di chuyển,
+chuột trái để bắn và phím cách để chém và đỡ đạn.
 
 \subsection*{5. Mô tả các tính năng cơ bản của sản phẩm}
 Mê cung Khốc liệt là trò chơi hành động tiết tấu nhanh. Người chơi phải điều
@@ -117,13 +120,15 @@ Các tuỳ chọn đơn giản có thể được xác định qua giao diện d
 \begin{description}
   \item[-h, -{}-help] in trợ giúp và thoát
   \item[-v, -{}-version] in phiên bản và thoát
-  \item[-{}-write-config \lbrack PATH\rbrack ] in tuỳ chỉnh mặc định vào tệp PATH
-    và thoát, nếu PATH không được chỉ định, in ra stdout
+  \item[-{}-write-config \lbrack PATH\rbrack ] in tuỳ chỉnh mặc định vào tệp
+    PATH và thoát, nếu PATH không được chỉ định, in ra stdout
   \item[-c, -{}-config PATH] nạp tuỳ chỉnh từ tệp PATH
   \item[-s, -{}-size] chỉ định kích thước XxY cho trò chơi
   \item[-f, -{}-max-fps FPS] chỉ định số khung hình tối đa trong một giây
   \item[-{}-\lbrack un\rbrack mute] tắt âm thanh
   \item[-{}-music-volume VOL] đặt âm lượng nhạc nền (trong khoảng 0.0 đến 1.0)
+  \item[-{}-space-music] dùng nhạc nền ngoài không gian vũ trụ
+  \item[-{}-default-music] dùng nhạc nền mặc định
   \item[-{}-\lbrack no-\rbrack server] bật/tắt server socket
   \item[-{}-host] đặt địa chỉ server
   \item[-{}-port] đặt cổng server
@@ -152,6 +157,8 @@ Maximum FPS: 60
 Muted: no
 # Âm lượng nhạc nền, trong khoảng 0.0 đến 1.1
 Music volume: 1.0
+# Nhạc nền không gian vũ trụ lạnh lẽo, rợn ngợp
+Space theme: no
 
 # Các phím điều khiển hợp lệ được liệt kê trong
 # http://www.pygame.org/docs/ref/key.html
@@ -164,14 +171,16 @@ New game: F2
 Toggle pause: p
 # Tắt/bật tiếng
 Toggle mute: m
-# Di chuyển sang trái, phải, trên. dưới
+# Di chuyển sang trái, phải, trên, dưới
 Move left: Left
 Move right: Right
 Move up: Up
 Move down: Down
+# Di chuyển tự động
+Auto move: Mouse3
 # Bắn và chém (đồng thời đỡ đạn)
 Long-range attack: Mouse1
-Close-range attack: Mouse3
+Close-range attack: Space
 
 [Server]
 # Bật server sẽ vô hiệu hoá điều khiển trực tiếp
@@ -185,7 +194,10 @@ Timeout: 1.0
 # Bật/tắt cửa sổ trờ chơi khi chạy trong chế độ server
 Headless: no
 \end{verbatim}
-Các tuỳ chỉnh được nạp theo thứ tự sau:
+
+\newpage
+Các tuỳ chỉnh được nạp theo thứ tự sau, theo đó các giá trị sau sẽ được nạp đè
+lên giá trị trước:
 \begin{enumerate}
   \item[0.] Tuỳ chọn mặc định
   \item Tệp tuỳ chỉnh hệ thống và của người dùng\footnote{Lần lượt được liệt kê
@@ -193,9 +205,7 @@ Các tuỳ chỉnh được nạp theo thứ tự sau:
   \item Tệp INI được chỉ định bởi thẻ \verb|--config|
   \item Các tuỳ chọn trong dòng lệnh
 \end{enumerate}
-Các giá trị nạp sau sẽ đè lên giá trị trước.
 
-\newpage
 Khi được khởi động với thẻ \verb|--server| hoặc chỉ định trong tệp tuỳ chỉnh
 (\verb|Enable: yes| trong mục \verb|[Server]|), Mê cung Khốc liệt sẽ mở một
 TCP/IPv4 socket tại địa chỉ đã chọn. Trước khi gửi dữ liệu trò chơi, server sẽ
@@ -307,8 +317,6 @@ cho lập trình trò chơi đơn giản, xử lí tuỳ chỉnh và socket tron
 \subsection*{7. Tự đánh giá những mặt tồn tại chưa được giải quyết}
 Trò chơi còn tồn tại một số vấn đề như sau:
 \begin{itemize}
-  \item Thuật toán tạo mê cung còn bất cập: di chuyển theo hướng Tây Bắc sẽ
-    không bao giờ gặp đường cùng.~\cite{algo}
   \item Đồ hoạ còn chưa hấp dẫn.
 \end{itemize}
 
@@ -323,8 +331,6 @@ trí cũng như học tập.
 \renewcommand{\refname}{D. TÀI LIỆU THAM KHẢO}
 \begin{thebibliography}{99}
   \bibitem{nixpip} \url{https://packaging.python.org/guides/installing-using-linux-tools/\#installing-pip-setuptools-wheel-with-linux-package-managers}
-  \bibitem{algo} Tạo mê cung bằng cây nhị phân:
-  \url{http://weblog.jamisbuck.org/2011/2/1/maze-generation-binary-tree-algorithm}
 \end{thebibliography}
 
 \raggedleft{Ba Đình, ngày 04 tháng 04 năm 2018}
