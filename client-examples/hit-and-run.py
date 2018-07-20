@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from math import inf, atan2, degrees
 from socket import socket
-from random import randint
 
 clientsocket = socket()
 clientsocket.connect(('localhost', 8089))

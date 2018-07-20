@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Brutal Maze.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.7.8'
+__version__ = '0.8.0'
 
 import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter
@@ -369,9 +369,8 @@ def main():
     parser.add_argument(
         '--music-volume', type=float, metavar='VOL', dest='musicvol',
         help='between 0.0 and 1.0 (fallback: {})'.format(config.musicvol))
-    parser.add_argument(
-        '--space-music', action='store_true', default=None, dest='space',
-        help='use space music background'.format(config.muted))
+    parser.add_argument('--space-music', action='store_true', dest='space',
+                        default=None, help='use space music background')
     parser.add_argument('--default-music', action='store_false', dest='space',
                         help='use default music background')
     parser.add_argument(
