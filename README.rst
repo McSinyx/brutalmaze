@@ -48,13 +48,13 @@ F2
    Toggle pause.
 ``m``
    Toggle mute.
-Left
+``a``
    Move left.
-Right
+``d``
    Move right.
-Up
+``w``
    Move up.
-Down
+``s``
    Move down.
 Right Mouse
    Move the hero using mouse
