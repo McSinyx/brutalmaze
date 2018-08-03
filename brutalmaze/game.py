@@ -54,8 +54,8 @@ class ConfigReader:
                        ('Auto move', 'autove'),
                        ('Long-range attack', 'shot'),
                        ('Close-range attack', 'slash'))
-    WEIRD_MOUSE_ERR = '{}: Mouse is not a suitable control'
-    INVALID_CONTROL_ERR = '{}: {} is not recognized as a valid control key'
+    WEIRD_MOUSE_ERR = '{}: Chuột không thích hợp điều khiển chức năng này'
+    INVALID_CONTROL_ERR = '{}: {} không phải là phím điều khiển hợp lệ'
 
     def __init__(self, filenames):
         self.config = ConfigParser()
@@ -123,8 +123,8 @@ class Game:
             self.server.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
             self.server.bind((config.host, config.port))
             self.server.listen(1)
-            print('Socket server is listening on {}:{}'.format(config.host,
-                                                               config.port))
+            print('Server socket đang nghe ở {}:{}'.format(config.host,
+                                                           config.port))
             self.timeout = config.timeout
             self.sockinp = 0, 0, -pi * 3 / 4, 0, 0  # freeze and point to NW
         else:
@@ -263,7 +263,7 @@ class Game:
             connection, address = self.server.accept()
             connection.settimeout(self.timeout)
             time = get_ticks()
-            print('[{}] Connected to {}:{}'.format(time, *address))
+            print('[{}] Kết nối với {}:{}'.format(time, *address))
             self.maze.reinit()
             while True:
                 if self.hero.dead:
@@ -286,7 +286,7 @@ class Game:
                 clock.tick(self.fps)
             self.sockinp = 0, 0, -pi * 3 / 4, 0, 0
             new_time = get_ticks()
-            print('[{0}] {3}:{4} scored {1} points in {2}ms'.format(
+            print('[{0}] {3}:{4} ghi {1} điểm trong {2}ms'.format(
                 new_time, self.maze.get_score(), new_time - time, *address))
             connection.close()
             if not self.hero.dead: self.maze.lose()

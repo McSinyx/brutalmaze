@@ -286,15 +286,17 @@ class Enemy:
         x, y = self.get_pos()
         return atan2(y - self.maze.y, x - self.maze.x)
 
-
     def get_color(self):
         """Return current color of the enemy."""
         return TANGO[self.color][int(self.wound)]
 
+    def isunnoticeable(self):
+        """Return whether the enemy can be noticed."""
+        return not self.awake or self.wound >= ENEMY_HP
 
     def draw(self):
         """Draw the enemy."""
-        if not self.awake: return
+        if self.isunnoticeable(): return
         radius = self.maze.distance / SQRT2
         square = regpoly(4, radius, self.angle, *self.get_pos())
         fill_aapolygon(self.maze.surface, square, self.get_color())
@@ -344,10 +346,11 @@ class Chameleon(Enemy):
         if Enemy.wake(self) is True:
             self.visible = 1000.0 / ENEMY_SPEED
 
-    def draw(self):
-        """Draw the Chameleon."""
-        if not self.awake or self.visible > 0 or self.spin_queue:
-            Enemy.draw(self)
+    def isunnoticeable(self):
+        """Return whether the enemy can be noticed."""
+        return (Enemy.isunnoticeable(self)
+                or self.visible <= 0 and not self.spin_queue
+                and self.maze.next_move <= 0)
 
     def update(self):
         """Update the Chameleon."""
