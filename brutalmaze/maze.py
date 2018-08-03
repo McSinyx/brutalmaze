@@ -20,7 +20,9 @@
 __doc__ = 'Brutal Maze module for the maze class'
 
 from collections import defaultdict, deque
+import json
 from math import pi, log
+from os import path
 from random import choice, sample, uniform
 
 import pygame
@@ -30,9 +32,10 @@ from .constants import (
     EMPTY, WALL, HERO, ENEMY, ROAD_WIDTH, WALL_WIDTH, CELL_WIDTH, CELL_NODES,
     MAZE_SIZE, MIDDLE, INIT_SCORE, ENEMIES, MINW, MAXW, SQRT2, SFX_SPAWN,
     SFX_SLASH_ENEMY, SFX_LOSE, ADJACENTS, TANGO_VALUES, BG_COLOR, FG_COLOR,
-    HERO_HP, ENEMY_HP, ATTACK_SPEED, MAX_WOUND, HERO_SPEED, BULLET_LIFETIME)
-from .misc import round2, sign, around, regpoly, fill_aapolygon, play
-from .weapons import Bullet
+    COLORS, HERO_HP, ENEMY_HP, ATTACK_SPEED, MAX_WOUND, HERO_SPEED,
+    BULLET_LIFETIME, JSON_SEPARATORS)
+from .misc import (
+    round2, sign, deg, around, regpoly, fill_aapolygon, play, json_rec)
 
 
 class Maze:
@@ -50,7 +53,7 @@ class Maze:
         map (deque of deque): map of grids representing objects on the maze
         vx, vy (float): velocity of the maze movement (in pixels per frame)
         rotatex, rotatey (int): grids rotated
-        bullets (list of Bullet): flying bullets
+        bullets (list of .weapons.Bullet): flying bullets
         enemy_weights (dict): probabilities of enemies to be created
         enemies (list of Enemy): alive enemies
         hero (Hero): the hero
@@ -62,14 +65,21 @@ class Maze:
         slashd (float): minimum distance for slashes to be effective
         sfx_slash (pygame.mixer.Sound): sound effect of slashed enemy
         sfx_lose (pygame.mixer.Sound): sound effect to be played when you lose
+        export (list of defaultdict): records of game states
+        export_dir (str): directory containing records of game states
+        export_rate (float): milliseconds per snapshot
+        next_export (float): time until next snapshot (in ms)
     """
-    def __init__(self, fps, size, headless):
+    def __init__(self, fps, size, headless, export_dir, export_rate):
         self.fps = fps
         self.w, self.h = size
         if headless:
             self.surface = None
         else:
             self.surface = pygame.display.set_mode(size, pygame.RESIZABLE)
+        self.export_dir = path.abspath(export_dir)
+        self.next_export = self.export_rate = export_rate
+        self.export = []
 
         self.distance = (self.w * self.h / 416) ** 0.5
         self.x, self.y = self.w // 2, self.h // 2
@@ -336,6 +346,46 @@ class Maze:
                 return 0.0
         return vx or vy
 
+    def expos(self, x, y):
+        """Return position of the given coordinates in rounded percent."""
+        cx = len(self.rangex)*50 + (x - self.centerx)/self.distance*100
+        cy = len(self.rangey)*50 + (y - self.centery)/self.distance*100
+        return round2(cx), round2(cy)
+
+    def update_export(self, forced=False):
+        """Update the maze's data export and return the last record."""
+        if self.next_export > 0 and not forced or self.hero.dead: return
+        export = defaultdict(list)
+        export['s'] = self.get_score()
+
+        if self.next_move <= 0:
+            for y in self.rangey:
+                export['m'].append(''.join(
+                    COLORS[self.get_color()] if self.map[x][y] == WALL else '0'
+                    for x in self.rangex))
+
+        x, y = self.expos(self.x, self.y)
+        export['h'] = [
+            COLORS[self.hero.get_color()], x, y, deg(self.hero.angle),
+            int(self.hero.next_strike <= 0), int(self.hero.next_heal <= 0)]
+
+        for enemy in self.enemies:
+            if enemy.isunnoticeable(): continue
+            x, y = self.expos(*enemy.get_pos())
+            color, angle = COLORS[enemy.get_color()], deg(enemy.angle)
+            export['e'].append([color, x, y, angle])
+
+        for bullet in self.bullets:
+            x, y = self.expos(bullet.x, bullet.y)
+            color, angle = COLORS[bullet.get_color()], deg(bullet.angle)
+            if color != '0': export['b'].append([color, x, y, angle])
+
+        if self.next_export <= 0:
+            export['t'] = round2(self.export_rate - self.next_export)
+            self.export.append(export)
+            self.next_export = self.export_rate
+        return export
+
     def update(self, fps):
         """Update the maze."""
         self.fps = fps
@@ -347,6 +397,7 @@ class Maze:
         self.next_move -= 1000.0 / fps
         self.glitch -= 1000.0 / fps
         self.next_slashfx -= 1000.0 / fps
+        self.next_export -= 1000.0 / fps
 
         self.rotate()
         if self.vx or self.vy or self.hero.firing or self.hero.slashing:
@@ -358,7 +409,8 @@ class Maze:
         if not self.hero.dead:
             self.hero.update(fps)
             self.slash()
-            if self.hero.wound > HERO_HP: self.lose()
+            if self.hero.wound >= HERO_HP: self.lose()
+        self.update_export()
 
     def resize(self, size):
         """Resize the maze."""
@@ -419,19 +471,27 @@ class Maze:
         """Return if the hero is moving faster than HERO_SPEED."""
         return (self.vx**2+self.vy**2)**0.5*self.fps > HERO_SPEED*self.distance
 
+    def dump_records(self):
+        """Dump JSON records."""
+        if self.export_dir:
+            with open(json_rec(self.export_dir), 'w') as f:
+                json.dump(self.export, f, separators=JSON_SEPARATORS)
+
     def lose(self):
         """Handle loses."""
         self.hero.dead = True
+        self.hero.wound = HERO_HP
         self.hero.slashing = self.hero.firing = False
         self.destx = self.desty = MIDDLE
         self.stepx = self.stepy = 0
         self.vx = self.vy = 0.0
         play(self.sfx_lose)
+        self.dump_records()
 
     def reinit(self):
         """Open new game."""
         self.centerx, self.centery = self.w / 2.0, self.h / 2.0
-        self.score = INIT_SCORE
+        self.score, self.export = INIT_SCORE, []
         self.map = deque(deque(EMPTY for _ in range(MAZE_SIZE * CELL_WIDTH))
                          for _ in range(MAZE_SIZE * CELL_WIDTH))
         for x in range(MAZE_SIZE):

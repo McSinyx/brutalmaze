@@ -84,3 +84,5 @@ HERO_HP = 5
 MIN_BEAT = 526
 BG_COLOR = TANGO['Aluminium'][-1]
 FG_COLOR = TANGO['Aluminium'][0]
+
+JSON_SEPARATORS = ',', ':'
