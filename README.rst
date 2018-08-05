@@ -21,6 +21,7 @@ Brutal Maze has a few notable features:
 * Somewhat a realistic physic and logic system.
 * Resizable game window in-game.
 * Easily customizable via INI file format.
+* Recordable in JSON (some kind of silent screencast).
 * Remote control through TCP/IP socket (can be used in AI researching).
 
 Installation
