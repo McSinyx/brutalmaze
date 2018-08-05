@@ -5,6 +5,7 @@ Brutal Maze is a third-person shooter game with fast-paced action and a
 minimalist art style.
 
 .. image:: https://raw.githubusercontent.com/McSinyx/brutalmaze/master/screenshot.png
+   :target: https://McSinyx.github.io/brutalmaze/
 
 The game features a trigon trapped in an infinite maze. As our hero tries to
 escape, the maze's border turns into aggressive squares trying to stop him.
