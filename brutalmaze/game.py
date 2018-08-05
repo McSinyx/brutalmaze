@@ -17,17 +17,16 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Brutal Maze.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.8.1'
+__version__ = '0.8.20'
 
 import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter, SUPPRESS
-from collections import deque
 try:                    # Python 3
     from configparser import ConfigParser
 except ImportError:     # Python 2
     from ConfigParser import ConfigParser
 from math import atan2, radians, pi
-from os.path import join, pathsep
+from os.path import join as pathjoin, pathsep
 from socket import socket, SOL_SOCKET, SO_REUSEADDR
 from sys import stdout
 from threading import Thread
@@ -37,10 +36,9 @@ from pygame import KEYDOWN, QUIT, VIDEORESIZE
 from pygame.time import Clock, get_ticks
 from appdirs import AppDirs
 
-from .constants import (
-    SETTINGS, ICON, MUSIC, NOISE, HERO_SPEED, COLORS, MIDDLE, WALL)
+from .constants import SETTINGS, ICON, MUSIC, NOISE, HERO_SPEED, MIDDLE
 from .maze import Maze
-from .misc import deg, round2, sign
+from .misc import sign, deg, join
 
 
 class ConfigReader:
@@ -73,6 +71,8 @@ class ConfigReader:
         self.muted = self.config.getboolean('Sound', 'Muted')
         self.musicvol = self.config.getfloat('Sound', 'Music volume')
         self.space = self.config.getboolean('Sound', 'Space theme')
+        self.export_dir = self.config.get('Record', 'Directory')
+        self.export_rate = self.config.getint('Record', 'Frequency')
         self.server = self.config.getboolean('Server', 'Enable')
         self.host = self.config.get('Server', 'Host')
         self.port = self.config.getint('Server', 'Port')
@@ -98,8 +98,9 @@ class ConfigReader:
 
     def read_args(self, arguments):
         """Read and parse a ArgumentParser.Namespace."""
-        for option in ('size', 'max_fps', 'muted', 'musicvol', 'space',
-                       'server', 'host', 'port', 'timeout', 'headless'):
+        for option in (
+            'size', 'max_fps', 'muted', 'musicvol', 'space', 'export_dir',
+            'export_rate', 'server', 'host', 'port', 'timeout', 'headless'):
             value = getattr(arguments, option)
             if value is not None: setattr(self, option, value)
 
@@ -134,51 +135,20 @@ class Game:
         self.max_fps, self.fps = config.max_fps, float(config.max_fps)
         self.musicvol = config.musicvol
         self.key, self.mouse = config.key, config.mouse
-        self.maze = Maze(config.max_fps, config.size, config.headless)
+        self.maze = Maze(config.max_fps, config.size, config.headless,
+                         config.export_dir, 1000.0 / config.export_rate)
         self.hero = self.maze.hero
         self.clock, self.paused = Clock(), False
 
     def __enter__(self): return self
 
-    def expos(self, x, y):
-        """Return position of the given coordinates in rounded percent."""
-        cx = (x+self.maze.x-self.maze.centerx) / self.maze.distance * 100
-        cy = (y+self.maze.y-self.maze.centery) / self.maze.distance * 100
-        return round2(cx), round2(cy)
-
-    def export(self):
-        """Export maze data to a bytes object."""
-        maze, hero, = self.maze, self.hero
-        lines = deque(['{0} {4} {5} {1} {2:d} {3:d}'.format(
-            COLORS[hero.get_color()], deg(self.hero.angle),
-            hero.next_strike <= 0, hero.next_heal <= 0,
-            *self.expos(maze.x, maze.y))])
-
-        walls = [[1 if maze.map[x][y] == WALL else 0 for x in maze.rangex]
-                 for y in maze.rangey] if maze.next_move <= 0 else []
-        ne = nb = 0
-
-        for enemy in maze.enemies:
-            # Check Chameleons
-            if getattr(enemy, 'visible', 1) <= 0 and maze.next_move <= 0:
-                continue
-            lines.append('{0} {2} {3} {1:.0f}'.format(
-                COLORS[enemy.get_color()], deg(enemy.angle),
-                *self.expos(*enemy.get_pos())))
-            ne += 1
-
-        for bullet in maze.bullets:
-            x, y = self.expos(bullet.x, bullet.y)
-            color, angle = COLORS[bullet.get_color()], deg(bullet.angle)
-            if color != '0':
-                lines.append('{} {} {} {:.0f}'.format(color, x, y, angle))
-                nb += 1
-
-        if walls: lines.appendleft('\n'.join(''.join(str(cell) for cell in row)
-                                             for row in walls))
-        lines.appendleft('{} {} {} {}'.format(len(walls), ne, nb,
-                                              maze.get_score()))
-        return '\n'.join(lines).encode()
+    def export_txt(self):
+        """Export maze data to string."""
+        export = self.maze.update_export(forced=True)
+        return '{} {} {} {}\n{}{}{}{}'.format(
+            len(export['m']), len(export['e']), len(export['b']), export['s'],
+            ''.join(row + '\n' for row in export['m']), join(export['h']),
+            ''.join(map(join, export['e'])), ''.join(map(join, export['b'])))
 
     def update(self):
         """Draw and handle meta events on Pygame window.
@@ -191,12 +161,8 @@ class Game:
                 return False
             elif event.type == VIDEORESIZE:
                 self.maze.resize((event.w, event.h))
-            elif event.type == KEYDOWN and not self.server:
-                if event.key == self.key['new']:
-                    self.maze.reinit()
-                elif event.key == self.key['pause'] and not self.hero.dead:
-                    self.paused ^= True
-                elif event.key == self.key['mute']:
+            elif event.type == KEYDOWN:
+                if event.key == self.key['mute']:
                     if pygame.mixer.get_init() is None:
                         pygame.mixer.init(frequency=44100)
                         pygame.mixer.music.load(MUSIC)
@@ -204,6 +170,11 @@ class Game:
                         pygame.mixer.music.play(-1)
                     else:
                         pygame.mixer.quit()
+                elif not self.server:
+                    if event.key == self.key['new']:
+                        self.maze.reinit()
+                    elif event.key == self.key['pause'] and not self.hero.dead:
+                        self.paused ^= True
 
         # Compare current FPS with the average of the last 10 frames
         new_fps = self.clock.get_fps()
@@ -269,7 +240,8 @@ class Game:
                 if self.hero.dead:
                     connection.send('0000000'.encode())
                     break
-                data = self.export()
+                data = self.export_txt().encode()
+                alpha = deg(self.hero.angle)
                 connection.send('{:07}'.format(len(data)).encode())
                 connection.send(data)
                 try:
@@ -282,7 +254,9 @@ class Game:
                 except ValueError:  # invalid input
                     break
                 y, x = (i - 1 for i in divmod(move, 3))
-                self.sockinp = x, y, radians(angle), attack & 1, attack >> 1
+                # Time is the essence.
+                angle = self.hero.angle if angle == alpha else radians(angle)
+                self.sockinp = x, y, angle, attack & 1, attack >> 1
                 clock.tick(self.fps)
             self.sockinp = 0, 0, -pi * 3 / 4, 0, 0
             new_time = get_ticks()
@@ -329,6 +303,7 @@ class Game:
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self.server is not None: self.server.close()
+        if not self.hero.dead: self.maze.dump_records()
         pygame.quit()
 
 
@@ -338,7 +313,7 @@ def main():
     dirs = AppDirs(appname='brutalmaze', appauthor=False, multipath=True)
     parents = dirs.site_config_dir.split(pathsep)
     parents.append(dirs.user_config_dir)
-    filenames = [join(parent, 'settings.ini') for parent in parents]
+    filenames = [pathjoin(parent, 'settings.ini') for parent in parents]
     config = ConfigReader(filenames)
     config.parse()
 
@@ -375,9 +350,16 @@ def main():
         help='đặt âm lượng nhạc nền (trong khoảng 0.0 đến 1.0) (dự phòng: {})'.format(config.musicvol))
     translation.add_argument(
         '--space-music', action='store_true', default=None, dest='space',
-        help='dùng nhạc nền ngoài không gian vũ trụ')
-    translation.add_argument('--default-music', action='store_false', dest='space',
-                             help='dùng nhạc nền mặc định')
+        help='dùng nhạc nền ngoài không gian vũ trụ (dự phòng: {})'.format(config.space))
+    translation.add_argument('--default-music', action='store_false',
+                             dest='space', help='dùng nhạc nền mặc định')
+    translation.add_argument(
+        '--record-dir', metavar='DIR', dest='export_dir',
+        help='thư mục để chứa bản ghi (dự phòng: {})'.format(
+            config.export_dir or '*tắt*'))
+    translation.add_argument(
+        '--record-rate', metavar='SPF', dest='export_rate',
+        help='số kết xuất mỗi giây (dự phòng: {})'.format(config.export_rate))
     translation.add_argument(
         '--server', action='store_true', default=None,
         help='bật server socket (dự phòng: {})'.format(config.server))
