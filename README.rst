@@ -92,6 +92,14 @@ about I/O format are explained carefully in
 `Remote control <https://github.com/McSinyx/brutalmaze/wiki/Remote-control>`_
 wiki page.
 
+Game recording
+--------------
+
+Either game played by human or client script can be recorded to JSON format.
+This can be enabled by setting the output directory to a non-empty string [4]_.
+Recordings can be played on the repo's Github Page which the above screenshot
+is linked to.
+
 License
 -------
 
@@ -114,3 +122,5 @@ authors and licenses are listed in
 .. [3] This can be done by either editing option *Enable* in section *Server*
    in the configuration file, or launching Brutal Maze using ``brutalmaze
    --server``.
+.. [4] ``brutalmaze --record-dir DIR``. Navigate to `wiki <https://github.com/McSinyx/brutalmaze/wiki/Configuration>`_
+   to see more options.
