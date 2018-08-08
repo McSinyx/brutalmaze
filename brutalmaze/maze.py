@@ -77,7 +77,7 @@ class Maze:
             self.surface = None
         else:
             self.surface = pygame.display.set_mode(size, pygame.RESIZABLE)
-        self.export_dir = path.abspath(export_dir)
+        self.export_dir = path.abspath(export_dir) if export_dir else ''
         self.next_export = self.export_rate = export_rate
         self.export = []
 
