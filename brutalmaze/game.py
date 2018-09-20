@@ -17,10 +17,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Brutal Maze.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.8.20-vi'
+__version__ = '0.8.21-vi'
 
 import re
-from argparse import ArgumentParser, FileType, RawTextHelpFormatter, SUPPRESS
+from argparse import ArgumentParser, FileType, RawTextHelpFormatter
 try:                    # Python 3
     from configparser import ConfigParser
 except ImportError:     # Python 2

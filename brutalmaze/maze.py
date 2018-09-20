@@ -77,7 +77,7 @@ class Maze:
             self.surface = None
         else:
             self.surface = pygame.display.set_mode(size, pygame.RESIZABLE)
-        self.export_dir = path.abspath(export_dir)
+        self.export_dir = path.abspath(export_dir) if export_dir else ''
         self.next_export = self.export_rate = export_rate
         self.export = []
 
@@ -445,10 +445,10 @@ class Maze:
                 self.stepx = w - e
             return
 
+        # Forest Fire algorithm with step count
         queue = defaultdict(list, {0: [(self.destx, self.desty)]})
         visited, count, distance = set(), 1, 0
         while count:
-            # Hashes of small intergers are themselves so queue is sorted
             if not queue[distance]: distance += 1
             x, y = queue[distance].pop()
             count -= 1
