@@ -20,7 +20,7 @@
 __version__ = '0.8.21-vi'
 
 import re
-from argparse import ArgumentParser, FileType, RawTextHelpFormatter
+from argparse import ArgumentParser, FileType, RawTextHelpFormatter, SUPPRESS
 try:                    # Python 3
     from configparser import ConfigParser
 except ImportError:     # Python 2
