@@ -45,9 +45,9 @@ class Hero:
         next_beat (float): time until next heart beat (in ms)
         next_strike (float): time until the hero can do the next attack (in ms)
         highness (float): likelihood that the hero shoots toward other angles
-        slashing (bool): flag indicates if the hero is doing close-range attack
-        firing (bool): flag indicates if the hero is doing long-range attack
-        dead (bool): flag indicates if the hero is dead
+        slashing (bool): flag indicating if the hero is doing close-range attack
+        firing (bool): flag indicating if the hero is doing long-range attack
+        dead (bool): flag indicating if the hero is dead
         spin_speed (float): speed of spinning (in frames per slash)
         spin_queue (float): frames left to finish spinning
         wound (float): amount of wound
@@ -159,7 +159,7 @@ class Enemy:
         x, y (int): coordinates of the center of the enemy (in grids)
         angle (float): angle of the direction the enemy pointing (in radians)
         color (str): enemy's color name
-        awake (bool): flag indicates if the enemy is active
+        awake (bool): flag indicating if the enemy is active
         next_strike (float): time until the enemy's next action (in ms)
         move_speed (float): speed of movement (in frames per grid)
         offsetx, offsety (integer): steps moved from the center of the grid
@@ -290,8 +290,14 @@ class Enemy:
         """Return current color of the enemy."""
         return TANGO[self.color][int(self.wound)]
 
-    def isunnoticeable(self):
-        """Return whether the enemy can be noticed."""
+    def isunnoticeable(self, x=None, y=None):
+        """Return whether the enemy can be noticed.
+
+        Only search within column x and row y if these coordinates
+        are provided.
+        """
+        if x is not None and self.x != x: return True
+        if y is not None and self.y != y: return True
         return not self.awake or self.wound >= ENEMY_HP
 
     def draw(self):
@@ -321,6 +327,18 @@ class Enemy:
         """Handle the enemy when it's attacked."""
         self.wound += wound
 
+    @property
+    def retired(self):
+        """Provide compatibility with LockOn object."""
+        try:
+            return self._retired
+        except AttributeError:
+            return self.wound >= ENEMY_HP
+
+    @retired.setter
+    def retired(self, value):
+        self._retired = value
+
     def die(self):
         """Handle the enemy's death."""
         if self.awake:
@@ -346,9 +364,13 @@ class Chameleon(Enemy):
         if Enemy.wake(self) is True:
             self.visible = 1000.0 / ENEMY_SPEED
 
-    def isunnoticeable(self):
-        """Return whether the enemy can be noticed."""
-        return (Enemy.isunnoticeable(self)
+    def isunnoticeable(self, x=None, y=None):
+        """Return whether the enemy can be noticed.
+
+        Only search within column x and row y if these coordinates
+        are provided.
+        """
+        return (Enemy.isunnoticeable(self, x, y)
                 or self.visible <= 0 and not self.spin_queue
                 and self.maze.next_move <= 0)
 

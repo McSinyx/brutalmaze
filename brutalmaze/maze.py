@@ -36,6 +36,7 @@ from .constants import (
     BULLET_LIFETIME, JSON_SEPARATORS)
 from .misc import (
     round2, sign, deg, around, regpoly, fill_aapolygon, play, json_rec)
+from .weapons import LockOn
 
 
 class Maze:
@@ -59,6 +60,7 @@ class Maze:
         hero (Hero): the hero
         destx, desty (int): the grid the hero is moving to
         stepx, stepy (int): direction the maze is moving
+        target (Enemy or LockOn): target to automatically aim at
         next_move (float): time until the hero gets mobilized (in ms)
         glitch (float): time that the maze remain flashing colors (in ms)
         next_slashfx (float): time until next slash effect of the hero (in ms)
@@ -102,6 +104,7 @@ class Maze:
         self.map[MIDDLE][MIDDLE] = HERO
         self.destx = self.desty = MIDDLE
         self.stepx = self.stepy = 0
+        self.target = LockOn(MIDDLE, MIDDLE, retired=True)
         self.next_move = self.glitch = self.next_slashfx = 0.0
         self.slashd = self.hero.R + self.distance/SQRT2
 
@@ -152,6 +155,17 @@ class Maze:
         return (MIDDLE + round2((x-self.centerx) / self.distance),
                 MIDDLE + round2((y-self.centery) / self.distance))
 
+    def get_target(self, x, y):
+        """Return shooting target the grid containing the point (x, y).
+
+        If the grid is the hero, return a retired target.
+        """
+        gridx, gridy = self.get_grid(x, y)
+        if gridx == gridy == MIDDLE: return LockOn(gridx, gridy, True)
+        for enemy in self.enemies:
+            if not enemy.isunnoticeable(gridx, gridy): return enemy
+        return LockOn(gridx, gridy)
+
     def get_score(self):
         """Return the current score."""
         return int(self.score - INIT_SCORE)
@@ -179,7 +193,7 @@ class Maze:
         pygame.display.set_caption(
             'Brutal Maze - Score: {}'.format(self.get_score()))
 
-    def is_displayed(self, x, y):
+    def isdisplayed(self, x, y):
         """Return True if the grid (x, y) is in the displayable part
         of the map, False otherwise.
         """
@@ -212,12 +226,16 @@ class Maze:
         killist = []
         for i, enemy in enumerate(self.enemies):
             enemy.place(x, y)
-            if not self.is_displayed(enemy.x, enemy.y):
+            if not self.isdisplayed(enemy.x, enemy.y):
                 self.score += enemy.wound
                 enemy.die()
                 killist.append(i)
         for i in reversed(killist): self.enemies.pop(i)
         self.add_enemy()
+
+        # LockOn target is not yet updated.
+        if isinstance(self.target, LockOn):
+            self.target.place(x, y, self.isdisplayed)
 
         # Regenerate the maze
         if abs(self.rotatex) == CELL_WIDTH:
@@ -290,7 +308,7 @@ class Maze:
             wound = bullet.fall_time / BULLET_LIFETIME
             bullet.update(self.fps, self.distance)
             gridx, gridy = self.get_grid(bullet.x, bullet.y)
-            if wound <= 0 or not self.is_displayed(gridx, gridy):
+            if wound <= 0 or not self.isdisplayed(gridx, gridy):
                 fallen.append(i)
             elif bullet.color == 'Aluminium':
                 if self.map[gridx][gridy] == WALL and self.next_move <= 0:
@@ -430,7 +448,11 @@ class Maze:
         self.slashd = self.hero.R + self.distance/SQRT2
 
     def set_step(self, check=(lambda x, y: True)):
-        """Return direction on the shortest path to the destination."""
+        """Work out next step on the shortest path to the destination.
+
+        Return whether target is impossible to reach and hero should
+        shoot toward it instead.
+        """
         if self.stepx or self.stepy and self.vx == self.vy == 0.0:
             x, y = MIDDLE - self.stepx, MIDDLE - self.stepy
             if self.stepx and not self.stepy:
@@ -443,7 +465,12 @@ class Maze:
                 w = self.map[x - 1][y] == EMPTY == self.map[x - 1][nexty]
                 e = self.map[x + 1][y] == EMPTY == self.map[x + 1][nexty]
                 self.stepx = w - e
-            return
+            return False
+
+        # Shoot WALL and ENEMY instead
+        if self.map[self.destx][self.desty] != EMPTY:
+            self.stepx = self.stepy = 0
+            return True
 
         # Forest Fire algorithm with step count
         queue = defaultdict(list, {0: [(self.destx, self.desty)]})
@@ -460,12 +487,15 @@ class Maze:
             dx, dy = MIDDLE - x, MIDDLE - y
             if dx**2 + dy**2 <= 2:
                 self.stepx, self.stepy = dx, dy
-                return
+                return False
             for i, j in around(x, y):
                 if self.map[i][j] == EMPTY and check(i, j):
                     queue[distance + 1].append((i, j))
                     count += 1
-        self.stepx, self.stepy = 0, 0
+
+        # Failed to find way to move to target
+        self.stepx = self.stepy = 0
+        return True
 
     def isfast(self):
         """Return if the hero is moving faster than HERO_SPEED."""
@@ -506,6 +536,7 @@ class Maze:
         self.add_enemy()
 
         self.next_move = self.next_slashfx = self.hero.next_strike = 0.0
+        self.target = LockOn(MIDDLE, MIDDLE, retired=True)
         self.hero.next_heal = -1.0
         self.hero.highness = 0.0
         self.hero.slashing = self.hero.firing = self.hero.dead = False

@@ -76,3 +76,22 @@ class Bullet:
     def get_distance(self, x, y):
         """Return the from the center of the bullet to the point (x, y)."""
         return ((self.x-x)**2 + (self.y-y)**2)**0.5
+
+
+class LockOn:
+    """Lock-on device to assist hero's aiming.
+    This is used as a mutable object to represent a grid of wall.
+
+    Attributes:
+        x, y (int): coordinates of the target (in grids)
+        destroyed (bool): flag indicating if the target is destroyed
+    """
+    def __init__(self, x, y, retired=False):
+        self.x, self.y = x, y
+        self.retired = retired
+
+    def place(self, x, y, isdisplayed):
+        """Move the target by (x, y) (in grids)."""
+        self.x += x
+        self.y += y
+        if not isdisplayed(self.x, self.y): self.retired = True

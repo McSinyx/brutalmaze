@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Brutal Maze.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.8.21'
+__version__ = '0.8.22'
 
 import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter
@@ -32,7 +32,7 @@ from sys import stdout
 from threading import Thread
 
 import pygame
-from pygame import KEYDOWN, QUIT, VIDEORESIZE
+from pygame import KEYDOWN, MOUSEBUTTONUP, QUIT, VIDEORESIZE
 from pygame.time import Clock, get_ticks
 from appdirs import AppDirs
 
@@ -49,7 +49,6 @@ class ConfigReader:
                        ('Toggle mute', 'mute'),
                        ('Move left', 'left'), ('Move right', 'right'),
                        ('Move up', 'up'), ('Move down', 'down'),
-                       ('Auto move', 'autove'),
                        ('Long-range attack', 'shot'),
                        ('Close-range attack', 'slash'))
     WEIRD_MOUSE_ERR = '{}: Mouse is not a suitable control'
@@ -71,6 +70,7 @@ class ConfigReader:
         self.muted = self.config.getboolean('Sound', 'Muted')
         self.musicvol = self.config.getfloat('Sound', 'Music volume')
         self.space = self.config.getboolean('Sound', 'Space theme')
+        self.touch = self.config.getboolean('Control', 'Touch')
         self.export_dir = self.config.get('Record', 'Directory')
         self.export_rate = self.config.getint('Record', 'Frequency')
         self.server = self.config.getboolean('Server', 'Enable')
@@ -84,7 +84,7 @@ class ConfigReader:
         for cmd, alias in self.CONTROL_ALIASES:
             i = self.config.get('Control', cmd)
             if re.match('mouse[1-3]$', i.lower()):
-                if alias not in ('autove', 'shot', 'slash'):
+                if alias not in ('shot', 'slash'):
                     raise ValueError(self.WEIRD_MOUSE_ERR.format(cmd))
                 self.mouse[alias] = int(i[-1]) - 1
                 continue
@@ -98,9 +98,9 @@ class ConfigReader:
 
     def read_args(self, arguments):
         """Read and parse a ArgumentParser.Namespace."""
-        for option in (
-            'size', 'max_fps', 'muted', 'musicvol', 'space', 'export_dir',
-            'export_rate', 'server', 'host', 'port', 'timeout', 'headless'):
+        for option in ('size', 'max_fps', 'muted', 'musicvol', 'space',
+                       'touch', 'export_dir', 'export_rate', 'server',
+                       'host', 'port', 'timeout', 'headless'):
             value = getattr(arguments, option)
             if value is not None: setattr(self, option, value)
 
@@ -134,6 +134,7 @@ class Game:
         # self.fps is a float to make sure floordiv won't be used in Python 2
         self.max_fps, self.fps = config.max_fps, float(config.max_fps)
         self.musicvol = config.musicvol
+        self.touch = config.touch
         self.key, self.mouse = config.key, config.mouse
         self.maze = Maze(config.max_fps, config.size, config.headless,
                          config.export_dir, 1000.0 / config.export_rate)
@@ -175,6 +176,19 @@ class Game:
                         self.maze.reinit()
                     elif event.key == self.key['pause'] and not self.hero.dead:
                         self.paused ^= True
+            elif event.type == MOUSEBUTTONUP and self.touch:
+                # We're careless about which mouse button is clicked.
+                maze = self.maze
+                if self.hero.dead:
+                    maze.reinit()
+                else:
+                    x, y = pygame.mouse.get_pos()
+                    maze.destx, maze.desty = maze.get_grid(x, y)
+                    if maze.set_step(maze.isdisplayed):
+                        maze.target = maze.get_target(x, y)
+                        self.hero.firing = not maze.target.retired
+                    if maze.stepx == maze.stepy == 0:
+                        maze.destx = maze.desty = MIDDLE
 
         # Compare current FPS with the average of the last 10 frames
         new_fps = self.clock.get_fps()
@@ -187,7 +201,7 @@ class Game:
         self.clock.tick(self.fps)
         return True
 
-    def move(self, x, y):
+    def move(self, x=0, y=0):
         """Command the hero to move faster in the given direction."""
         maze = self.maze
         velocity = maze.distance * HERO_SPEED / self.fps
@@ -265,41 +279,37 @@ class Game:
             connection.close()
             if not self.hero.dead: self.maze.lose()
 
+    def touch_control(self):
+        """Handle touch control."""
+        maze, hero = self.maze, self.hero
+        if maze.target.retired: hero.firing = False
+        if hero.firing:
+            x, y = maze.get_pos(maze.target.x, maze.target.y)
+        else:
+            x, y = pygame.mouse.get_pos()
+        hero.update_angle(atan2(y - hero.y, x - hero.x))
+        self.move()
+
     def user_control(self):
         """Handle direct control from user's mouse and keyboard."""
-        if not self.hero.dead:
-            keys = pygame.key.get_pressed()
-            right = keys[self.key['right']] - keys[self.key['left']]
-            down = keys[self.key['down']] - keys[self.key['up']]
+        if self.hero.dead: return
+        keys = pygame.key.get_pressed()
+        buttons = pygame.mouse.get_pressed()
 
-            buttons = pygame.mouse.get_pressed()
-            try:
-                autove = keys[self.key['autove']]
-            except KeyError:
-                autove = buttons[self.mouse['autove']]
-            try:
-                firing = keys[self.key['shot']]
-            except KeyError:
-                firing = buttons[self.mouse['shot']]
-            try:
-                slashing = keys[self.key['slash']]
-            except KeyError:
-                slashing = buttons[self.mouse['slash']]
+        right = keys[self.key['right']] - keys[self.key['left']]
+        down = keys[self.key['down']] - keys[self.key['up']]
+        x, y = pygame.mouse.get_pos()
+        angle = atan2(y - self.hero.y, x - self.hero.x)
 
-            # Follow the mouse cursor
-            x, y = pygame.mouse.get_pos()
-            maze = self.maze
-            if right or down:
-                maze.destx = maze.desty = MIDDLE
-                maze.stepx = maze.stepy = 0
-            elif autove:
-                maze.destx, maze.desty = maze.get_grid(x, y)
-                maze.set_step(maze.is_displayed)
-                if maze.stepx == maze.stepy == 0:
-                    maze.destx = maze.desty = MIDDLE
-
-            angle = atan2(y - self.hero.y, x - self.hero.x)
-            self.control(right, down, angle, firing, slashing)
+        try:
+            firing = keys[self.key['shot']]
+        except KeyError:
+            firing = buttons[self.mouse['shot']]
+        try:
+            slashing = keys[self.key['slash']]
+        except KeyError:
+            slashing = buttons[self.mouse['slash']]
+        self.control(right, down, angle, firing, slashing)
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self.server is not None: self.server.close()
@@ -350,6 +360,12 @@ def main():
     parser.add_argument('--default-music', action='store_false', dest='space',
                         help='use default music background')
     parser.add_argument(
+        '--touch', action='store_true', default=None,
+        help='enable touch-friendly control (fallback: {})'.format(
+            config.touch))
+    parser.add_argument('--no-touch', action='store_false', dest='touch',
+                        help='disable touch-friendly control')
+    parser.add_argument(
         '--record-dir', metavar='DIR', dest='export_dir',
         help='directory to write game records (fallback: {})'.format(
             config.export_dir or '*disabled*'))
@@ -397,5 +413,7 @@ def main():
             socket_thread.daemon = True     # make it disposable
             socket_thread.start()
             while game.update(): game.control(*game.sockinp)
+        elif config.touch:
+            while game.update(): game.touch_control()
         else:
             while game.update(): game.user_control()
