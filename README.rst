@@ -58,12 +58,17 @@ F2
    Move up.
 ``s``
    Move down.
-Right Mouse
-   Move the hero using mouse
 Left Mouse
    Long-range attack.
-Space
+Right Mouse
    Close-range attack, also dodge from bullets.
+
+Additionally, Brutal Maze also supports touch-friendly control. In this mode,
+touches on different grid (empty, wall, enemy, hero) send different signals (to
+guide the hero to either move or attack, or start new game). Albeit it is
+implemented using *mouse button up* event, touch control is not a solution for
+mouse-only input, but an attempt to support mobile GNU/Linux distribution such
+as postmarketOS, i.e. it's meant to be played using two thumbs :-)
 
 Configuration
 -------------

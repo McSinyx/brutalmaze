@@ -84,7 +84,7 @@ class LockOn:
 
     Attributes:
         x, y (int): coordinates of the target (in grids)
-        destroyed (bool): flag indicating if the target is destroyed
+        retired (bool): flag indicating if the target is retired
     """
     def __init__(self, x, y, retired=False):
         self.x, self.y = x, y
