@@ -94,7 +94,7 @@ class Hero:
             self.next_beat -= 1000.0 / fps
         self.next_strike -= 1000.0 / fps
 
-        full_spin = pi * 2 / self.get_sides()
+        full_spin = pi * 2 / self.sides
         if self.slashing and self.next_strike <= 0:
             self.next_strike = ATTACK_SPEED
             self.spin_queue = randsign() * self.spin_speed
@@ -105,9 +105,10 @@ class Hero:
         else:
             self.spin_queue = 0.0
 
-    def get_sides(self):
-        """Return the number of sides the hero has. While the hero is
-        generally a trigon, Agent Orange may turn him into a square.
+    @property
+    def sides(self):
+        """Number of sides the hero has. While the hero is generally
+        a trigon, Agent Orange may turn him into a square.
         """
         return 3 if self.next_heal < 0 else 4
 
@@ -115,21 +116,22 @@ class Hero:
         """Turn to the given angle if the hero is not busy slashing."""
         if round(self.spin_queue) != 0: return
         delta = (angle - self.angle + pi) % (pi * 2) - pi
-        unit = pi * 2 / self.get_sides() / self.spin_speed
+        unit = pi * 2 / self.sides / self.spin_speed
         if abs(delta) < unit:
             self.angle, self.spin_queue = angle, 0.0
         else:
             self.spin_queue = delta / unit
 
-    def get_shots(self):
-        """Return list of Bullet shot by the hero."""
+    @property
+    def shots(self):
+        """List of Bullet the hero has just shot."""
         if not self.firing or self.slashing or self.next_strike > 0: return []
         self.next_strike = ATTACK_SPEED
         if not randrange(int(self.highness + 1)):
             return [Bullet(self.surface, self.x, self.y,
                            self.angle, 'Aluminium')]
         self.highness -= 1.0
-        n = self.get_sides()
+        n = self.sides
         corners = {randrange(n) for _ in range(n)}
         angles = (self.angle + pi*2*corner/n for corner in corners)
         return [Bullet(self.surface, self.x, self.y, angle, 'Aluminium')
@@ -141,7 +143,7 @@ class Hero:
 
     def draw(self):
         """Draw the hero."""
-        trigon = regpoly(self.get_sides(), self.R, self.angle, self.x, self.y)
+        trigon = regpoly(self.sides, self.R, self.angle, self.x, self.y)
         fill_aapolygon(self.surface, trigon, self.get_color())
 
     def resize(self, maze_size):
@@ -182,23 +184,30 @@ class Enemy:
 
         self.sfx_slash = SFX_SLASH_HERO
 
-    def get_pos(self):
-        """Return coordinate of the center of the enemy."""
+    @property
+    def pos(self):
+        """Coordinates (in pixels) of the center of the enemy."""
         x, y = self.maze.get_pos(self.x, self.y)
         step = self.maze.distance * ENEMY_SPEED / self.maze.fps
         return x + self.offsetx*step, y + self.offsety*step
 
-    def get_distance(self):
-        """Return the distance from the center of the enemy to
-        the center of the maze.
+    @property
+    def distance(self):
+        """Distance from the center of the enemy
+        to the center of the maze.
         """
-        return self.maze.get_distance(*self.get_pos())
+        return self.maze.get_distance(*self.pos)
 
     def place(self, x=0, y=0):
         """Move the enemy by (x, y) (in grids)."""
         self.x += x
         self.y += y
         if self.awake: self.maze.map[self.x][self.y] = ENEMY
+
+    @property
+    def spawn_volumn(self):
+        """Volumn of spawning sound effect."""
+        return 1 - self.distance / self.maze.get_distance(0, 0) / 2
 
     def wake(self):
         """Wake the enemy up if it can see the hero.
@@ -224,15 +233,13 @@ class Enemy:
                     return False
         self.awake = True
         self.maze.map[self.x][self.y] = ENEMY
-        play(self.maze.sfx_spawn,
-             1 - self.get_distance()/self.maze.get_distance(0, 0)/2,
-             self.get_angle() + pi)
+        play(self.maze.sfx_spawn, self.spawn_volumn, self.get_angle() + pi)
         return True
 
     def fire(self):
         """Return True if the enemy has just fired, False otherwise."""
         if self.maze.hero.dead: return False
-        x, y = self.get_pos()
+        x, y = self.pos
         if (self.maze.get_distance(x, y) > FIRANGE*self.maze.distance
             or self.next_strike > 0
             or (self.x, self.y) in AROUND_HERO or self.offsetx or self.offsety
@@ -269,7 +276,7 @@ class Enemy:
 
     def get_slash(self):
         """Return the enemy's close-range damage."""
-        wound = (self.maze.slashd - self.get_distance()) / self.maze.hero.R
+        wound = (self.maze.slashd - self.distance) / self.maze.hero.R
         return wound if wound > 0 else 0.0
 
     def slash(self):
@@ -283,7 +290,7 @@ class Enemy:
         the center of the screen and terminal point is the center of
         the enemy.
         """
-        x, y = self.get_pos()
+        x, y = self.pos
         return atan2(y - self.maze.y, x - self.maze.x)
 
     def get_color(self):
@@ -304,7 +311,7 @@ class Enemy:
         """Draw the enemy."""
         if self.isunnoticeable(): return
         radius = self.maze.distance / SQRT2
-        square = regpoly(4, radius, self.angle, *self.get_pos())
+        square = regpoly(4, radius, self.angle, *self.pos)
         fill_aapolygon(self.maze.surface, square, self.get_color())
 
     def update(self):

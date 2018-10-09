@@ -264,7 +264,7 @@ class Maze:
             # in playable FPS (24 to infinity), the difference within 2%.
             self.hero.next_heal = abs(self.hero.next_heal * (1 - wound))
         elif (uniform(0, sum(self.enemy_weights.values()))
-            < self.enemy_weights[color]):
+              < self.enemy_weights[color]):
             self.hero.next_heal = -1.0  # what doesn't kill you heals you
             if color == 'Butter' or color == 'ScarletRed':
                 wound *= ENEMY_HP
@@ -283,7 +283,7 @@ class Maze:
         if not self.hero.spin_queue: return
         killist = []
         for i, enemy in enumerate(self.enemies):
-            d = self.slashd - enemy.get_distance()
+            d = self.slashd - enemy.distance
             if d > 0:
                 wound = d * SQRT2 / self.distance
                 if self.next_slashfx <= 0:
@@ -299,7 +299,7 @@ class Maze:
 
     def track_bullets(self):
         """Handle the bullets."""
-        self.bullets.extend(self.hero.get_shots())
+        self.bullets.extend(self.hero.shots)
         fallen = []
         block = (self.hero.spin_queue and self.hero.next_heal < 0
                  and self.hero.next_strike > self.hero.spin_queue / self.fps)
@@ -316,17 +316,14 @@ class Maze:
                     enemy = new_enemy(self, gridx, gridy)
                     enemy.awake = True
                     self.map[gridx][gridy] = ENEMY
-                    play(self.sfx_spawn,
-                         1 - enemy.get_distance()/self.get_distance(0, 0)/2,
-                         enemy.get_angle())
+                    play(self.sfx_spawn, enemy.spawn_volumn, enemy.get_angle())
                     enemy.hit(wound)
                     self.enemies.append(enemy)
                     fallen.append(i)
                     continue
                 for j, enemy in enumerate(self.enemies):
                     if not enemy.awake: continue
-                    x, y = enemy.get_pos()
-                    if bullet.get_distance(x, y) < self.distance:
+                    if bullet.get_distance(*enemy.pos) < self.distance:
                         enemy.hit(wound)
                         if enemy.wound >= ENEMY_HP:
                             self.score += enemy.wound
@@ -389,7 +386,7 @@ class Maze:
 
         for enemy in self.enemies:
             if enemy.isunnoticeable(): continue
-            x, y = self.expos(*enemy.get_pos())
+            x, y = self.expos(*enemy.pos)
             color, angle = COLORS[enemy.get_color()], deg(enemy.angle)
             export['e'].append([color, x, y, angle])
 
