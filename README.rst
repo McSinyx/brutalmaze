@@ -16,7 +16,7 @@ and our hero will get weaker when wounded.
 Brutal Maze has a few notable features:
 
 * Being highly portable.
-* Auto-generated and infinite maze.
+* Auto-generated and infinite maze. [0]_
 * No binary data for drawing.
 * Enemies with special abilities: stun, poison, camo, etc.
 * Somewhat a realistic physic and logic system.
@@ -80,10 +80,10 @@ to configuration file only.
 
 Settings are read in the following order:
 
-0. Default configuration [0]_
-1. System-wide configuration file [1]_
-2. Local configuration file [1]_
-3. Manually set configuration file [2]_
+0. Default configuration [1]_
+1. System-wide configuration file [2]_
+2. Local configuration file [2]_
+3. Manually set configuration file [3]_
 4. Command-line arguments
 
 Later-read preferences will override previous ones.
@@ -91,7 +91,7 @@ Later-read preferences will override previous ones.
 Remote control
 --------------
 
-If you enable the socket server [3]_, Brutal Maze will no longer accept direct
+If you enable the socket server [4]_, Brutal Maze will no longer accept direct
 input from your mouse or keyboard, but wait for a client to connect. Details
 about I/O format are explained carefully in
 `Remote control <https://github.com/McSinyx/brutalmaze/wiki/Remote-control>`_
@@ -101,7 +101,7 @@ Game recording
 --------------
 
 Either game played by human or client script can be recorded to JSON format.
-This can be enabled by setting the output directory to a non-empty string [4]_.
+This can be enabled by setting the output directory to a non-empty string [5]_.
 Recordings can be played on the repo's Github Page which the above screenshot
 is linked to.
 
@@ -118,14 +118,16 @@ This project also uses Tango color palette and several sound effects, whose
 authors and licenses are listed in
 `Credits <https://github.com/McSinyx/brutalmaze/wiki/Credits>`_ wiki page.
 
-.. [0] This can be copied to desired location by ``brutalmaze --write-config
+.. [0] Broken on vanilla pygame on GNU/Linux. For workarounds, see issue
+   `#11 <https://github.com/McSinyx/brutalmaze/issues/11>`_.
+.. [1] This can be copied to desired location by ``brutalmaze --write-config
    PATH``. ``brutalmaze --write-config`` alone will print the file to stdout.
-.. [1] These will be listed as fallback config in the help message
+.. [2] These will be listed as fallback config in the help message
    (``brutalmaze --help``). See `wiki <https://github.com/McSinyx/brutalmaze/wiki/Configuration>`_
    for more info.
-.. [2] If specified by ``brutalmaze --config PATH``.
-.. [3] This can be done by either editing option *Enable* in section *Server*
+.. [3] If specified by ``brutalmaze --config PATH``.
+.. [4] This can be done by either editing option *Enable* in section *Server*
    in the configuration file, or launching Brutal Maze using ``brutalmaze
    --server``.
-.. [4] ``brutalmaze --record-dir DIR``. Navigate to `wiki <https://github.com/McSinyx/brutalmaze/wiki/Configuration>`_
+.. [5] ``brutalmaze --record-dir DIR``. Navigate to `wiki <https://github.com/McSinyx/brutalmaze/wiki/Configuration>`_
    to see more options.

@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Brutal Maze.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.8.22'
+__version__ = '0.8.23'
 
 import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter
@@ -417,3 +417,7 @@ def main():
             while game.update(): game.touch_control()
         else:
             while game.update(): game.user_control()
+
+
+# Allow launching the game via invoking ``python -m brutalmaze.game''
+if __name__ == '__main__': main()
