@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Brutal Maze.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.8.23'
+__version__ = '0.8.24'
 
 import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter
@@ -36,7 +36,7 @@ from pygame import KEYDOWN, MOUSEBUTTONUP, QUIT, VIDEORESIZE
 from pygame.time import Clock, get_ticks
 from appdirs import AppDirs
 
-from .constants import SETTINGS, ICON, MUSIC, NOISE, HERO_SPEED, MIDDLE
+from .constants import SETTINGS, ICON, NOISE, HERO_SPEED, MIDDLE
 from .maze import Maze
 from .misc import sign, deg, join
 
@@ -69,7 +69,6 @@ class ConfigReader:
         self.max_fps = self.config.getint('Graphics', 'Maximum FPS')
         self.muted = self.config.getboolean('Sound', 'Muted')
         self.musicvol = self.config.getfloat('Sound', 'Music volume')
-        self.space = self.config.getboolean('Sound', 'Space theme')
         self.touch = self.config.getboolean('Control', 'Touch')
         self.export_dir = self.config.get('Record', 'Directory')
         self.export_rate = self.config.getint('Record', 'Frequency')
@@ -98,7 +97,7 @@ class ConfigReader:
 
     def read_args(self, arguments):
         """Read and parse a ArgumentParser.Namespace."""
-        for option in ('size', 'max_fps', 'muted', 'musicvol', 'space',
+        for option in ('size', 'max_fps', 'muted', 'musicvol',
                        'touch', 'export_dir', 'export_rate', 'server',
                        'host', 'port', 'timeout', 'headless'):
             value = getattr(arguments, option)
@@ -114,7 +113,7 @@ class Game:
         if config.muted or self.headless:
             pygame.mixer.quit()
         else:
-            pygame.mixer.music.load(NOISE if config.space else MUSIC)
+            pygame.mixer.music.load(NOISE)
             pygame.mixer.music.set_volume(config.musicvol)
             pygame.mixer.music.play(-1)
         pygame.display.set_icon(ICON)
@@ -354,11 +353,6 @@ def main():
     parser.add_argument(
         '--music-volume', type=float, metavar='VOL', dest='musicvol',
         help='between 0.0 and 1.0 (fallback: {})'.format(config.musicvol))
-    parser.add_argument(
-        '--space-music', action='store_true', dest='space', default=None,
-        help='use space music background (fallback: {})'.format(config.space))
-    parser.add_argument('--default-music', action='store_false', dest='space',
-                        help='use default music background')
     parser.add_argument(
         '--touch', action='store_true', default=None,
         help='enable touch-friendly control (fallback: {})'.format(

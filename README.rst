@@ -1,8 +1,7 @@
 Brutal Maze
 ===========
 
-Brutal Maze is a third-person shooter game with fast-paced action and a
-minimalist art style.
+Brutal Maze is a thrilling shoot 'em up game with minimalist art style.
 
 .. image:: https://raw.githubusercontent.com/McSinyx/brutalmaze/master/screenshot.png
    :target: https://McSinyx.github.io/brutalmaze/

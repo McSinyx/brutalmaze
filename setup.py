@@ -7,13 +7,13 @@ with open('README.rst') as f:
 
 setup(
     name='brutalmaze',
-    version='0.8.23',
-    description='A minimalist TPS game with fast-paced action',
+    version='0.8.24',
+    description="Minimalist thrilling shoot 'em up game",
     long_description=long_description,
     url='https://github.com/McSinyx/brutalmaze',
     author='Nguyễn Gia Phong',
     author_email='vn.mcsinyx@gmail.com',
-    license='GPLv3+',
+    license='AGPLv3+',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: MacOS X',
@@ -25,7 +25,7 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Topic :: Games/Entertainment :: Arcade'],
-    keywords='pygame third-person-shooter arcade-game maze ai-challenges',
+    keywords='pygame shmup arcade-game maze ai-challenges',
     packages=['brutalmaze'],
     install_requires=['appdirs', 'pygame>=1.9'],
     package_data={'brutalmaze': ['icon.png', 'soundfx/*.ogg', 'settings.ini']},
