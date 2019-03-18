@@ -311,7 +311,10 @@ class Maze:
             if wound <= 0 or not self.isdisplayed(gridx, gridy):
                 fallen.append(i)
             elif bullet.color == 'Aluminium':
+                active_enemies = [e for e in self.enemies if e.awake]
                 if self.map[gridx][gridy] == WALL and self.next_move <= 0:
+                    fallen.append(i)
+                    if not active_enemies: continue
                     self.glitch = wound * 1000
                     enemy = new_enemy(self, gridx, gridy)
                     enemy.awake = True
@@ -319,10 +322,8 @@ class Maze:
                     play(self.sfx_spawn, enemy.spawn_volumn, enemy.get_angle())
                     enemy.hit(wound)
                     self.enemies.append(enemy)
-                    fallen.append(i)
                     continue
-                for j, enemy in enumerate(self.enemies):
-                    if not enemy.awake: continue
+                for j, enemy in enumerate(active_enemies):
                     if bullet.get_distance(*enemy.pos) < self.distance:
                         enemy.hit(wound)
                         if enemy.wound >= ENEMY_HP:
