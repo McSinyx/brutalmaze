@@ -1,0 +1,24 @@
+<?xml version="1.0" standalone="no"?>
+<!--
+  This work is licensed under the Creative Commons Attribution-ShareAlike 4.0
+  International License. To view a copy of this license, visit
+  http://creativecommons.org/licenses/by-sa/4.0/ or send a letter
+  to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+  -->
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="576" height="576" viewBox="-288 -288 576 576">
+<title>Brutal Maze icon in Scalable Vector Graphics</title>
+<path fill="#2e3436"
+      d="M 0 288
+         C 126.2 288, 196.3563 288, 242.1782 242.1782
+         C 288 196.3563, 288 126.2, 288 0
+         C 288 -126.2, 288 -196.3563, 242.1782 -242.1782
+         C 196.3563 -288, 126.2,-288, 0 -288
+         C -126.2 -288, -196.3563 -288, -242.1782 -242.1782
+         C -288 -196.3563, -288 -126.2, -288 0
+         C -288 126.2, -288 196.3563, -242.1782 242.1782
+         C -196.3563 288, -126.2 288, 0 288
+         Z"/>
+<polygon points="-119.1174 -119.1174, 162.7174 -43.6, -43.6 162.7174"
+         style="fill:#eeeeec"/>
+</svg>
