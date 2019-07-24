@@ -80,7 +80,7 @@ COLORS = {c: COLOR_CODE[i] for i, c in enumerate(
 MINW, MAXW = 24, 36
 ENEMY_HP = 3
 HERO_HP = 5
-MIN_BEAT = 526
+MIN_BEAT = 420
 BG_COLOR = TANGO['Aluminium'][-1]
 FG_COLOR = TANGO['Aluminium'][0]
 

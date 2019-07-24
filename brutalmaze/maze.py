@@ -132,6 +132,7 @@ class Maze:
 
     def add_enemy(self):
         """Add enough enemies."""
+        self.enemies = [e for e in self.enemies if e.alive]
         walls = [(i, j) for i in self.rangex for j in self.rangey
                  if self.map[i][j] == WALL]
         plums = [e for e in self.enemies if e.color == 'Plum' and e.awake]
@@ -223,14 +224,11 @@ class Maze:
         self.stepx = self.stepy = 0
 
         # Respawn the enemies that fall off the display
-        killist = []
         for i, enemy in enumerate(self.enemies):
             enemy.place(x, y)
             if not self.isdisplayed(enemy.x, enemy.y):
                 self.score += enemy.wound
                 enemy.die()
-                killist.append(i)
-        for i in reversed(killist): self.enemies.pop(i)
         self.add_enemy()
 
         # LockOn target is not yet updated.
@@ -281,8 +279,7 @@ class Maze:
         """Handle close-range attacks."""
         for enemy in self.enemies: enemy.slash()
         if not self.hero.spin_queue: return
-        killist = []
-        for i, enemy in enumerate(self.enemies):
+        for enemy in filter(lambda e: e.awake, self.enemies):
             d = self.slashd - enemy.distance
             if d > 0:
                 wound = d * SQRT2 / self.distance
@@ -293,8 +290,6 @@ class Maze:
                 if enemy.wound >= ENEMY_HP:
                     self.score += enemy.wound
                     enemy.die()
-                    killist.append(i)
-        for i in reversed(killist): self.enemies.pop(i)
         self.add_enemy()
 
     def track_bullets(self):
@@ -323,13 +318,13 @@ class Maze:
                     enemy.hit(wound)
                     self.enemies.append(enemy)
                     continue
-                for j, enemy in enumerate(active_enemies):
+                for enemy in active_enemies:
                     if bullet.get_distance(*enemy.pos) < self.distance:
                         enemy.hit(wound)
                         if enemy.wound >= ENEMY_HP:
                             self.score += enemy.wound
                             enemy.die()
-                            self.enemies.pop(j)
+                            self.add_enemy()
                         play(bullet.sfx_hit, wound, bullet.angle)
                         fallen.append(i)
                         break

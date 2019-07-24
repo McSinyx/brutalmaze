@@ -161,6 +161,7 @@ class Enemy:
         x, y (int): coordinates of the center of the enemy (in grids)
         angle (float): angle of the direction the enemy pointing (in radians)
         color (str): enemy's color name
+        alive (bool): flag indicating if the enemy is alive
         awake (bool): flag indicating if the enemy is active
         next_strike (float): time until the enemy's next action (in ms)
         move_speed (float): speed of movement (in frames per grid)
@@ -175,7 +176,7 @@ class Enemy:
         self.x, self.y = x, y
         self.angle, self.color = pi / 4, color
 
-        self.awake = False
+        self.alive, self.awake = True, False
         self.next_strike = 0.0
         self.move_speed = self.maze.fps / ENEMY_SPEED
         self.offsetx = self.offsety = 0
@@ -354,6 +355,7 @@ class Enemy:
                 self.maze.enemy_weights[self.color] -= 1.5
         else:
             self.maze.map[self.x][self.y] = WALL
+        self.alive = False
 
 
 class Chameleon(Enemy):
