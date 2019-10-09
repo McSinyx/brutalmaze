@@ -23,7 +23,7 @@ from datetime import datetime
 from itertools import chain
 from math import degrees, cos, sin, pi
 from os import path
-from random import shuffle, uniform
+from random import shuffle
 
 import pygame
 from pygame.gfxdraw import filled_polygon, aapolygon
@@ -85,18 +85,6 @@ def around(x, y):
     c = [(x + i, y + j) for i, j in CORNERS]
     shuffle(c)
     return chain(a, c)
-
-
-def choices(d):
-    """Choose a random key from a dict which has values being relative
-    weights of the coresponding keys.
-    """
-    population, weights = tuple(d.keys()), tuple(d.values())
-    cum_weights = [weights[0]]
-    for weight in weights[1:]: cum_weights.append(cum_weights[-1] + weight)
-    num = uniform(0, cum_weights[-1])
-    for i, w in enumerate(cum_weights):
-        if num <= w: return population[i]
 
 
 def play(sound, volume=1.0, angle=None):

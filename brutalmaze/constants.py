@@ -77,7 +77,6 @@ ENEMIES = ['Butter', 'Orange', 'Chocolate', 'Chameleon',
 COLOR_CODE = ascii_lowercase + '0'
 COLORS = {c: COLOR_CODE[i] for i, c in enumerate(
     color for code in ENEMIES + ['Aluminium'] for color in TANGO[code])}
-MINW, MAXW = 24, 36
 ENEMY_HP = 3
 HERO_HP = 5
 MIN_BEAT = 420

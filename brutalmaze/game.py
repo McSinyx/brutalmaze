@@ -165,7 +165,7 @@ class Game:
                 if event.key == self.key['mute']:
                     if pygame.mixer.get_init() is None:
                         pygame.mixer.init(frequency=44100)
-                        pygame.mixer.music.load(MUSIC)
+                        pygame.mixer.music.load(NOISE)
                         pygame.mixer.music.set_volume(self.musicvol)
                         pygame.mixer.music.play(-1)
                     else:

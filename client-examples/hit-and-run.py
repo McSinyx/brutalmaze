@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from math import inf, atan2, degrees
-from random import randrange, shuffle
+from random import randrange
 from socket import socket
 
 AROUND = [5, 2, 1, 0, 3, 6, 7, 8]
@@ -25,8 +25,7 @@ around, move = [0, 1, 2, 3, 5, 6, 7, 8], 4
 while True:
     length = clientsocket.recv(7).decode()
     if length in ('', '0000000'): break     # connection closed or game over
-    l = clientsocket.recv(int(length)).decode().split()
-    data = iter(l)
+    data = iter(clientsocket.recv(int(length)).decode().split())
     nh, ne, nb, score = (int(next(data)) for _ in range(4))
     maze = [list(next(data)) for _ in range(nh)]
     hp = (lambda c: 0 if c == 48 else 123 - c)(ord(next(data)))

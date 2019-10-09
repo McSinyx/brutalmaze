@@ -20,15 +20,15 @@
 __doc__ = 'Brutal Maze module for hero and enemy classes'
 
 from collections import deque
-from math import atan, atan2, gcd, sin, pi
+from math import atan2, gcd, sin, pi
 from random import choice, randrange, shuffle
 from sys import modules
 
 from .constants import (
     TANGO, HERO_HP, SFX_HEART, HEAL_SPEED, MIN_BEAT, ATTACK_SPEED, ENEMY,
     ENEMY_SPEED, ENEMY_HP, SFX_SLASH_HERO, MIDDLE, WALL, FIRANGE, AROUND_HERO,
-    ADJACENTS, EMPTY, SQRT2, MINW)
-from .misc import sign, randsign, regpoly, fill_aapolygon, choices, play
+    ADJACENTS, EMPTY, SQRT2, ENEMIES)
+from .misc import sign, randsign, regpoly, fill_aapolygon, play
 from .weapons import Bullet
 
 
@@ -343,12 +343,7 @@ class Enemy:
 
     def die(self):
         """Handle the enemy's death."""
-        if self.awake:
-            self.maze.map[self.x][self.y] = EMPTY
-            if self.maze.enemy_weights[self.color] > MINW + 1.5:
-                self.maze.enemy_weights[self.color] -= 1.5
-        else:
-            self.maze.map[self.x][self.y] = WALL
+        self.maze.map[self.x][self.y] = EMPTY if self.wake else WALL
         self.alive = False
 
 
@@ -425,7 +420,7 @@ class ScarletRed(Enemy):
 
 def new_enemy(maze, x, y):
     """Return an enemy of a random type in the grid (x, y)."""
-    color = choices(maze.enemy_weights)
+    color = choice(ENEMIES)
     try:
         return getattr(modules[__name__], color)(maze, x, y)
     except AttributeError:

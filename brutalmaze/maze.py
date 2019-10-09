@@ -23,14 +23,14 @@ from collections import defaultdict, deque
 import json
 from math import pi, log
 from os import path
-from random import choice, sample, uniform
+from random import choice, sample
 
 import pygame
 
 from .characters import Hero, new_enemy
 from .constants import (
     EMPTY, WALL, HERO, ENEMY, ROAD_WIDTH, WALL_WIDTH, CELL_WIDTH, CELL_NODES,
-    MAZE_SIZE, MIDDLE, INIT_SCORE, ENEMIES, MINW, MAXW, SQRT2, SFX_SPAWN,
+    MAZE_SIZE, MIDDLE, INIT_SCORE, ENEMIES, SQRT2, SFX_SPAWN,
     SFX_SLASH_ENEMY, SFX_LOSE, ADJACENTS, TANGO_VALUES, BG_COLOR, FG_COLOR,
     COLORS, HERO_HP, ENEMY_HP, ATTACK_SPEED, MAX_WOUND, HERO_SPEED,
     BULLET_LIFETIME, JSON_SEPARATORS)
@@ -55,7 +55,6 @@ class Maze:
         vx, vy (float): velocity of the maze movement (in pixels per frame)
         rotatex, rotatey (int): grids rotated
         bullets (list of .weapons.Bullet): flying bullets
-        enemy_weights (dict): probabilities of enemies to be created
         enemies (list of Enemy): alive enemies
         hero (Hero): the hero
         destx, desty (int): the grid the hero is moving to
@@ -98,7 +97,6 @@ class Maze:
         self.vx = self.vy = 0.0
         self.rotatex = self.rotatey = 0
         self.bullets, self.enemies = [], []
-        self.enemy_weights = {color: MINW for color in ENEMIES}
         self.add_enemy()
         self.hero = Hero(self.surface, fps, size)
         self.map[MIDDLE][MIDDLE] = HERO
@@ -255,14 +253,11 @@ class Maze:
 
     def hit_hero(self, wound, color):
         """Handle the hero when he loses HP."""
-        if self.enemy_weights[color] + wound < MAXW:
-            self.enemy_weights[color] += wound
         if color == 'Orange':
             # If called by close-range attack, this is FPS-dependant, although
             # in playable FPS (24 to infinity), the difference within 2%.
             self.hero.next_heal = abs(self.hero.next_heal * (1 - wound))
-        elif (uniform(0, sum(self.enemy_weights.values()))
-              < self.enemy_weights[color]):
+        elif choice(ENEMIES) == color:
             self.hero.next_heal = -1.0  # what doesn't kill you heals you
             if color == 'Butter' or color == 'ScarletRed':
                 wound *= ENEMY_HP
@@ -529,7 +524,6 @@ class Maze:
         self.vx = self.vy = 0.0
         self.rotatex = self.rotatey = 0
         self.bullets, self.enemies = [], []
-        self.enemy_weights = {color: MINW for color in ENEMIES}
         self.add_enemy()
 
         self.next_move = self.next_slashfx = self.hero.next_strike = 0.0
