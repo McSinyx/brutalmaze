@@ -314,7 +314,7 @@ class Maze:
                     enemy = new_enemy(self, gridx, gridy)
                     enemy.awake = True
                     self.map[gridx][gridy] = ENEMY
-                    play(self.sfx_spawn, enemy.spawn_volumn, enemy.get_angle())
+                    play(self.sfx_spawn, enemy.spawn_volume, enemy.get_angle())
                     enemy.hit(wound)
                     self.enemies.append(enemy)
                     continue
@@ -466,7 +466,7 @@ class Maze:
             return True
 
         # Forest Fire algorithm with step count
-        queue = defaultdict(list, {0: [(self.destx, self.desty)]})
+        queue = [[(self.destx, self.desty)]]
         visited, count, distance = set(), 1, 0
         while count:
             if not queue[distance]: distance += 1
@@ -483,8 +483,12 @@ class Maze:
                 return False
             for i, j in around(x, y):
                 if self.map[i][j] == EMPTY and check(i, j):
-                    queue[distance + 1].append((i, j))
-                    count += 1
+                    try:
+                        queue[distance + 1].append((i, j))
+                    except IndexError:
+                        queue.append([(i, j)])
+                    finally:
+                        count += 1
 
         # Failed to find way to move to target
         self.stepx = self.stepy = 0

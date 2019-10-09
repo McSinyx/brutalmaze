@@ -20,7 +20,7 @@
 __doc__ = 'Brutal Maze module for hero and enemy classes'
 
 from collections import deque
-from math import atan, atan2, sin, pi
+from math import atan, atan2, gcd, sin, pi
 from random import choice, randrange, shuffle
 from sys import modules
 
@@ -28,7 +28,7 @@ from .constants import (
     TANGO, HERO_HP, SFX_HEART, HEAL_SPEED, MIN_BEAT, ATTACK_SPEED, ENEMY,
     ENEMY_SPEED, ENEMY_HP, SFX_SLASH_HERO, MIDDLE, WALL, FIRANGE, AROUND_HERO,
     ADJACENTS, EMPTY, SQRT2, MINW)
-from .misc import sign, cosin, randsign, regpoly, fill_aapolygon, choices, play
+from .misc import sign, randsign, regpoly, fill_aapolygon, choices, play
 from .weapons import Bullet
 
 
@@ -206,7 +206,7 @@ class Enemy:
         if self.awake: self.maze.map[self.x][self.y] = ENEMY
 
     @property
-    def spawn_volumn(self):
+    def spawn_volume(self):
         """Volumn of spawning sound effect."""
         return 1 - self.distance / self.maze.get_distance(0, 0) / 2
 
@@ -217,24 +217,18 @@ class Enemy:
         has just woken it, False otherwise.
         """
         if self.awake: return None
-        startx = starty = MIDDLE
-        stopx, stopy, distance = self.x, self.y, self.maze.distance
-        if startx > stopx: startx, stopx = stopx, startx
-        if starty > stopy: starty, stopy = stopy, starty
-        dx = (self.x-MIDDLE)*distance + self.maze.centerx - self.maze.x
-        dy = (self.y-MIDDLE)*distance + self.maze.centery - self.maze.y
-        mind = cosin(abs(atan(dy / dx)) if dx else 0) * distance
-        def get_distance(x, y): return abs(dy*x - dx*y) / (dy**2 + dx**2)**0.5
-        for i in range(startx, stopx + 1):
-            for j in range(starty, stopy + 1):
-                if self.maze.map[i][j] != WALL or i == stopx and j == stopy:
-                    continue
-                x, y = self.maze.get_pos(i, j)
-                if get_distance(x - self.maze.x, y - self.maze.y) <= mind:
-                    return False
+        srcx, destx = self.x, MIDDLE
+        if abs(destx - srcx) != 1: srcx += sign(destx - srcx) or 1
+        srcy, desty = self.y, MIDDLE
+        if abs(desty - srcy) != 1: srcy += sign(desty - srcy) or 1
+        m, n = destx - srcx, desty - srcy
+        lcm = abs(m * n // gcd(m, n))
+        w, u = lcm // m, lcm // n
+        for i in range(lcm):
+            if self.maze.map[srcx+i//w][srcy+i//u] == WALL: return False
         self.awake = True
         self.maze.map[self.x][self.y] = ENEMY
-        play(self.maze.sfx_spawn, self.spawn_volumn, self.get_angle() + pi)
+        play(self.maze.sfx_spawn, self.spawn_volume, self.get_angle()+pi)
         return True
 
     def fire(self):

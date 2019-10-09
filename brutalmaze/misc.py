@@ -63,15 +63,10 @@ def sign(n):
 
 
 def deg(x):
-    """Convert angle x from radians to degrees casted to a nonnegative
-    integer.
+    """Convert angle x from radians to degrees,
+    casted to a nonnegative integer.
     """
     return round2((lambda a: a if a > 0 else a + 360)(degrees(x)))
-
-
-def cosin(x):
-    """Return the sum of cosine and sine of x (measured in radians)."""
-    return cos(x) + sin(x)
 
 
 def join(iterable, sep=' ', end='\n'):
