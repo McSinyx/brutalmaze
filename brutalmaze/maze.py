@@ -460,31 +460,22 @@ class Maze:
             self.stepx = self.stepy = 0
             return True
 
-        # Forest Fire algorithm with step count
-        queue = [[(self.destx, self.desty)]]
-        visited, count, distance = set(), 1, 0
-        while count:
-            if not queue[distance]: distance += 1
-            x, y = queue[distance].pop()
-            count -= 1
+        # Forest Fire algorithm
+        queue, visited = deque([(self.destx, self.desty)]), set()
+        while queue:
+            x, y = queue.pop()
             if (x, y) not in visited:
                 visited.add((x, y))
             else:
                 continue
-
             dx, dy = MIDDLE - x, MIDDLE - y
             if dx**2 + dy**2 <= 2:
+                # Succeeded on finding a path
                 self.stepx, self.stepy = dx, dy
                 return False
             for i, j in around(x, y):
                 if self.map[i][j] == EMPTY and check(i, j):
-                    try:
-                        queue[distance + 1].append((i, j))
-                    except IndexError:
-                        queue.append([(i, j)])
-                    finally:
-                        count += 1
-
+                    queue.appendleft((i, j))
         # Failed to find way to move to target
         self.stepx = self.stepy = 0
         return True
