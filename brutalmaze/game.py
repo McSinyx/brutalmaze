@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Brutal Maze.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.8.26'
+__version__ = '0.8.27'
 
 import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter

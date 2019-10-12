@@ -89,19 +89,13 @@ class Maze:
         self.rangex = list(range(MIDDLE - w, MIDDLE + w + 1))
         self.rangey = list(range(MIDDLE - h, MIDDLE + h + 1))
         self.score = INIT_SCORE
+        self.new_map()
 
-        self.map = deque(deque(EMPTY for _ in range(MAZE_SIZE * CELL_WIDTH))
-                         for _ in range(MAZE_SIZE * CELL_WIDTH))
-        for x in range(MAZE_SIZE):
-            for y in range(MAZE_SIZE): self.new_cell(x, y)
         self.vx = self.vy = 0.0
         self.rotatex = self.rotatey = 0
         self.bullets, self.enemies = [], []
         self.add_enemy()
         self.hero = Hero(self.surface, fps, size)
-        self.map[MIDDLE][MIDDLE] = HERO
-        self.destx = self.desty = MIDDLE
-        self.stepx = self.stepy = 0
         self.target = LockOn(MIDDLE, MIDDLE, retired=True)
         self.next_move = self.glitch = self.next_slashfx = 0.0
         self.slashd = self.hero.R + self.distance/SQRT2
@@ -111,9 +105,8 @@ class Maze:
         self.sfx_lose = SFX_LOSE
 
     def new_cell(self, x, y):
-        """Draw on the map a new cell whose coordinates are given.
-
-        For the sake of performance, cell corners are NOT redrawn.
+        """Draw on the map a newly created cell
+        whose coordinates are given.
         """
         def draw_bit(bit, dx=0, dy=0):
             startx, starty = x + CELL_NODES[dx], y + CELL_NODES[dy]
@@ -127,6 +120,36 @@ class Maze:
         walls.add(choice(ADJACENTS))
         for i, j in ADJACENTS:
             draw_bit((WALL if (i, j) in walls else EMPTY), i, j)
+
+    def isdisplayed(self, x, y):
+        """Return True if the grid (x, y) is in the displayable part
+        of the map, False otherwise.
+        """
+        return (self.rangex[0] <= x <= self.rangex[-1]
+                and self.rangey[0] <= y <= self.rangey[-1])
+
+    def new_map(self):
+        """Generate a new map."""
+        self.map = deque(deque(EMPTY for _ in range(MAZE_SIZE * CELL_WIDTH))
+                         for _ in range(MAZE_SIZE * CELL_WIDTH))
+        for x in range(MAZE_SIZE):
+            for y in range(MAZE_SIZE): self.new_cell(x, y)
+        # Regenerate if the hero is trapped.  This can only reach
+        # maximum recursion depth is there's a flaw with the system's entropy.
+        room, visited = [(MIDDLE, MIDDLE)], set()
+        while room:
+            bit = room.pop()
+            print(bit)
+            if not self.isdisplayed(*bit): break
+            if bit not in visited:
+                visited.add(bit)
+                for x, y in around(*bit):
+                    if self.map[x][y] == EMPTY: room.append((x, y))
+        else:
+            self.new_map()
+        self.map[MIDDLE][MIDDLE] = HERO
+        self.destx = self.desty = MIDDLE
+        self.stepx = self.stepy = 0
 
     def add_enemy(self):
         """Add enough enemies."""
@@ -191,13 +214,6 @@ class Maze:
         pygame.display.flip()
         pygame.display.set_caption(
             'Brutal Maze - Score: {}'.format(self.get_score()))
-
-    def isdisplayed(self, x, y):
-        """Return True if the grid (x, y) is in the displayable part
-        of the map, False otherwise.
-        """
-        return (self.rangex[0] <= x <= self.rangex[-1]
-                and self.rangey[0] <= y <= self.rangey[-1])
 
     def rotate(self):
         """Rotate the maze if needed."""
@@ -505,13 +521,7 @@ class Maze:
         """Open new game."""
         self.centerx, self.centery = self.w / 2.0, self.h / 2.0
         self.score, self.export = INIT_SCORE, []
-        self.map = deque(deque(EMPTY for _ in range(MAZE_SIZE * CELL_WIDTH))
-                         for _ in range(MAZE_SIZE * CELL_WIDTH))
-        for x in range(MAZE_SIZE):
-            for y in range(MAZE_SIZE): self.new_cell(x, y)
-        self.map[MIDDLE][MIDDLE] = HERO
-        self.destx = self.desty = MIDDLE
-        self.stepx = self.stepy = 0
+        self.new_map()
         self.vx = self.vy = 0.0
         self.rotatex = self.rotatey = 0
         self.bullets, self.enemies = [], []
