@@ -139,9 +139,8 @@ class Maze:
         room, visited = [(MIDDLE, MIDDLE)], set()
         while room:
             bit = room.pop()
-            print(bit)
-            if not self.isdisplayed(*bit): break
             if bit not in visited:
+                if not self.isdisplayed(*bit): break
                 visited.add(bit)
                 for x, y in around(*bit):
                     if self.map[x][y] == EMPTY: room.append((x, y))
@@ -480,10 +479,8 @@ class Maze:
         queue, visited = deque([(self.destx, self.desty)]), set()
         while queue:
             x, y = queue.pop()
-            if (x, y) not in visited:
-                visited.add((x, y))
-            else:
-                continue
+            if (x, y) in visited: continue
+            visited.add((x, y))
             dx, dy = MIDDLE - x, MIDDLE - y
             if dx**2 + dy**2 <= 2:
                 # Succeeded on finding a path
