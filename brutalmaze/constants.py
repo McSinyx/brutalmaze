@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
 # constants.py - module for shared constants
-# Copyright (C) 2017, 2018  Nguyễn Gia Phong
+# Copyright (C) 2017-2020  Nguyễn Gia Phong
 #
 # This file is part of Brutal Maze.
 #
@@ -56,7 +55,7 @@ BULLET_SPEED = 15   # grid/s
 ATTACK_SPEED = 333.333  # ms/strike
 MAX_WOUND = 1   # per attack turn
 FIRANGE = 6     # grids
-BULLET_LIFETIME = 1000.0 * FIRANGE / (BULLET_SPEED-HERO_SPEED)  # ms
+BULLET_LIFETIME = 1000 * FIRANGE / (BULLET_SPEED-HERO_SPEED)    # ms
 EMPTY, WALL, HERO, ENEMY = range(4)
 ADJACENTS = (1, 0), (0, 1), (-1, 0), (0, -1)
 CORNERS = (1, 1), (-1, 1), (-1, -1), (1, -1)

@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
 # misc.py - module for miscellaneous functions
-# Copyright (C) 2017, 2018  Nguyễn Gia Phong
+# Copyright (C) 2017-2020  Nguyễn Gia Phong
 #
 # This file is part of Brutal Maze.
 #
@@ -29,11 +28,6 @@ import pygame
 from pygame.gfxdraw import filled_polygon, aapolygon
 
 from .constants import ADJACENTS, CORNERS
-
-
-def round2(number):
-    """Round a number to an int."""
-    return int(round(number))
 
 
 def randsign():
@@ -66,7 +60,7 @@ def deg(x):
     """Convert angle x from radians to degrees,
     casted to a nonnegative integer.
     """
-    return round2((lambda a: a if a > 0 else a + 360)(degrees(x)))
+    return round((lambda a: a if a > 0 else a + 360)(degrees(x)))
 
 
 def join(iterable, sep=' ', end='\n'):

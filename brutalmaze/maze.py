@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
 # maze.py - module for the maze class
-# Copyright (C) 2017, 2018  Nguyễn Gia Phong
+# Copyright (C) 2017-2020  Nguyễn Gia Phong
 #
 # This file is part of Brutal Maze.
 #
@@ -35,7 +34,7 @@ from .constants import (
     COLORS, HERO_HP, ENEMY_HP, ATTACK_SPEED, MAX_WOUND, HERO_SPEED,
     BULLET_LIFETIME, JSON_SEPARATORS)
 from .misc import (
-    round2, sign, deg, around, regpoly, fill_aapolygon, play, json_rec)
+    sign, deg, around, regpoly, fill_aapolygon, play, json_rec)
 from .weapons import LockOn
 
 
@@ -84,7 +83,7 @@ class Maze:
 
         self.distance = (self.w * self.h / 416) ** 0.5
         self.x, self.y = self.w // 2, self.h // 2
-        self.centerx, self.centery = self.w / 2.0, self.h / 2.0
+        self.centerx, self.centery = self.w / 2, self.h / 2
         w, h = (int(i/self.distance/2 + 1) for i in size)
         self.rangex = list(range(MIDDLE - w, MIDDLE + w + 1))
         self.rangey = list(range(MIDDLE - h, MIDDLE + h + 1))
@@ -173,8 +172,8 @@ class Maze:
 
     def get_grid(self, x, y):
         """Return the grid containing the point (x, y)."""
-        return (MIDDLE + round2((x-self.centerx) / self.distance),
-                MIDDLE + round2((y-self.centery) / self.distance))
+        return (MIDDLE + round((x-self.centerx) / self.distance),
+                MIDDLE + round((y-self.centery) / self.distance))
 
     def get_target(self, x, y):
         """Return shooting target the grid containing the point (x, y).
@@ -371,7 +370,7 @@ class Maze:
         """Return position of the given coordinates in rounded percent."""
         cx = len(self.rangex)*50 + (x - self.centerx)/self.distance*100
         cy = len(self.rangey)*50 + (y - self.centery)/self.distance*100
-        return round2(cx), round2(cy)
+        return round(cx), round(cy)
 
     def update_export(self, forced=False):
         """Update the maze's data export and return the last record."""
@@ -402,7 +401,7 @@ class Maze:
             if color != '0': export['b'].append([color, x, y, angle])
 
         if self.next_export <= 0:
-            export['t'] = round2(self.export_rate - self.next_export)
+            export['t'] = round(self.export_rate - self.next_export)
             self.export.append(export)
             self.next_export = self.export_rate
         return export
@@ -415,10 +414,10 @@ class Maze:
         self.vy = self.is_valid_move(vy=self.vy)
         self.centery += self.vy
 
-        self.next_move -= 1000.0 / fps
-        self.glitch -= 1000.0 / fps
-        self.next_slashfx -= 1000.0 / fps
-        self.next_export -= 1000.0 / fps
+        self.next_move -= 1000 / fps
+        self.glitch -= 1000 / fps
+        self.next_slashfx -= 1000 / fps
+        self.next_export -= 1000 / fps
 
         self.rotate()
         if self.vx or self.vy or self.hero.firing or self.hero.slashing:
@@ -516,7 +515,7 @@ class Maze:
 
     def reinit(self):
         """Open new game."""
-        self.centerx, self.centery = self.w / 2.0, self.h / 2.0
+        self.centerx, self.centery = self.w / 2, self.h / 2
         self.score, self.export = INIT_SCORE, []
         self.new_map()
         self.vx = self.vy = 0.0

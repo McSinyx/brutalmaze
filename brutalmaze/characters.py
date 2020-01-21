@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
 # characters.py - module for hero and enemy classes
-# Copyright (C) 2017, 2018  Nguyễn Gia Phong
+# Copyright (C) 2017-2020  Nguyễn Gia Phong
 #
 # This file is part of Brutal Maze.
 #
@@ -45,7 +44,7 @@ class Hero:
         next_beat (float): time until next heart beat (in ms)
         next_strike (float): time until the hero can do the next attack (in ms)
         highness (float): likelihood that the hero shoots toward other angles
-        slashing (bool): flag indicating if the hero is doing close-range attack
+        slashing (bool): flag indicating if the hero's doing close-range attack
         firing (bool): flag indicating if the hero is doing long-range attack
         dead (bool): flag indicating if the hero is dead
         spin_speed (float): speed of spinning (in frames per slash)
@@ -91,8 +90,8 @@ class Hero:
             play(self.sfx_heart)
             self.next_beat = MIN_BEAT*(2 - self.wound/HERO_HP)
         else:
-            self.next_beat -= 1000.0 / fps
-        self.next_strike -= 1000.0 / fps
+            self.next_beat -= 1000 / fps
+        self.next_strike -= 1000 / fps
 
         full_spin = pi * 2 / self.sides
         if self.slashing and self.next_strike <= 0:
@@ -314,7 +313,7 @@ class Enemy:
         if self.awake:
             self.spin_speed, tmp = self.maze.fps / ENEMY_HP, self.spin_speed
             self.spin_queue *= self.spin_speed / tmp
-            self.next_strike -= 1000.0 / self.maze.fps
+            self.next_strike -= 1000 / self.maze.fps
             if not self.spin_queue and not self.fire() and not self.move():
                 self.spin_queue = randsign() * self.spin_speed
                 if not self.maze.hero.dead:
@@ -360,7 +359,7 @@ class Chameleon(Enemy):
     def wake(self):
         """Wake the Chameleon up if it can see the hero."""
         if Enemy.wake(self) is True:
-            self.visible = 1000.0 / ENEMY_SPEED
+            self.visible = 1000 / ENEMY_SPEED
 
     def isunnoticeable(self, x=None, y=None):
         """Return whether the enemy can be noticed.
@@ -375,7 +374,7 @@ class Chameleon(Enemy):
     def update(self):
         """Update the Chameleon."""
         Enemy.update(self)
-        if self.awake: self.visible -= 1000.0 / self.maze.fps
+        if self.awake: self.visible -= 1000 / self.maze.fps
 
     def hit(self, wound):
         """Handle the Chameleon when it's attacked."""

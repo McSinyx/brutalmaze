@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 from setuptools import setup
 
 with open('README.rst') as f:
@@ -7,7 +6,7 @@ with open('README.rst') as f:
 
 setup(
     name='brutalmaze',
-    version='0.8.28',
+    version='0.9.0',
     description="Minimalist thrilling shoot 'em up game",
     long_description=long_description,
     url='https://github.com/McSinyx/brutalmaze',

@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
 # characters.py - module for weapon classes
-# Copyright (C) 2017, 2018  Nguyễn Gia Phong
+# Copyright (C) 2017-2020  Nguyễn Gia Phong
 #
 # This file is part of Brutal Maze.
 #
@@ -53,7 +52,7 @@ class Bullet:
         s = distance * BULLET_SPEED / fps
         self.x += s * cos(self.angle)
         self.y += s * sin(self.angle)
-        self.fall_time -= 1000.0 / fps
+        self.fall_time -= 1000 / fps
 
     def get_color(self):
         """Return current color of the enemy."""

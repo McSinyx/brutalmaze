@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
 # game.py - main module, starts game and main loop
-# Copyright (C) 2017, 2018  Nguyễn Gia Phong
+# Copyright (C) 2017-2020  Nguyễn Gia Phong
 #
 # This file is part of Brutal Maze.
 #
@@ -17,14 +16,11 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Brutal Maze.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.8.28'
+__version__ = '0.9.0'
 
 import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter
-try:                    # Python 3
-    from configparser import ConfigParser
-except ImportError:     # Python 2
-    from ConfigParser import ConfigParser
+from configparser import ConfigParser
 from math import atan2, radians, pi
 from os.path import join as pathjoin, pathsep
 from socket import socket, SOL_SOCKET, SO_REUSEADDR
@@ -136,7 +132,7 @@ class Game:
         self.touch = config.touch
         self.key, self.mouse = config.key, config.mouse
         self.maze = Maze(config.max_fps, config.size, config.headless,
-                         config.export_dir, 1000.0 / config.export_rate)
+                         config.export_dir, 1000 / config.export_rate)
         self.hero = self.maze.hero
         self.clock, self.paused = Clock(), False
 
