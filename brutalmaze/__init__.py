@@ -1,1 +1,3 @@
-"""Brutal Maze is a minimalist thrilling shoot 'em up game."""
+"""Minimalist thrilling shoot 'em up game with minimalist art style"""
+
+from .game import __version__
