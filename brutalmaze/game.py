@@ -21,13 +21,15 @@ __version__ = '0.9.0'
 import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter
 from configparser import ConfigParser
+from contextlib import redirect_stdout
+from io import StringIO
 from math import atan2, radians, pi
 from os.path import join as pathjoin, pathsep
 from socket import socket, SOL_SOCKET, SO_REUSEADDR
 from sys import stdout
 from threading import Thread
 
-import pygame
+with redirect_stdout(StringIO()): import pygame
 from pygame import KEYDOWN, MOUSEBUTTONUP, QUIT, VIDEORESIZE
 from pygame.time import Clock, get_ticks
 from appdirs import AppDirs

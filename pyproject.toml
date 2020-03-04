@@ -28,4 +28,5 @@ license = 'AGPLv3+'
 brutalmaze = "brutalmaze.game:main"
 
 [tool.flit.sdist]
-exclude = ['docs', 'wiki']
+include = ['wiki']
+exclude = ['docs']
