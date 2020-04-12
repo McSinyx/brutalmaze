@@ -21,7 +21,7 @@ __doc__ = 'Brutal Maze module for weapon classes'
 from math import cos, sin
 
 from .constants import (BULLET_LIFETIME, SFX_SHOT_ENEMY, SFX_SHOT_HERO,
-                        SFX_MISSED, BULLET_SPEED, ENEMY_HP, TANGO, BG_COLOR)
+                        BULLET_SPEED, ENEMY_HP, TANGO, BG_COLOR)
 from .misc import regpoly, fill_aapolygon
 
 
@@ -34,8 +34,7 @@ class Bullet:
         angle (float): angle of the direction the bullet pointing (in radians)
         color (str): bullet's color name
         fall_time (int): time until the bullet fall down
-        sfx_hit (pygame.mixer.Sound): sound effect indicating target was hit
-        sfx_missed (pygame.mixer.Sound): sound effect indicating a miss shot
+        sfx_hit (str): sound effect indicating target was hit
     """
     def __init__(self, surface, x, y, angle, color):
         self.surface = surface
@@ -45,7 +44,6 @@ class Bullet:
             self.sfx_hit = SFX_SHOT_ENEMY
         else:
             self.sfx_hit = SFX_SHOT_HERO
-        self.sfx_missed = SFX_MISSED
 
     def update(self, fps, distance):
         """Update the bullet."""

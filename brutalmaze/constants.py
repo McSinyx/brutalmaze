@@ -20,25 +20,23 @@ __doc__ = 'Brutal Maze module for shared constants'
 
 from string import ascii_lowercase
 
-from pkg_resources import resource_filename as pkg_file
 import pygame
-from pygame.mixer import Sound
+from pkg_resources import resource_filename as pkg_file
 
 SETTINGS = pkg_file('brutalmaze', 'settings.ini')
 ICON = pygame.image.load(pkg_file('brutalmaze', 'icon.png'))
-NOISE = pkg_file('brutalmaze', 'soundfx/noise.ogg')
 
-mixer = pygame.mixer.get_init()
-if mixer is None: pygame.mixer.init(frequency=44100)
-SFX_SPAWN = Sound(pkg_file('brutalmaze', 'soundfx/spawn.ogg'))
-SFX_SLASH_ENEMY = Sound(pkg_file('brutalmaze', 'soundfx/slash-enemy.ogg'))
-SFX_SLASH_HERO = Sound(pkg_file('brutalmaze', 'soundfx/slash-hero.ogg'))
-SFX_SHOT_ENEMY = Sound(pkg_file('brutalmaze', 'soundfx/shot-enemy.ogg'))
-SFX_SHOT_HERO = Sound(pkg_file('brutalmaze', 'soundfx/shot-hero.ogg'))
-SFX_MISSED = Sound(pkg_file('brutalmaze', 'soundfx/missed.ogg'))
-SFX_HEART = Sound(pkg_file('brutalmaze', 'soundfx/heart.ogg'))
-SFX_LOSE = Sound(pkg_file('brutalmaze', 'soundfx/lose.ogg'))
-if mixer is None: pygame.mixer.quit()
+SFX_NOISE = pkg_file('brutalmaze', 'soundfx/noise.ogg')
+SFX_SPAWN = pkg_file('brutalmaze', 'soundfx/spawn.ogg')
+SFX_SLASH_ENEMY = pkg_file('brutalmaze', 'soundfx/slash-enemy.ogg')
+SFX_SLASH_HERO = pkg_file('brutalmaze', 'soundfx/slash-hero.ogg')
+SFX_SHOT_ENEMY = pkg_file('brutalmaze', 'soundfx/shot-enemy.ogg')
+SFX_SHOT_HERO = pkg_file('brutalmaze', 'soundfx/shot-hero.ogg')
+SFX_MISSED = pkg_file('brutalmaze', 'soundfx/missed.ogg')
+SFX_HEART = pkg_file('brutalmaze', 'soundfx/heart.ogg')
+SFX_LOSE = pkg_file('brutalmaze', 'soundfx/lose.ogg')
+SFX = (SFX_NOISE, SFX_SPAWN, SFX_SLASH_ENEMY, SFX_SLASH_HERO,
+       SFX_SHOT_ENEMY, SFX_SHOT_HERO, SFX_MISSED, SFX_HEART, SFX_LOSE)
 
 SQRT2 = 2 ** 0.5
 INIT_SCORE = 2

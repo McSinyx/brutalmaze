@@ -32,11 +32,12 @@ from threading import Thread
 with redirect_stdout(StringIO()): import pygame
 from pygame import KEYDOWN, MOUSEBUTTONUP, QUIT, VIDEORESIZE
 from pygame.time import Clock, get_ticks
+from palace import free, use_context, Device, Context
 from appdirs import AppDirs
 
-from .constants import SETTINGS, ICON, NOISE, HERO_SPEED, MIDDLE
+from .constants import SETTINGS, ICON, SFX, SFX_NOISE, HERO_SPEED, MIDDLE
 from .maze import Maze
-from .misc import sign, deg, join
+from .misc import sign, deg, join, play, clean_sources
 
 
 class ConfigReader:
@@ -104,17 +105,12 @@ class ConfigReader:
 
 class Game:
     """Object handling main loop and IO."""
-    def __init__(self, config):
-        pygame.mixer.pre_init(frequency=44100)
+    def __init__(self, config: ConfigReader):
         pygame.init()
         self.headless = config.headless and config.server
-        if config.muted or self.headless:
-            pygame.mixer.quit()
-        else:
-            pygame.mixer.music.load(NOISE)
-            pygame.mixer.music.set_volume(config.musicvol)
-            pygame.mixer.music.play(-1)
-        pygame.display.set_icon(ICON)
+        if not self.headless: pygame.display.set_icon(ICON)
+        self.actx = None if self.headless else Context(Device())
+        self._mute = config.muted
 
         if config.server:
             self.server = socket()
@@ -128,8 +124,7 @@ class Game:
         else:
             self.server = self.sockinp = None
 
-        # self.fps is a float to make sure floordiv won't be used in Python 2
-        self.max_fps, self.fps = config.max_fps, float(config.max_fps)
+        self.max_fps, self.fps = config.max_fps, config.max_fps
         self.musicvol = config.musicvol
         self.touch = config.touch
         self.key, self.mouse = config.key, config.mouse
@@ -138,7 +133,35 @@ class Game:
         self.hero = self.maze.hero
         self.clock, self.paused = Clock(), False
 
-    def __enter__(self): return self
+    def __enter__(self):
+        if self.actx is not None:
+            use_context(self.actx)
+            self.actx.listener.position = MIDDLE, 0, MIDDLE
+            self.actx.listener.gain = not self._mute
+            play(SFX_NOISE)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.server is not None: self.server.close()
+        if not self.hero.dead: self.maze.dump_records()
+        if self.actx is not None:
+            free(SFX)
+            clean_sources()
+            use_context(None)
+            self.actx.destroy()
+            self.actx.device.close()
+        pygame.quit()
+
+    @property
+    def mute(self):
+        """Mute state."""
+        return getattr(self, '_mute', 1)
+
+    @mute.setter
+    def mute(self, value):
+        """Mute state."""
+        self._mute = int(bool(value))
+        self.actx.listener.gain = not self._mute
 
     def export_txt(self):
         """Export maze data to string."""
@@ -161,13 +184,7 @@ class Game:
                 self.maze.resize((event.w, event.h))
             elif event.type == KEYDOWN:
                 if event.key == self.key['mute']:
-                    if pygame.mixer.get_init() is None:
-                        pygame.mixer.init(frequency=44100)
-                        pygame.mixer.music.load(NOISE)
-                        pygame.mixer.music.set_volume(self.musicvol)
-                        pygame.mixer.music.play(-1)
-                    else:
-                        pygame.mixer.quit()
+                    self.mute ^= 1
                 elif not self.server:
                     if event.key == self.key['new']:
                         self.maze.reinit()
@@ -196,6 +213,7 @@ class Game:
         if not self.paused: self.maze.update(self.fps)
         if not self.headless: self.maze.draw()
         self.clock.tick(self.fps)
+        clean_sources()
         return True
 
     def move(self, x=0, y=0):
@@ -307,11 +325,6 @@ class Game:
         except KeyError:
             slashing = buttons[self.mouse['slash']]
         self.control(right, down, angle, firing, slashing)
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        if self.server is not None: self.server.close()
-        if not self.hero.dead: self.maze.dump_records()
-        pygame.quit()
 
 
 def main():

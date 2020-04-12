@@ -7,7 +7,7 @@ module = 'brutalmaze'
 author = 'Nguyễn Gia Phong'
 author-email = 'mcsinyx@disroot.org'
 home-page = 'https://github.com/McSinyx/brutalmaze'
-requires = ['appdirs', 'pygame>=1.9', 'setuptools']
+requires = ['appdirs', 'palace', 'pygame>=1.9', 'setuptools']
 description-file = 'README.rst'
 classifiers = [
     'Development Status :: 4 - Beta',
@@ -28,5 +28,4 @@ license = 'AGPLv3+'
 brutalmaze = "brutalmaze.game:main"
 
 [tool.flit.sdist]
-include = ['wiki']
 exclude = ['docs']

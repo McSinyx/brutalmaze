@@ -26,8 +26,9 @@ from random import shuffle
 
 import pygame
 from pygame.gfxdraw import filled_polygon, aapolygon
+from palace import Buffer, Source
 
-from .constants import ADJACENTS, CORNERS
+from .constants import ADJACENTS, CORNERS, MIDDLE
 
 
 def randsign():
@@ -81,29 +82,34 @@ def around(x, y):
     return chain(a, c)
 
 
-def play(sound, volume=1.0, angle=None):
-    """Play a pygame.mixer.Sound at the given volume."""
-    if pygame.mixer.get_init() is None: return
-    if pygame.mixer.find_channel() is None:
-        pygame.mixer.set_num_channels(pygame.mixer.get_num_channels() + 1)
-
-    channel = sound.play()
-    if angle is None:
-        channel.set_volume(volume)
-    else:
-        delta = cos(angle)
-        volumes = [volume * (1-delta), volume * (1+delta)]
-        for i, v in enumerate(volumes):
-            if v > 1:
-                volumes[i - 1] += v - 1
-                volumes[i] = 1.0
-        sound.set_volume(1.0)
-        channel.set_volume(*volumes)
-
-
 def json_rec(directory):
     """Return path to JSON file to be created inside the given directory
     based on current time local to timezone in ISO 8601 format.
     """
     return path.join(
         directory, '{}.json'.format(datetime.now().isoformat()[:19]))
+
+
+def play(sound: str, x: float = MIDDLE, y: float = MIDDLE,
+         gain: float = 1.0) -> None:
+    """Play a sound at the given position."""
+    buffer = Buffer(sound)
+    source = buffer.play()
+    source.spatialize = True
+    source.position = x, 0, y
+    source.gain = gain
+    sources.append(source)
+
+
+def clean_sources() -> None:
+    """Destroyed stopped sources."""
+    global sources
+    sources, tmp = [], sources
+    for source in tmp:
+        if source.playing:
+            sources.append(source)
+        else:
+            source.destroy()
+
+
+sources = []

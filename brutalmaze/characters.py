@@ -25,8 +25,8 @@ from sys import modules
 
 from .constants import (
     TANGO, HERO_HP, SFX_HEART, HEAL_SPEED, MIN_BEAT, ATTACK_SPEED, ENEMY,
-    ENEMY_SPEED, ENEMY_HP, SFX_SLASH_HERO, MIDDLE, WALL, FIRANGE, AROUND_HERO,
-    ADJACENTS, EMPTY, SQRT2, ENEMIES)
+    ENEMY_SPEED, ENEMY_HP, SFX_SPAWN, SFX_SLASH_HERO, MIDDLE, WALL, FIRANGE,
+    AROUND_HERO, ADJACENTS, EMPTY, SQRT2, ENEMIES)
 from .misc import sign, randsign, regpoly, fill_aapolygon, play
 from .weapons import Bullet
 
@@ -51,7 +51,6 @@ class Hero:
         spin_queue (float): frames left to finish spinning
         wound (float): amount of wound
         wounds (deque of float): wounds in time of an attack (ATTACK_SPEED)
-        sfx_heart (pygame.mixer.Sound): heart beat sound effect
     """
     def __init__(self, surface, fps, maze_size):
         self.surface = surface
@@ -67,8 +66,6 @@ class Hero:
         self.spin_speed = fps / HERO_HP
         self.spin_queue = self.wound = 0.0
         self.wounds = deque([0.0])
-
-        self.sfx_heart = SFX_HEART
 
     def update(self, fps):
         """Update the hero."""
@@ -87,7 +84,7 @@ class Hero:
             if self.wound < 0: self.wound = 0.0
         self.wounds.append(0.0)
         if self.next_beat <= 0:
-            play(self.sfx_heart)
+            play(SFX_HEART)
             self.next_beat = MIN_BEAT*(2 - self.wound/HERO_HP)
         else:
             self.next_beat -= 1000 / fps
@@ -168,7 +165,6 @@ class Enemy:
         spin_speed (float): speed of spinning (in frames per slash)
         spin_queue (float): frames left to finish spinning
         wound (float): amount of wound
-        sfx_slash (pygame.mixer.Sound): sound effect of slashed hero
     """
     def __init__(self, maze, x, y, color):
         self.maze = maze
@@ -181,8 +177,6 @@ class Enemy:
         self.offsetx = self.offsety = 0
         self.spin_speed = self.maze.fps / ENEMY_HP
         self.spin_queue = self.wound = 0.0
-
-        self.sfx_slash = SFX_SLASH_HERO
 
     @property
     def pos(self):
@@ -227,7 +221,7 @@ class Enemy:
             if self.maze.map[srcx+i//w][srcy+i//u] == WALL: return False
         self.awake = True
         self.maze.map[self.x][self.y] = ENEMY
-        play(self.maze.sfx_spawn, self.spawn_volume, self.get_angle()+pi)
+        play(SFX_SPAWN, self.x, self.y)
         return True
 
     def fire(self):
@@ -317,7 +311,7 @@ class Enemy:
             if not self.spin_queue and not self.fire() and not self.move():
                 self.spin_queue = randsign() * self.spin_speed
                 if not self.maze.hero.dead:
-                    play(self.sfx_slash, self.get_slash(), self.get_angle())
+                    play(SFX_SLASH_HERO, self.x, self.y, self.get_slash())
             if round(self.spin_queue) != 0:
                 self.angle += sign(self.spin_queue) * pi / 2 / self.spin_speed
                 self.spin_queue -= sign(self.spin_queue)

@@ -29,7 +29,7 @@ import pygame
 from .characters import Hero, new_enemy
 from .constants import (
     EMPTY, WALL, HERO, ENEMY, ROAD_WIDTH, WALL_WIDTH, CELL_WIDTH, CELL_NODES,
-    MAZE_SIZE, MIDDLE, INIT_SCORE, ENEMIES, SQRT2, SFX_SPAWN,
+    MAZE_SIZE, MIDDLE, INIT_SCORE, ENEMIES, SQRT2, SFX_SPAWN, SFX_MISSED,
     SFX_SLASH_ENEMY, SFX_LOSE, ADJACENTS, TANGO_VALUES, BG_COLOR, FG_COLOR,
     COLORS, HERO_HP, ENEMY_HP, ATTACK_SPEED, MAX_WOUND, HERO_SPEED,
     BULLET_LIFETIME, JSON_SEPARATORS)
@@ -63,8 +63,6 @@ class Maze:
         glitch (float): time that the maze remain flashing colors (in ms)
         next_slashfx (float): time until next slash effect of the hero (in ms)
         slashd (float): minimum distance for slashes to be effective
-        sfx_slash (pygame.mixer.Sound): sound effect of slashed enemy
-        sfx_lose (pygame.mixer.Sound): sound effect to be played when you lose
         export (list of defaultdict): records of game states
         export_dir (str): directory containing records of game states
         export_rate (float): milliseconds per snapshot
@@ -293,7 +291,7 @@ class Maze:
             if d > 0:
                 wound = d * SQRT2 / self.distance
                 if self.next_slashfx <= 0:
-                    play(self.sfx_slash, wound, enemy.get_angle())
+                    play(SFX_SLASH_ENEMY, enemy.x, enemy.y, wound)
                     self.next_slashfx = ATTACK_SPEED
                 enemy.hit(wound / self.hero.spin_speed)
                 if enemy.wound >= ENEMY_HP:
@@ -323,7 +321,7 @@ class Maze:
                     enemy = new_enemy(self, gridx, gridy)
                     enemy.awake = True
                     self.map[gridx][gridy] = ENEMY
-                    play(self.sfx_spawn, enemy.spawn_volume, enemy.get_angle())
+                    play(SFX_SPAWN, enemy.x, enemy.y)
                     enemy.hit(wound)
                     self.enemies.append(enemy)
                     continue
@@ -334,17 +332,17 @@ class Maze:
                             self.score += enemy.wound
                             enemy.die()
                             self.add_enemy()
-                        play(bullet.sfx_hit, wound, bullet.angle)
+                        play(bullet.sfx_hit, gridx, gridy, wound)
                         fallen.append(i)
                         break
             elif bullet.get_distance(self.x, self.y) < self.distance:
                 if block:
                     self.hero.next_strike = (abs(self.hero.spin_queue/self.fps)
                                              + ATTACK_SPEED)
-                    play(bullet.sfx_missed, wound, bullet.angle + pi)
+                    play(SFX_MISSED, gain=wound)
                 else:
                     self.hit_hero(wound, bullet.color)
-                    play(bullet.sfx_hit, wound, bullet.angle + pi)
+                    play(bullet.sfx_hit, gain=wound)
                 fallen.append(i)
         for i in reversed(fallen): self.bullets.pop(i)
 
@@ -510,7 +508,7 @@ class Maze:
         self.destx = self.desty = MIDDLE
         self.stepx = self.stepy = 0
         self.vx = self.vy = 0.0
-        play(self.sfx_lose)
+        play(SFX_LOSE)
         self.dump_records()
 
     def reinit(self):
