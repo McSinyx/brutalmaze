@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Brutal Maze.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.9.0'
+__version__ = '0.9.1'
 
 import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter
@@ -32,7 +32,7 @@ from threading import Thread
 with redirect_stdout(StringIO()): import pygame
 from pygame import KEYDOWN, MOUSEBUTTONUP, QUIT, VIDEORESIZE
 from pygame.time import Clock, get_ticks
-from palace import free, use_context, Device, Context
+from palace import free, use_context, Device, Context, Buffer
 from appdirs import AppDirs
 
 from .constants import SETTINGS, ICON, SFX, SFX_NOISE, HERO_SPEED, MIDDLE
@@ -136,9 +136,10 @@ class Game:
     def __enter__(self):
         if self.actx is not None:
             use_context(self.actx)
-            self.actx.listener.position = MIDDLE, 0, MIDDLE
+            self.actx.listener.position = MIDDLE, -MIDDLE, 0
             self.actx.listener.gain = not self._mute
-            play(SFX_NOISE)
+            self._source = Buffer(SFX_NOISE).play()
+            self._source.looping = True
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -146,7 +147,8 @@ class Game:
         if not self.hero.dead: self.maze.dump_records()
         if self.actx is not None:
             free(SFX)
-            clean_sources()
+            clean_sources(stopped=False)
+            self._source.destroy()
             use_context(None)
             self.actx.destroy()
             self.actx.device.close()
