@@ -37,7 +37,7 @@ from appdirs import AppDirs
 
 from .constants import SETTINGS, ICON, SFX, SFX_NOISE, HERO_SPEED, MIDDLE
 from .maze import Maze
-from .misc import sign, deg, join, play, clean_sources
+from .misc import sign, deg, join, play
 
 
 class ConfigReader:
@@ -138,7 +138,7 @@ class Game:
             use_context(self.actx)
             self.actx.listener.position = MIDDLE, -MIDDLE, 0
             self.actx.listener.gain = not self._mute
-            self._source = Buffer(SFX_NOISE).play()
+            self._source = play(SFX_NOISE)
             self._source.looping = True
         return self
 
@@ -147,8 +147,8 @@ class Game:
         if not self.hero.dead: self.maze.dump_records()
         if self.actx is not None:
             free(SFX)
-            clean_sources(stopped=False)
-            self._source.destroy()
+            self._source.stop()
+            self.actx.update()
             use_context(None)
             self.actx.destroy()
             self.actx.device.close()
@@ -215,7 +215,7 @@ class Game:
         if not self.paused: self.maze.update(self.fps)
         if not self.headless: self.maze.draw()
         self.clock.tick(self.fps)
-        clean_sources()
+        self.actx.update()
         return True
 
     def move(self, x=0, y=0):

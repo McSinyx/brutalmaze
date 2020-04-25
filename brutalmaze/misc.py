@@ -91,27 +91,10 @@ def json_rec(directory):
 
 
 def play(sound: str, x: float = MIDDLE, y: float = MIDDLE,
-         gain: float = 1.0) -> None:
+         gain: float = 1.0) -> Source:
     """Play a sound at the given position."""
     source = Buffer(sound).play()
     source.spatialize = True
     source.position = x, -y, 0
     source.gain = gain
-    sources.append(source)
-
-
-def clean_sources(stopped=True) -> None:
-    """Destroyed stopped sources.
-
-    If stopped is set to False, clean all sources.
-    """
-    global sources
-    sources, tmp = [], sources
-    for source in tmp:
-        if stopped and source.playing:
-            sources.append(source)
-        else:
-            source.destroy()
-
-
-sources = []
+    return source
