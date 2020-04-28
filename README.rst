@@ -27,11 +27,11 @@ Brutal Maze has a few notable features:
 Installation
 ------------
 
-Brutal Maze is written in Python and is compatible with both version 2 and 3.
+Brutal Maze is written in Python and is compatible version 3.6 and above.
 The installation procedure should be as simple as follows:
 
 * Install Python and `pip <https://pip.pypa.io/en/latest/>`_. Make sure the
-  directory for `Python scripts <https://docs.python.org/2/install/index.html#alternate-installation-the-user-scheme>`_
+  directory for `Python scripts <https://docs.python.org/3/install/index.html#alternate-installation-the-user-scheme>`_
   is in your ``$PATH``.
 * Open Terminal or Command Prompt and run ``pip install --user brutalmaze``.
 

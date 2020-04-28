@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Brutal Maze.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.9.1'
+__version__ = '0.9.2'
 
 import re
 from argparse import ArgumentParser, FileType, RawTextHelpFormatter
@@ -32,7 +32,7 @@ from threading import Thread
 with redirect_stdout(StringIO()): import pygame
 from pygame import KEYDOWN, MOUSEBUTTONUP, QUIT, VIDEORESIZE
 from pygame.time import Clock, get_ticks
-from palace import free, use_context, Device, Context, Buffer
+from palace import free, use_context, Device, Context
 from appdirs import AppDirs
 
 from .constants import SETTINGS, ICON, SFX, SFX_NOISE, HERO_SPEED, MIDDLE

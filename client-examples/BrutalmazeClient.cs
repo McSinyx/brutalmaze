@@ -9,7 +9,7 @@ namespace BrutalmazeClient
 		static void Main(string[] args)
 		{
 			const string host = "localhost";
-			const int port = 8089;
+			const int port = 42069;
 			Socket client_socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
 			client_socket.Connect(host, port);
 			Random rnd = new Random();
